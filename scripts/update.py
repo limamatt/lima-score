@@ -239,6 +239,10 @@ def main():
         ))
     saida_times.sort(key=lambda x: x["pos"])
 
+    # canais de transmissão (preenchidos em data/transmissoes.json)
+    arq_canais = ROOT / "data" / "transmissoes.json"
+    canais = json.loads(arq_canais.read_text(encoding="utf-8")) if arq_canais.exists() else {}
+
     saida_jogos = []
     for j in sorted(jogos, key=lambda x: (x["matchday"] or 0, x["utcDate"])):
         h, a = j["homeTeam"]["id"], j["awayTeam"]["id"]
@@ -249,6 +253,7 @@ def main():
             id=j["id"], rodada=j["matchday"], data=j["utcDate"], status=j["status"],
             casa=h, fora=a, gols_casa=ft["home"], gols_fora=ft["away"],
             previsao=prev.get(j["id"]),
+            canais=(canais.get(str(j["id"])) or {}).get("canais"),
         ))
 
     # artilheiros e garçons, com chance de gol/assistência no próximo jogo

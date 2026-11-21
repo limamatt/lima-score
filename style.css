@@ -224,3 +224,6 @@ details.how li{margin-bottom:.35rem}
 }
 
 .team.sigla span{font-family:var(--display);font-weight:800;font-size:1.05rem;letter-spacing:.04em}
+.tv{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem;padding-top:.55rem;border-top:1px dashed var(--line)}
+.tv-k{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;color:var(--muted);margin-right:.15rem}
+.chip{font-size:.8rem;font-weight:700;padding:.12rem .5rem;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}

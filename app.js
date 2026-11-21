@@ -114,6 +114,12 @@
         el('span', null, 'Fora ', el('b', { class: 'num', text: pct(p.fora) })));
       card.append(bar, pr);
     }
+    if (!encerrado(j)) {
+      const tv = el('div', { class: 'tv' }, el('span', { class: 'tv-k', text: 'Onde assistir' }));
+      if (j.canais && j.canais.length) j.canais.forEach((c) => tv.append(el('span', { class: 'chip', text: c })));
+      else tv.append(el('span', { class: 'small', text: 'A definir' }));
+      card.append(tv);
+    }
     return card;
   }
   const legendaJogo = () => el('div', { class: 'legend' },
