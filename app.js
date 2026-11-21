@@ -25,7 +25,7 @@
   }
   const pct = (v) => {
     if (v == null) return '—';
-    if (v >= 99.95) return '>99,9%';
+    if (v > 99) return '100%';
     if (v > 0 && v < 0.05) return '<0,1%';
     return (+v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
   };
@@ -131,14 +131,14 @@
   function telaInicio(app) {
     const lider = D.times.slice().sort((a, b) => b.titulo - a.titulo)[0];
     const porRisco = D.times.slice().sort((a, b) => b.rebaixamento - a.rebaixamento);
-    const certos = porRisco.filter((t) => t.rebaixamento >= 99.95);
-    const abertos = porRisco.filter((t) => t.rebaixamento >= 5 && t.rebaixamento < 99.95);
+    const certos = porRisco.filter((t) => t.rebaixamento > 99);
+    const abertos = porRisco.filter((t) => t.rebaixamento >= 5 && t.rebaixamento <= 99);
     const vagas = 4 - certos.length;
     const r = rodadaAtual();
     const restamRodadas = 38 - r + 1;
 
     let frase;
-    if (lider.titulo >= 99.95) frase = `${lider.nome} está praticamente campeão.`;
+    if (lider.titulo > 99) frase = `${lider.nome} está praticamente campeão.`;
     else frase = `${lider.nome} tem ${pct(lider.titulo)} de chance de título.`;
     if (vagas > 0 && abertos.length) {
       const nomes = abertos.map((t) => t.nome);
@@ -165,7 +165,7 @@
       const mat = rebaixadoMatematicamente(t);
       risk.append(el('a', { href: '#clube-' + t.id },
         el('div', { class: 'card risk-card lvl-' + lvl },
-          mat ? el('span', { class: 'tag', text: 'Rebaixado' }) : t.rebaixamento >= 99.95 ? el('span', { class: 'tag', text: 'Praticamente rebaixado' }) : null,
+          mat ? el('span', { class: 'tag', text: 'Rebaixado' }) : t.rebaixamento > 99 ? el('span', { class: 'tag', text: 'Praticamente rebaixado' }) : null,
           el('div', { class: 'team' }, escudo(t.id), el('span', { style: 'font-weight:700', text: t.nome })),
           el('div', { class: 'pct num', text: mat ? '100%' : pct(t.rebaixamento) }),
           el('div', { class: 'meter' }, el('span', { style: `width:${Math.max(2, t.rebaixamento)}%` })),
