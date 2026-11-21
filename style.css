@@ -230,3 +230,9 @@ details.how li{margin-bottom:.35rem}
 .crest.tb{width:28px;height:28px}
 .crest-fb.tb{font-size:.5rem;overflow:hidden}
 .team.sigla{justify-content:center}
+
+/* colunas congeladas na tabela: posição e escudo */
+td.pos{width:2.6rem;min-width:2.6rem}
+.sticky-col2{position:sticky;left:0;z-index:1;background:var(--surface);width:3.2rem;min-width:3.2rem;box-shadow:8px 0 8px -8px rgba(0,0,0,.35)}
+th.sticky-col,th.sticky-col2{z-index:2}
+tr.z-reb .sticky-col2{background:color-mix(in srgb,var(--bad) 5%,var(--surface))}
