@@ -501,6 +501,10 @@
     if (['inicio', 'tabela', 'rodadas', 'artilharia', 'noticias'].includes(h)) return { tela: h };
     return { tela: 'inicio' };
   }
+  window.addEventListener('error', () => {
+    const app = $('#app');
+    if (app && !app.children.length) app.replaceChildren(el('p', { class: 'erro', text: 'Algo deu errado ao abrir o site. Recarregue a página.' }));
+  });
   function render() {
     if (!D) return;
     const app = $('#app');
