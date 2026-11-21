@@ -91,11 +91,11 @@
       el('span', { text: dataHora(j.data) }),
       aoVivo(j) ? el('span', { class: 'tag', text: 'Ao vivo' })
         : encerrado(j) ? el('span', { text: 'Encerrado' })
-          : opts.destaque ? el('span', { class: 'tag y', text: opts.destaque }) : el('span', { text: 'Previsão' }));
+          : opts.destaque ? el('span', { class: 'tag y', text: opts.destaque }) : el('span', { text: 'Chances' }));
     let placar;
     if (encerrado(j)) placar = el('div', { class: 'sc final num', text: `${j.gols_casa} × ${j.gols_fora}` });
     else if (aoVivo(j) && j.gols_casa != null) placar = el('div', { class: 'sc live num', text: `${j.gols_casa} × ${j.gols_fora}` });
-    else placar = el('div', { class: 'sc pred num', title: 'Placar mais provável', text: p ? p.placar.replace(' x ', ' × ') : '× ' });
+    else placar = el('div', { class: 'sc vs', 'aria-hidden': 'true', text: '×' });
     const card = el('article', { class: 'card game' }, top,
       el('div', { class: 'game-row' }, timeLink(j.casa, 'md'), placar, timeLink(j.fora, 'md')));
     if (p && !encerrado(j)) {
@@ -169,7 +169,7 @@
       proximos.sort((a, b) => (zr.has(b.casa) || zr.has(b.fora)) - (zr.has(a.casa) || zr.has(a.fora)) || a.data.localeCompare(b.data));
       const g = el('div', { class: 'games' });
       proximos.forEach((j) => g.append(cartaoJogo(j, { destaque: zr.has(j.casa) || zr.has(j.fora) ? 'Mexe com o Z4' : null })));
-      app.append(el('section', null, secHead(`${r}ª rodada`, 'Palpites dos próximos jogos', 'Placar mais provável e a chance de cada resultado.'), legendaJogo(), g,
+      app.append(el('section', null, secHead(`${r}ª rodada`, 'Palpites dos próximos jogos', 'Chance de vitória de cada time e de empate.'), legendaJogo(), g,
         el('p', null, el('a', { href: '#rodadas', text: 'Ver todas as rodadas →' }))));
     }
 
@@ -410,7 +410,7 @@
       el('ol', null,
         el('li', { text: 'Para cada jogo, cruzamos a média de gols que o mandante marca em casa com a que o visitante sofre fora, e o contrário, em relação à média do campeonato.' }),
         el('li', { text: 'A fase recente ajusta ataque e defesa: últimos 5 jogos com peso 60% e últimos 10 com peso 40%.' }),
-        el('li', { text: 'Com os gols esperados, a distribuição de Poisson dá a chance de vitória, empate e derrota e o placar mais provável.' }),
+        el('li', { text: 'Com os gols esperados, a distribuição de Poisson dá a chance de vitória, empate e derrota em cada jogo.' }),
         el('li', { text: `O resto do campeonato é simulado ${D.simulacoes.toLocaleString('pt-BR')} vezes. A chance de cada faixa é a parte das simulações em que o clube termina nela.` }),
         el('li', { text: 'A chance de gol ou assistência de um jogador usa a média dele por partida, ajustada pelos gols esperados do time no próximo jogo.' }),
         el('li', { text: 'Os dados são atualizados automaticamente alguns minutos depois do fim de cada jogo.' })));
