@@ -69,6 +69,13 @@ def times_no_titulo(titulo_norm):
     return [c for _, c in achados]
 
 
+def eh_video_de_gol(t):
+    """Títulos de vídeo de um gol só (não melhores momentos, nem jogo completo)."""
+    if "MELHORES MOMENTOS" in t or "JOGO COMPLETO" in t or "COLETIVA" in t or "PRE-JOGO" in t:
+        return False
+    return bool(re.match(r"^\W*(GOL|GOLACO|GOOO+L)\b", t)) or " GOL D" in t[:40]
+
+
 def main():
     global CHAVE
     CHAVE = os.environ.get("YOUTUBE_API_KEY", "").strip()
@@ -89,6 +96,12 @@ def main():
 
     dados = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
     videos = dados.get("jogos", {})
+    gols = dados.get("gols", {})
+    gols_antes = json.dumps(gols, sort_keys=True)
+    jogos_por_time = {}
+    for j in site["jogos"]:
+        for t in (j["casa"], j["fora"]):
+            jogos_por_time.setdefault(t, []).append(j)
     ultimo = dados.get("ultimo_visto", {})  # playlist -> data do vídeo mais novo já lido
     novos_ultimos = dict(ultimo)
 
@@ -120,6 +133,19 @@ def main():
                 if pl not in novos_ultimos or pub.isoformat() > novos_ultimos[pl]:
                     novos_ultimos[pl] = pub.isoformat()
                 t = norm(sn.get("title", ""))
+                vid = sn["resourceId"]["videoId"]
+                if eh_video_de_gol(t):
+                    # liga o gol ao jogo do clube citado que estava acontecendo quando o vídeo saiu
+                    for cid in times_no_titulo(t):
+                        cands = [x for x in jogos_por_time.get(cid, [])
+                                 if timedelta(minutes=-5) <= pub - datetime.fromisoformat(x["data"].replace("Z", "+00:00")) <= timedelta(hours=4)]
+                        if len(cands) == 1:
+                            lista = gols.setdefault(str(cands[0]["id"]), [])
+                            if all(g["id"] != vid for g in lista):
+                                lista.append(dict(id=vid, titulo=sn.get("title", ""), publicado=sn["publishedAt"]))
+                                lista.sort(key=lambda g: g["publicado"])
+                            break
+                    continue
                 if "MELHORES MOMENTOS" not in t or "BRASILEIR" not in t or ano not in t:
                     continue
                 m = re.search(r"(\d{1,2})\s*[ªAO°º]?\s*RODADA", t)
@@ -134,7 +160,6 @@ def main():
                     jogo = cands[0] if len(cands) == 1 else None
                 if not jogo:
                     continue
-                vid = sn["resourceId"]["videoId"]
                 atual = videos.get(str(jogo["id"]))
                 # se houver mais de um vídeo, fica o publicado primeiro (o oficial da partida)
                 if not atual or sn["publishedAt"] < atual["publicado"]:
@@ -146,8 +171,8 @@ def main():
         print(f"@{handle}: {paginas} páginas, {lidos} vídeos lidos, {ligados} melhores momentos ligados")
 
     # só grava quando um vídeo novo foi ligado a um jogo (evita mudanças a cada 15 minutos)
-    novo = dict(jogos=videos, ultimo_visto=novos_ultimos)
-    if videos != dados.get("jogos", {}) or not dados.get("ultimo_visto"):
+    novo = dict(jogos=videos, gols=gols, ultimo_visto=novos_ultimos)
+    if videos != dados.get("jogos", {}) or json.dumps(gols, sort_keys=True) != gols_antes or not dados.get("ultimo_visto"):
         OUT.write_text(json.dumps(novo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Vídeos: {len(videos)} jogos com melhores momentos.")
     else:

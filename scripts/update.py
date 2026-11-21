@@ -243,7 +243,8 @@ def main():
     arq_canais = ROOT / "data" / "transmissoes.json"
     canais = json.loads(arq_canais.read_text(encoding="utf-8")) if arq_canais.exists() else {}
     arq_videos = ROOT / "data" / "videos.json"
-    videos = json.loads(arq_videos.read_text(encoding="utf-8")).get("jogos", {}) if arq_videos.exists() else {}
+    _v = json.loads(arq_videos.read_text(encoding="utf-8")) if arq_videos.exists() else {}
+    videos, videos_gols = _v.get("jogos", {}), _v.get("gols", {})
 
     saida_jogos = []
     for j in sorted(jogos, key=lambda x: (x["matchday"] or 0, x["utcDate"])):
@@ -257,6 +258,7 @@ def main():
             previsao=prev.get(j["id"]),
             canais=(canais.get(str(j["id"])) or {}).get("canais"),
             video=(videos.get(str(j["id"])) or {}).get("id"),
+            gols_video=[g["id"] for g in videos_gols.get(str(j["id"]), [])] or None,
         ))
 
     # artilheiros e garçons, com chance de gol/assistência no próximo jogo

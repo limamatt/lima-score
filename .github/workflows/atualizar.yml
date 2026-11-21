@@ -2,7 +2,7 @@ name: Atualizar dados
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # a cada 15 minutos
+    - cron: "*/10 * * * *"   # a cada 10 minutos; com jogo rolando, o robô fica ligado conferindo a cada 1 minuto
   workflow_dispatch:          # botão "Run workflow" para rodar na hora
 
 permissions:
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -26,30 +26,8 @@ jobs:
       - name: Instalar dependências
         run: pip install numpy
 
-      - name: Buscar melhores momentos no YouTube
-        continue-on-error: true
-        env:
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-        run: python scripts/videos.py
-
-      - name: Baixar jogos e recalcular previsões
+      - name: Robô (placar, previsões, vídeos e notícias)
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
-        run: python scripts/update.py
-
-      - name: Buscar notícias do ge
-        continue-on-error: true
-        run: python scripts/noticias.py
-
-      - name: Publicar se algo mudou
-        run: |
-          for f in data/noticias.json data/videos.json; do if [ -f "$f" ]; then git add -N "$f"; fi; done
-          if git diff --quiet -- data/site.json data/noticias.json data/videos.json; then
-            echo "Sem mudanças."
-            exit 0
-          fi
-          git config user.name "robo-termometro"
-          git config user.email "robo-termometro@users.noreply.github.com"
-          for f in data/site.json data/noticias.json data/videos.json; do if [ -f "$f" ]; then git add "$f"; fi; done
-          git commit -m "Atualiza dados $(date -u +'%Y-%m-%d %H:%M') UTC"
-          git push
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: python scripts/robo.py

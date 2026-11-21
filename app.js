@@ -104,6 +104,11 @@
     else placar = el('div', { class: 'sc vs', 'aria-hidden': 'true', text: '×' });
     const card = el('article', { class: 'card game' }, top,
       el('div', { class: 'game-row' }, timeLink(j.casa, 'md'), placar, timeLink(j.fora, 'md')));
+    if (j.gols_video && j.gols_video.length) {
+      const gl = el('div', { class: 'gols-v' }, el('span', { class: 'tv-k', text: 'Gols' }));
+      j.gols_video.forEach((id, i) => gl.append(el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(id), target: '_blank', rel: 'noopener', 'aria-label': `Ver gol ${i + 1} no YouTube` }, `▶ Gol ${i + 1}`)));
+      card.append(gl);
+    }
     if (encerrado(j) && j.video) {
       card.append(el('a', { class: 'btn-video', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(j.video), target: '_blank', rel: 'noopener' },
         el('span', { class: 'play', 'aria-hidden': 'true' }), 'Melhores momentos'));
@@ -568,7 +573,15 @@
 
   window.addEventListener('hashchange', render);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) carregar(true); });
-  setInterval(() => carregar(true), 5 * 60 * 1000);
+  // com jogo rolando, confere a cada 1 minuto; fora disso, a cada 5 minutos
+  function temJogoAgora() {
+    if (!D) return false;
+    const agora = Date.now();
+    return D.jogos.some((j) => aoVivo(j) || (!encerrado(j) && Math.abs(agora - new Date(j.data).getTime() - 60 * 60 * 1000) < 80 * 60 * 1000));
+  }
+  (function ciclo() {
+    setTimeout(async () => { await carregar(true); ciclo(); }, temJogoAgora() ? 60 * 1000 : 5 * 60 * 1000);
+  })();
   carregar(false);
 
   // ---------- app instalável

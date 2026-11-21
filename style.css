@@ -267,3 +267,6 @@ tr.z-reb .sticky-col2{background:color-mix(in srgb,var(--bad) 5%,var(--surface))
 .btn-video:hover{border-color:var(--bad)}
 .btn-video .play{width:22px;height:16px;border-radius:4px;background:#e62117;position:relative;flex:none}
 .btn-video .play::after{content:"";position:absolute;left:8px;top:4px;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}
+.gols-v{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem}
+a.chip-gol{text-decoration:none;border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+a.chip-gol:hover{border-color:var(--bad)}
