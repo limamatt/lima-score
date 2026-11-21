@@ -413,7 +413,9 @@
         el('li', { text: 'A fase recente ajusta ataque e defesa: últimos 5 jogos com peso 60% e últimos 10 com peso 40%.' }),
         el('li', { text: 'Com os gols esperados, a distribuição de Poisson dá a chance de vitória, empate e derrota em cada jogo.' }),
         el('li', { text: `O resto do campeonato é simulado ${D.simulacoes.toLocaleString('pt-BR')} vezes. A chance de cada faixa é a parte das simulações em que o clube termina nela.` }),
-        el('li', { text: 'Os dados são atualizados automaticamente alguns minutos depois do fim de cada jogo.' })));
+        el('li', { text: 'Os dados são atualizados automaticamente alguns minutos depois do fim de cada jogo.' })),
+      el('p', { class: 'small', style: 'margin:.8rem 0 0' }, 'Site não oficial, sem ligação com a CBF ou com os clubes. Dados de jogos e artilharia: ',
+        el('a', { href: 'https://www.football-data.org', target: '_blank', rel: 'noopener', text: 'football-data.org' }), '. Previsões são estimativas.'));
   }
 
   // ---------- roteamento
