@@ -222,3 +222,5 @@ details.how li{margin-bottom:.35rem}
 @media (prefers-reduced-motion:no-preference){
   .meter span,.bar3 span{transition:width .6s cubic-bezier(.2,.7,.2,1)}
 }
+
+.team.sigla span{font-family:var(--display);font-weight:800;font-size:1.05rem;letter-spacing:.04em}

@@ -53,6 +53,11 @@
     const t = T[id];
     return el('a', { class: 'team', href: '#clube-' + id }, escudo(id, size), el('span', { text: t ? t.nome : '?' }));
   }
+  function timeLinkSigla(id) {
+    const t = T[id];
+    return el('a', { class: 'team sigla', href: '#clube-' + id, 'aria-label': t ? t.nome : '', title: t ? t.nome : '' },
+      escudo(id), el('span', { text: t ? t.sigla : '?' }));
+  }
   function zona(pos) {
     return pos <= 4 ? 'lib' : pos <= 6 ? 'pre' : pos <= 12 ? 'sul' : pos >= 17 ? 'reb' : 'mid';
   }
@@ -199,7 +204,7 @@
       head = ['#', 'Clube', 'Pts', 'J', 'V', 'E', 'D', 'GP', 'GC', 'SG', 'Últimos 5'];
       D.times.forEach((t) => tb.append(el('tr', { class: 'z-' + zona(t.pos) },
         el('td', { class: 'pos sticky-col', text: t.pos }),
-        el('td', { class: 'l' }, timeLink(t.id)),
+        el('td', { class: 'l' }, timeLinkSigla(t.id)),
         el('td', { class: 'pts', text: t.pts }), el('td', { text: t.j }), el('td', { text: t.v }), el('td', { text: t.e }), el('td', { text: t.d }),
         el('td', { text: t.gp }), el('td', { text: t.gc }), el('td', { text: sgTxt(t.sg) }),
         el('td', null, forma(t.forma)))));
@@ -207,7 +212,7 @@
       head = ['#', 'Clube', 'Pts', 'Projeção', 'Título', 'G4', 'Pré-Liberta', 'Sul-Americana', 'Rebaix.'];
       D.times.slice().sort((a, b) => b.pts_projetados - a.pts_projetados).forEach((t, i) => tb.append(el('tr', { class: 'z-' + zona(i + 1) },
         el('td', { class: 'pos sticky-col', text: i + 1 }),
-        el('td', { class: 'l' }, timeLink(t.id)),
+        el('td', { class: 'l' }, timeLinkSigla(t.id)),
         el('td', { class: 'pts', text: t.pts }), el('td', { text: n1(t.pts_projetados) }),
         el('td', null, heat(t.titulo, 'var(--accent)')), el('td', null, heat(t.libertadores, 'var(--info)')),
         el('td', null, heat(t.pre_libertadores, 'var(--teal)')), el('td', null, heat(t.sulamericana, 'var(--good)')),

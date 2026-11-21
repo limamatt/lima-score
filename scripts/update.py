@@ -33,7 +33,12 @@ NOMES = {
     "Vasco da Gama": "Vasco",
     "Bragantino": "Bragantino",
 }
-SIGLAS = {"Corinthians": "COR", "Coritiba": "CFC", "Grêmio": "GRE", "São Paulo": "SAO"}
+SIGLAS = {"Corinthians": "COR", "Coritiba": "CFC", "Grêmio": "GRE", "São Paulo": "SAO",
+          "Internacional": "INT", "Clube do Remo": "REM"}
+# Escudos que o football-data ainda mostra na versão antiga
+ESCUDOS = {
+    1768: "https://r2.thesportsdb.com/images/media/team/badge/irzu1u1554237406.png/medium",  # Athletico-PR (escudo atual)
+}
 
 # Faixas da tabela (2026). As vagas extras dependem dos campeões das copas.
 FAIXAS = [
@@ -221,7 +226,7 @@ def main():
         st = s[t]
         faixas = {k: round(float(np.mean((col >= lo) & (col <= hi))) * 100, 1) for k, lo, hi in FAIXAS}
         saida_times.append(dict(
-            id=t, nome=nome(r["team"]), sigla=sigla(r["team"]), escudo=r["team"]["crest"],
+            id=t, nome=nome(r["team"]), sigla=sigla(r["team"]), escudo=ESCUDOS.get(t, r["team"]["crest"]),
             pos=r["position"], pts=r["points"], j=r["playedGames"], v=r["won"], e=r["draw"], d=r["lost"],
             gp=r["goalsFor"], gc=r["goalsAgainst"], sg=r["goalDifference"],
             forma="".join(forma[t][-5:]),
