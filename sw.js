@@ -1,6 +1,6 @@
 // Guarda o "esqueleto" do site para abrir rápido e funcionar sem internet.
 // Os dados (data/site.json) sempre vêm da internet primeiro.
-const CACHE = 'termometro-v6';
+const CACHE = 'termometro-v7';
 const BASE = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'assets/icon-192.png'];
 
 self.addEventListener('install', (e) => {
