@@ -69,6 +69,8 @@ def ler_rss(xml_bytes):
             dt = email.utils.parsedate_to_datetime(data) if data else None
         except (TypeError, ValueError):
             dt = None
+        if dt is not None and dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
         itens.append(dict(titulo=titulo, link=link, data=dt))
     return itens
 
@@ -94,13 +96,15 @@ def main():
     clubes = {}
     for cid, (slug, nome) in CLUBES.items():
         itens = []
-        for fonte in (lambda: do_ge(slug), lambda: do_google(nome)):
+        fontes = (lambda: do_ge(slug), lambda: do_google(nome))
+        for fonte in fontes:
             try:
                 itens = fonte()
             except Exception as e:  # uma fonte fora do ar não derruba o robô
                 print(f"{nome}: fonte falhou ({e.__class__.__name__})")
                 itens = []
             if itens:
+                print(f"{nome}: {len(itens)} itens da fonte {'ge' if fonte is fontes[0] else 'Google Notícias'}")
                 break
         itens = [i for i in itens if i["data"] is None or i["data"] >= limite]
         itens.sort(key=lambda i: i["data"] or limite, reverse=True)
