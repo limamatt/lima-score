@@ -280,3 +280,8 @@ a.chip-gol:hover{border-color:var(--bad)}
   .game-row .team,.game-row .team:last-child{flex-direction:column;justify-content:flex-start;text-align:center;gap:.3rem}
   .game-row .team span{hyphens:none;overflow-wrap:normal;word-break:normal;font-size:.95rem}
 }
+.live-wrap{display:inline-flex;align-items:center;gap:.45rem}
+.minuto{font-size:.8rem;font-weight:700;color:var(--bad)}
+.team.sigla{flex-direction:column;gap:.15rem}
+.mini-live{font-family:var(--display);font-weight:800;font-size:.72rem;line-height:1;padding:.12rem .3rem;border-radius:4px;color:#fff;background:var(--muted)}
+.mini-live.V{background:var(--good)} .mini-live.D{background:var(--bad)}

@@ -1,5 +1,5 @@
 // Service worker simples: sempre busca na internet. Só usa a cópia guardada se estiver sem conexão.
-const CACHE = 'termometro-v19';
+const CACHE = 'termometro-v20';
 const BASE = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'assets/icon-192.png'];
 
 self.addEventListener('install', (e) => {

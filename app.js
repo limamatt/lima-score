@@ -57,7 +57,7 @@
   function timeLinkSigla(id) {
     const t = T[id];
     return el('a', { class: 'team sigla', href: '#clube-' + id, 'aria-label': t ? t.nome : '', title: t ? t.nome : '' },
-      escudo(id, 'tb'));
+      escudo(id, 'tb'), D ? placarAoVivo(id) : null);
   }
   function zona(pos) {
     return pos <= 4 ? 'lib' : pos <= 6 ? 'pre' : pos <= 12 ? 'sul' : pos >= 17 ? 'reb' : 'mid';
@@ -78,11 +78,23 @@
       texto && el('p', { text: texto }));
   }
   const encerrado = (j) => j.status === 'FINISHED';
-  function fase(j) {
+  // minuto aproximado, calculado pelo horário de início (a fonte grátis não informa o minuto)
+  function minuto(j) {
     if (j.status === 'PAUSED') return 'Intervalo';
-    const min = (Date.now() - new Date(j.data).getTime()) / 60000;
-    if (min < 0) return 'Começando';
-    return min < 50 ? '1º tempo' : '2º tempo';
+    const m = (Date.now() - new Date(j.data).getTime()) / 60000;
+    if (m < 1) return "1'";
+    if (m <= 45) return Math.ceil(m) + "'";
+    if (m <= 62) return "45+'";
+    const s2 = Math.ceil(m - 17);
+    return s2 <= 90 ? s2 + "'" : "90+'";
+  }
+  function placarAoVivo(id) {
+    const j = D.jogos.find((x) => aoVivo(x) && (x.casa === id || x.fora === id));
+    if (!j || j.gols_casa == null) return null;
+    const meu = j.casa === id ? j.gols_casa : j.gols_fora, dele = j.casa === id ? j.gols_fora : j.gols_casa;
+    const res = meu > dele ? 'V' : meu === dele ? 'E' : 'D';
+    const adv = T[j.casa === id ? j.fora : j.casa];
+    return el('span', { class: 'mini-live ' + res, title: `Ao vivo contra ${adv ? adv.nome : ''}`, text: `${meu}-${dele}` });
   }
   const aoVivo = (j) => j.status === 'IN_PLAY' || j.status === 'PAUSED';
   function rodadaAtual() {
@@ -101,7 +113,7 @@
     const p = j.previsao;
     const top = el('div', { class: 'game-top' },
       el('span', { text: dataHora(j.data) }),
-      aoVivo(j) ? el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo · ' + fase(j))
+      aoVivo(j) ? el('span', { class: 'live-wrap' }, el('span', { class: 'minuto num', text: minuto(j) }), el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo'))
         : encerrado(j) ? el('span', { text: 'Encerrado' })
           : opts.destaque ? el('span', { class: 'tag y', text: opts.destaque }) : null);
     let placar;
