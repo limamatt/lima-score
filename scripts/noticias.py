@@ -47,6 +47,26 @@ CLUBES = {
     1772: ("chapecoense", "Chapecoense"),
 }
 
+# outros nomes pelos quais o clube aparece nas manchetes
+APELIDOS = {
+    1768: ["Athletico", "Furacão"], 1766: ["Atlético-MG", "Galo", "Atlético Mineiro"], 4286: ["Bragantino", "Massa Bruta"],
+    6684: ["Inter", "Internacional", "Colorado"], 1772: ["Chapecoense", "Chape"], 4287: ["Remo", "Leão Azul"],
+    1780: ["Vasco"], 1783: ["Flamengo", "Fla", "Mengão"], 1765: ["Fluminense", "Flu"], 1770: ["Botafogo", "Fogão"],
+    1779: ["Corinthians", "Timão"], 1769: ["Palmeiras", "Verdão"], 6685: ["Santos", "Peixe"], 1776: ["São Paulo"],
+    1767: ["Grêmio"], 1771: ["Cruzeiro", "Raposa"], 1777: ["Bahia", "Tricolor de Aço"], 4241: ["Coritiba", "Coxa"],
+    1782: ["Vitória"], 4364: ["Mirassol"],
+}
+
+
+def relevante(item, cid, slug):
+    if f"/times/{slug}/" in item["link"]:
+        return True
+    titulo = item["titulo"]
+    if titulo.lower().startswith("ao vivo"):
+        return False
+    return any(re.search(r"(?<![\wÀ-ú])" + re.escape(n) + r"(?![\wÀ-ú])", titulo) for n in APELIDOS.get(cid, []))
+
+
 UA = {"User-Agent": "Mozilla/5.0 (TermometroDoBrasileirao; +https://github.com)"}
 
 
@@ -96,17 +116,17 @@ def main():
     clubes = {}
     for cid, (slug, nome) in CLUBES.items():
         itens = []
-        fontes = (lambda: do_ge(slug), lambda: do_google(nome))
-        for fonte in fontes:
+        for rotulo, fonte in (("ge", lambda: do_ge(slug)), ("Google Notícias", lambda: do_google(nome))):
             try:
-                itens = fonte()
+                novos = fonte()
             except Exception as e:  # uma fonte fora do ar não derruba o robô
-                print(f"{nome}: fonte falhou ({e.__class__.__name__})")
-                itens = []
-            if itens:
-                print(f"{nome}: {len(itens)} itens da fonte {'ge' if fonte is fontes[0] else 'Google Notícias'}")
+                print(f"{nome}: {rotulo} falhou ({e.__class__.__name__})")
+                continue
+            novos = [i for i in novos if (i["data"] is None or i["data"] >= limite) and relevante(i, cid, slug)]
+            print(f"{nome}: {len(novos)} notícias recentes de {rotulo}")
+            itens += novos
+            if len(itens) >= POR_CLUBE:
                 break
-        itens = [i for i in itens if i["data"] is None or i["data"] >= limite]
         itens.sort(key=lambda i: i["data"] or limite, reverse=True)
         vistos, lista = set(), []
         for i in itens:
