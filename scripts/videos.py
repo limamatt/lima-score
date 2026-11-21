@@ -83,6 +83,9 @@ def main():
     jogos = {}
     for j in site["jogos"]:
         jogos[(j["rodada"], frozenset((j["casa"], j["fora"])))] = j
+    por_par = {}
+    for j in site["jogos"]:
+        por_par.setdefault(frozenset((j["casa"], j["fora"])), []).append(j)
 
     dados = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
     videos = dados.get("jogos", {})
@@ -121,9 +124,14 @@ def main():
                     continue
                 m = re.search(r"(\d{1,2})\s*[ªAO°º]?\s*RODADA", t)
                 clubes = times_no_titulo(t)
-                if not m or len(clubes) != 2:
+                if len(clubes) != 2:
                     continue
-                jogo = jogos.get((int(m.group(1)), frozenset(clubes)))
+                jogo = jogos.get((int(m.group(1)), frozenset(clubes))) if m else None
+                if not jogo:
+                    # jogo adiado ou título sem rodada: usa o jogo desses dois times que terminou até 4 dias antes do vídeo
+                    cands = [x for x in por_par.get(frozenset(clubes), []) if x["status"] == "FINISHED"
+                             and timedelta(0) <= pub - datetime.fromisoformat(x["data"].replace("Z", "+00:00")) <= timedelta(days=4)]
+                    jogo = cands[0] if len(cands) == 1 else None
                 if not jogo:
                     continue
                 vid = sn["resourceId"]["videoId"]
