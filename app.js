@@ -104,6 +104,10 @@
     else placar = el('div', { class: 'sc vs', 'aria-hidden': 'true', text: '×' });
     const card = el('article', { class: 'card game' }, top,
       el('div', { class: 'game-row' }, timeLink(j.casa, 'md'), placar, timeLink(j.fora, 'md')));
+    if (encerrado(j) && j.video) {
+      card.append(el('a', { class: 'btn-video', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(j.video), target: '_blank', rel: 'noopener' },
+        el('span', { class: 'play', 'aria-hidden': 'true' }), 'Melhores momentos'));
+    }
     if (p && !encerrado(j)) {
       const bar = el('div', { class: 'bar3', role: 'img', 'aria-label': `Mandante ${pct(p.casa)}, empate ${pct(p.empate)}, visitante ${pct(p.fora)}` },
         el('span', { style: `width:${p.casa}%;background:var(--good)` }),

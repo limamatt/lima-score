@@ -263,3 +263,7 @@ tr.z-reb .sticky-col2{background:color-mix(in srgb,var(--bad) 5%,var(--surface))
 .hero-min{gap:.3rem;padding:1.1rem 1.2rem}
 .hero-min h1{font-size:clamp(2.2rem,8vw,3.4rem)}
 .hero-rod{font-family:var(--display);font-weight:800;font-size:clamp(1.3rem,4.5vw,1.8rem);text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.btn-video{display:flex;align-items:center;justify-content:center;gap:.5rem;text-decoration:none;font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:.95rem;padding:.55rem .8rem;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+.btn-video:hover{border-color:var(--bad)}
+.btn-video .play{width:22px;height:16px;border-radius:4px;background:#e62117;position:relative;flex:none}
+.btn-video .play::after{content:"";position:absolute;left:8px;top:4px;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}
