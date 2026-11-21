@@ -195,9 +195,9 @@
   }
 
   function telaTabela(app) {
-    app.append(secHead('Classificação', 'Tabela do Brasileirão', 'Posição atual e as chances de cada clube em cada faixa da tabela ao fim da 38ª rodada.', 'h1'));
-    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Visão da tabela' });
-    [['classificacao', 'Classificação'], ['chances', 'Chances']].forEach(([k, txt]) => {
+    app.append(secHead('Classificação', 'Tabela do Brasileirão', 'Classificação geral, desempenho como mandante e como visitante, e as chances de cada clube ao fim da 38ª rodada.', 'h1'));
+    const seg = el('div', { class: 'seg quatro', role: 'group', 'aria-label': 'Visão da tabela' });
+    [['classificacao', 'Classificação'], ['mandante', 'Mandante'], ['visitante', 'Visitante'], ['chances', 'Chances']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.tabela === k), text: txt, onclick: () => { estado.tabela = k; render(); } }));
     });
     app.append(seg);
@@ -214,6 +214,25 @@
         el('td', { class: 'pts', text: t.pts }), el('td', { text: t.j }), el('td', { text: t.v }), el('td', { text: t.e }), el('td', { text: t.d }),
         el('td', { text: t.gp }), el('td', { text: t.gc }), el('td', { text: sgTxt(t.sg) }),
         el('td', null, forma(t.forma)))));
+    } else if (estado.tabela === 'mandante' || estado.tabela === 'visitante') {
+      const casa = estado.tabela === 'mandante';
+      head = ['#', 'Clube', 'Pts', 'J', 'V', 'E', 'D', 'GP', 'GC', 'SG', 'Aprov.'];
+      const st = {};
+      D.times.forEach((t) => { st[t.id] = { id: t.id, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 }; });
+      D.jogos.filter(encerrado).forEach((j) => {
+        const id = casa ? j.casa : j.fora;
+        const x = st[id]; if (!x) return;
+        const gp = casa ? j.gols_casa : j.gols_fora, gc = casa ? j.gols_fora : j.gols_casa;
+        x.j++; x.gp += gp; x.gc += gc;
+        if (gp > gc) { x.v++; x.pts += 3; } else if (gp === gc) { x.e++; x.pts += 1; } else x.d++;
+      });
+      Object.values(st).sort((a, b) => b.pts - a.pts || b.v - a.v || (b.gp - b.gc) - (a.gp - a.gc) || b.gp - a.gp)
+        .forEach((x, i) => tb.append(el('tr', null,
+          el('td', { class: 'pos', text: i + 1 }),
+          el('td', { class: 'sticky-col2' }, timeLinkSigla(x.id)),
+          el('td', { class: 'pts', text: x.pts }), el('td', { text: x.j }), el('td', { text: x.v }), el('td', { text: x.e }), el('td', { text: x.d }),
+          el('td', { text: x.gp }), el('td', { text: x.gc }), el('td', { text: sgTxt(x.gp - x.gc) }),
+          el('td', { text: x.j ? Math.round(x.pts / (x.j * 3) * 100) + '%' : '—' }))));
     } else {
       head = ['#', 'Clube', 'Pts', 'Projeção', 'Título', 'G4', 'Pré-Liberta', 'Sul-Americana', 'Rebaix.'];
       D.times.slice().sort((a, b) => b.pts_projetados - a.pts_projetados).forEach((t, i) => tb.append(el('tr', { class: 'z-' + zona(i + 1) },
@@ -225,12 +244,17 @@
         el('td', null, heat(t.rebaixamento, 'var(--bad)')))));
     }
     wrap.append(el('table', null, el('thead', null, el('tr', null, head.map((h, i) => el('th', { class: (i === 1 ? 'sticky-col2' : ''), text: h })))), tb));
-    card.append(wrap, el('div', { class: 'zones' },
+    const porMando = estado.tabela === 'mandante' || estado.tabela === 'visitante';
+    if (porMando) card.append(wrap, el('div', { class: 'zones' }, el('span', { text: estado.tabela === 'mandante'
+      ? 'Só os jogos em casa. Aprov. = aproveitamento dos pontos disputados.'
+      : 'Só os jogos fora de casa. Aprov. = aproveitamento dos pontos disputados.' })));
+    else card.append(wrap, el('div', { class: 'zones' },
       el('span', null, el('i', { style: 'background:var(--info)' }), 'Libertadores'),
       el('span', null, el('i', { style: 'background:var(--teal)' }), 'Pré-Libertadores'),
       el('span', null, el('i', { style: 'background:var(--good)' }), 'Sul-Americana'),
       el('span', null, el('i', { style: 'background:var(--bad)' }), 'Rebaixamento'),
       estado.tabela === 'chances' ? el('span', { text: 'Ordenada pela projeção de pontos' }) : null));
+    if (porMando) { app.append(card); return; }
     app.append(card, el('p', { class: 'small', text: 'As vagas em Libertadores e Sul-Americana podem mudar conforme os campeões da Copa do Brasil e das competições continentais.' }));
   }
 
