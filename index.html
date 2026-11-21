@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Termômetro do Brasileirão</title>
+<meta name="description" content="Tabela, rodadas, artilharia e previsões do Brasileirão 2026, atualizadas após cada jogo.">
+<meta name="theme-color" content="#0f5132">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Termômetro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!--APP-->
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#inicio" aria-label="Termômetro do Brasileirão, início">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-txt"><b>Termômetro</b><small>do Brasileirão</small></span>
+    </a>
+    <nav class="tabs-top" aria-label="Seções">
+      <a href="#inicio" data-nav="inicio">Início</a>
+      <a href="#tabela" data-nav="tabela">Tabela</a>
+      <a href="#rodadas" data-nav="rodadas">Rodadas</a>
+      <a href="#artilharia" data-nav="artilharia">Artilharia</a>
+    </nav>
+  </div>
+</header>
+
+<main id="app" class="wrap" aria-live="polite">
+  <p class="loading">Carregando a tabela…</p>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <span id="upd"></span>
+    <span>Site não oficial, feito por torcedor. Dados: <a href="https://www.football-data.org" target="_blank" rel="noopener">football-data.org</a>. Previsões são estimativas.</span>
+    <button id="install" class="btn-install" type="button" hidden>Instalar como app</button>
+  </div>
+</footer>
+
+<nav class="tabs-bottom" aria-label="Seções">
+  <a href="#inicio" data-nav="inicio"><span class="ic ic-home"></span>Início</a>
+  <a href="#tabela" data-nav="tabela"><span class="ic ic-table"></span>Tabela</a>
+  <a href="#rodadas" data-nav="rodadas"><span class="ic ic-cal"></span>Rodadas</a>
+  <a href="#artilharia" data-nav="artilharia"><span class="ic ic-ball"></span>Artilharia</a>
+</nav>
+<!--/APP-->
+<script src="app.js"></script>
+</body>
+</html>
