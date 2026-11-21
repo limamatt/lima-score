@@ -159,20 +159,31 @@
         el('div', null, el('div', { class: 'k', text: 'Rodadas restantes' }), el('div', { class: 'v num', text: String(Math.max(0, restamRodadas)) }),
           el('div', { class: 's', text: 'Fim em ' + new Date(D.temporada.fim + 'T12:00:00Z').toLocaleDateString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit' }) })))));
 
-    // risco de rebaixamento
-    const risk = el('div', { class: 'risk' });
-    porRisco.filter((t) => t.rebaixamento >= 1).forEach((t) => {
-      const lvl = t.rebaixamento >= 50 ? 'hi' : t.rebaixamento >= 15 ? 'mid' : 'lo';
-      const mat = rebaixadoMatematicamente(t);
-      risk.append(el('a', { href: '#clube-' + t.id },
-        el('div', { class: 'card risk-card lvl-' + lvl },
-          mat ? el('span', { class: 'tag', text: 'Rebaixado' }) : t.rebaixamento > 99 ? el('span', { class: 'tag', text: 'Praticamente rebaixado' }) : null,
-          el('div', { class: 'team' }, escudo(t.id), el('span', { style: 'font-weight:700', text: t.nome })),
-          el('div', { class: 'pct num', text: mat ? '100%' : pct(t.rebaixamento) }),
-          el('div', { class: 'meter' }, el('span', { style: `width:${Math.max(2, t.rebaixamento)}%` })),
-          el('div', { class: 'small num', text: `${t.pos}º · ${t.pts} pts · projeção ${n1(t.pts_projetados)}` }))));
-    });
-    app.append(el('section', null, secHead('Zona de rebaixamento', 'Quem corre risco de cair', `Chance de terminar entre os quatro últimos, em ${D.simulacoes.toLocaleString('pt-BR')} simulações do resto do campeonato.`), risk));
+    // panorama: título, G4, Sul-Americana, rebaixamento e Copa do Brasil
+    const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
+      escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
+      el('span', { class: 'pr-bar' }, el('span', { style: `width:${Math.max(v > 0 ? 2 : 0, Math.min(100, v))}%;background:${cor}` })),
+      el('span', { class: 'pr-v num', text: extra || pct(v) }));
+    const bloco = (eyebrow, titulo, nota, linhas) => el('div', { class: 'card pano' },
+      el('div', { class: 'eyebrow', text: eyebrow }), el('h3', { text: titulo }),
+      nota ? el('p', { class: 'small', text: nota }) : null,
+      el('div', { class: 'pr-list' }, linhas.length ? linhas : el('p', { class: 'small', text: 'Ninguém com chance relevante.' })));
+    const topo = (campo, min, max) => D.times.filter((t) => t[campo] >= min).sort((a, b) => b[campo] - a[campo]).slice(0, max);
+
+    const pano = el('div', { class: 'pano-grid' });
+    pano.append(bloco('Título', 'Quem pode ser campeão', null,
+      topo('titulo', 0.1, 6).map((t) => linhaProb(t, t.titulo, 'var(--accent)'))));
+    pano.append(bloco('Libertadores', 'Chance de G4', 'Vaga direta na fase de grupos.',
+      topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))));
+    pano.append(bloco('Sul-Americana', 'Chance de 7º a 12º', null,
+      topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))));
+    pano.append(bloco('Rebaixamento', 'Chance de cair', 'Terminar entre os quatro últimos.',
+      topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? 'Caiu' : null))));
+    pano.append(bloco('Copa do Brasil 2027', 'Quem pode ficar de fora',
+      'A vaga vem de estar na Série A de 2027, então quem cair perde essa vaga. Ainda pode entrar pelo estadual ou pelo ranking da CBF.',
+      topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)',
+        rebaixadoMatematicamente(t) ? 'Fora' : t.rebaixamento > 99 ? 'Fora' : pct(t.rebaixamento)))));
+    app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', `Resultado de ${D.simulacoes.toLocaleString('pt-BR')} simulações do resto do campeonato.`), pano));
 
     // próximos jogos
     const proximos = D.jogos.filter((j) => j.rodada === r && !encerrado(j));

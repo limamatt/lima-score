@@ -249,3 +249,14 @@ tr.z-reb .sticky-col2{background:color-mix(in srgb,var(--bad) 5%,var(--surface))
 .nw:hover b{text-decoration:underline}
 .nw b{display:block;font-size:1rem;line-height:1.3;font-weight:700}
 .nw .small{margin-top:.2rem;display:block}
+.pano-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:.8rem}
+.pano{padding:1rem;display:flex;flex-direction:column;gap:.35rem}
+.pano h3{font-size:1.35rem;text-transform:uppercase}
+.pano .small{margin:0 0 .3rem}
+.pr-list{display:flex;flex-direction:column;gap:.15rem}
+.pr{display:grid;grid-template-columns:24px minmax(0,7.5rem) 1fr 3.6rem;gap:.6rem;align-items:center;text-decoration:none;padding:.3rem 0}
+.pr-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.pr-bar span{display:block;height:100%;border-radius:4px}
+.pr-v{font-family:var(--display);font-weight:800;font-size:1.05rem;text-align:right}
+.pr:hover .pr-n{text-decoration:underline}
