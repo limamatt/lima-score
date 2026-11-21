@@ -130,34 +130,14 @@
 
   // ---------- telas
   function telaInicio(app) {
-    const lider = D.times.slice().sort((a, b) => b.titulo - a.titulo)[0];
     const porRisco = D.times.slice().sort((a, b) => b.rebaixamento - a.rebaixamento);
-    const certos = porRisco.filter((t) => t.rebaixamento > 99);
     const abertos = porRisco.filter((t) => t.rebaixamento >= 5 && t.rebaixamento <= 99);
-    const vagas = 4 - certos.length;
     const r = rodadaAtual();
     const restamRodadas = 38 - r + 1;
 
-    let frase;
-    if (lider.titulo > 99) frase = `${lider.nome} está praticamente campeão.`;
-    else frase = `${lider.nome} tem ${pct(lider.titulo)} de chance de título.`;
-    if (vagas > 0 && abertos.length) {
-      const nomes = abertos.map((t) => t.nome);
-      frase += ` Na parte de baixo, ${nomes.length} clubes disputam ${vagas} ${vagas === 1 ? 'vaga' : 'vagas'} na zona de rebaixamento: ${nomes.slice(0, -1).join(', ')}${nomes.length > 1 ? ' e ' : ''}${nomes.at(-1)}.`;
-    }
-
-    app.append(el('section', { class: 'hero', 'aria-label': 'Resumo' },
-      el('div', null,
-        el('div', { class: 'eyebrow', text: `Brasileirão ${D.temporada.inicio.slice(0, 4)} · ${restamRodadas > 0 ? 'rodada ' + r : 'fim do campeonato'}` }),
-        el('h1', { text: 'A reta final em números' }),
-        el('p', { text: frase })),
-      el('div', { class: 'board' },
-        el('div', null, el('div', { class: 'k', text: 'Chance de título' }), el('div', { class: 'v y num', text: pct(lider.titulo) }),
-          el('div', { class: 's' }, escudo(lider.id), `${lider.nome} · ${lider.pts} pts`)),
-        el('div', null, el('div', { class: 'k', text: 'Rebaixados' }), el('div', { class: 'v num', text: String(certos.length) }),
-          el('div', { class: 's', text: certos.map((t) => t.nome).join(' e ') || 'Nenhum definido ainda' })),
-        el('div', null, el('div', { class: 'k', text: 'Rodadas restantes' }), el('div', { class: 'v num', text: String(Math.max(0, restamRodadas)) }),
-          el('div', { class: 's', text: 'Fim em ' + new Date(D.temporada.fim + 'T12:00:00Z').toLocaleDateString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit' }) })))));
+    app.append(el('section', { class: 'hero hero-min', 'aria-label': 'Brasileirão' },
+      el('h1', { text: `Brasileirão ${D.temporada.inicio.slice(0, 4)}` }),
+      el('div', { class: 'hero-rod', text: restamRodadas > 0 ? `Rodada ${r}` : 'Campeonato encerrado' })));
 
     // panorama: título, G4, Sul-Americana, rebaixamento e Copa do Brasil
     const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
@@ -175,6 +155,8 @@
       topo('titulo', 0.1, 6).map((t) => linhaProb(t, t.titulo, 'var(--accent)'))));
     pano.append(bloco('Libertadores', 'Chance de G4', 'Vaga direta na fase de grupos.',
       topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))));
+    pano.append(bloco('Pré-Libertadores', 'Chance de 5º ou 6º', 'Vaga na fase preliminar da Libertadores.',
+      topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))));
     pano.append(bloco('Sul-Americana', 'Chance de 7º a 12º', null,
       topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))));
     pano.append(bloco('Rebaixamento', 'Chance de cair', 'Terminar entre os quatro últimos.',

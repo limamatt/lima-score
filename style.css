@@ -260,3 +260,6 @@ tr.z-reb .sticky-col2{background:color-mix(in srgb,var(--bad) 5%,var(--surface))
 .pr-bar span{display:block;height:100%;border-radius:4px}
 .pr-v{font-family:var(--display);font-weight:800;font-size:1.05rem;text-align:right}
 .pr:hover .pr-n{text-decoration:underline}
+.hero-min{gap:.3rem;padding:1.1rem 1.2rem}
+.hero-min h1{font-size:clamp(2.2rem,8vw,3.4rem)}
+.hero-rod{font-family:var(--display);font-weight:800;font-size:clamp(1.3rem,4.5vw,1.8rem);text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
