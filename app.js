@@ -91,7 +91,7 @@
       el('span', { text: dataHora(j.data) }),
       aoVivo(j) ? el('span', { class: 'tag', text: 'Ao vivo' })
         : encerrado(j) ? el('span', { text: 'Encerrado' })
-          : opts.destaque ? el('span', { class: 'tag y', text: opts.destaque }) : el('span', { text: 'Chances' }));
+          : opts.destaque ? el('span', { class: 'tag y', text: opts.destaque }) : null);
     let placar;
     if (encerrado(j)) placar = el('div', { class: 'sc final num', text: `${j.gols_casa} × ${j.gols_fora}` });
     else if (aoVivo(j) && j.gols_casa != null) placar = el('div', { class: 'sc live num', text: `${j.gols_casa} × ${j.gols_fora}` });
