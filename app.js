@@ -78,6 +78,12 @@
       texto && el('p', { text: texto }));
   }
   const encerrado = (j) => j.status === 'FINISHED';
+  function fase(j) {
+    if (j.status === 'PAUSED') return 'Intervalo';
+    const min = (Date.now() - new Date(j.data).getTime()) / 60000;
+    if (min < 0) return 'Começando';
+    return min < 50 ? '1º tempo' : '2º tempo';
+  }
   const aoVivo = (j) => j.status === 'IN_PLAY' || j.status === 'PAUSED';
   function rodadaAtual() {
     const pend = D.jogos.filter((j) => !encerrado(j));
@@ -95,14 +101,14 @@
     const p = j.previsao;
     const top = el('div', { class: 'game-top' },
       el('span', { text: dataHora(j.data) }),
-      aoVivo(j) ? el('span', { class: 'tag', text: 'Ao vivo' })
+      aoVivo(j) ? el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo · ' + fase(j))
         : encerrado(j) ? el('span', { text: 'Encerrado' })
           : opts.destaque ? el('span', { class: 'tag y', text: opts.destaque }) : null);
     let placar;
     if (encerrado(j)) placar = el('div', { class: 'sc final num', text: `${j.gols_casa} × ${j.gols_fora}` });
     else if (aoVivo(j) && j.gols_casa != null) placar = el('div', { class: 'sc live num', text: `${j.gols_casa} × ${j.gols_fora}` });
     else placar = el('div', { class: 'sc vs', 'aria-hidden': 'true', text: '×' });
-    const card = el('article', { class: 'card game' }, top,
+    const card = el('article', { class: 'card game' + (aoVivo(j) ? ' is-live' : '') }, top,
       el('div', { class: 'game-row' }, timeLink(j.casa, 'md'), placar, timeLink(j.fora, 'md')));
     if (j.gols_video && j.gols_video.length) {
       const gl = el('div', { class: 'gols-v' }, el('span', { class: 'tv-k', text: 'Gols' }));
@@ -113,7 +119,7 @@
       card.append(el('a', { class: 'btn-video', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(j.video), target: '_blank', rel: 'noopener' },
         el('span', { class: 'play', 'aria-hidden': 'true' }), 'Melhores momentos'));
     }
-    if (p && !encerrado(j)) {
+    if (p && !encerrado(j) && !aoVivo(j)) {
       const bar = el('div', { class: 'bar3', role: 'img', 'aria-label': `Mandante ${pct(p.casa)}, empate ${pct(p.empate)}, visitante ${pct(p.fora)}` },
         el('span', { style: `width:${p.casa}%;background:var(--good)` }),
         el('span', { style: `width:${p.empate}%;background:var(--muted)` }),
@@ -148,6 +154,14 @@
       el('h1', { text: `Brasileirão ${D.temporada.inicio.slice(0, 4)}` }),
       el('div', { class: 'hero-rod', text: restamRodadas > 0 ? `Rodada ${r}` : 'Campeonato encerrado' })));
 
+    // ao vivo
+    const vivos = D.jogos.filter(aoVivo);
+    if (vivos.length) {
+      const g = el('div', { class: 'games' });
+      vivos.forEach((j) => g.append(cartaoJogo(j)));
+      app.append(el('section', { id: 'ao-vivo' }, secHead('Agora', 'Ao vivo', 'O placar se atualiza sozinho a cada minuto.'), g));
+    }
+
     // panorama: título, G4, Sul-Americana, rebaixamento e Copa do Brasil
     const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
       escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
@@ -177,7 +191,7 @@
     app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', `Resultado de ${D.simulacoes.toLocaleString('pt-BR')} simulações do resto do campeonato.`), pano));
 
     // próximos jogos
-    const proximos = D.jogos.filter((j) => j.rodada === r && !encerrado(j));
+    const proximos = D.jogos.filter((j) => j.rodada === r && !encerrado(j) && !aoVivo(j));
     if (proximos.length) {
       const zr = new Set(abertos.map((t) => t.id));
       proximos.sort((a, b) => (zr.has(b.casa) || zr.has(b.fora)) - (zr.has(a.casa) || zr.has(a.fora)) || a.data.localeCompare(b.data));

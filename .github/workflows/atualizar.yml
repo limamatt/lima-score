@@ -2,7 +2,7 @@ name: Atualizar dados
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # a cada 10 minutos; com jogo rolando, o robô fica ligado conferindo a cada 1 minuto
+    - cron: "*/10 * * * *"   # a cada 10 minutos (o GitHub às vezes atrasa); em dia de jogo o robô fica ligado
   workflow_dispatch:          # botão "Run workflow" para rodar na hora
 
 permissions:
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
