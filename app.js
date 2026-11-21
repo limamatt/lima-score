@@ -188,7 +188,7 @@
     const top = D.jogadores.slice().sort((a, b) => b.gols - a.gols || a.jogos - b.jogos).slice(0, 5);
     const lista = el('div', { class: 'card players' });
     top.forEach((p, i) => lista.append(linhaJogador(p, i + 1, 'gols')));
-    app.append(el('section', null, secHead('Artilharia', 'Goleadores do campeonato', 'Com a chance de cada um marcar no próximo jogo.'), lista,
+    app.append(el('section', null, secHead('Artilharia', 'Goleadores do campeonato', null), lista,
       el('p', null, el('a', { href: '#artilharia', text: 'Ver artilheiros e garçons →' }))));
 
     app.append(metodo());
@@ -273,19 +273,11 @@
     const valor = modo === 'gols' ? p.gols : p.assistencias;
     const stat = el('div', { class: 'stat' },
       el('div', { class: 'big num' }, String(valor), el('small', { text: modo === 'gols' ? 'gols' : 'assist.' })));
-    if (p.prox) {
-      const ch = modo === 'gols' ? p.prox.gol : p.prox.assistencia;
-      stat.append(el('div', { class: 'chance', title: 'Chance no próximo jogo' },
-        el('span', { class: 'v num', text: pct(ch) }),
-        el('span', { class: 'small' }, p.prox.em_casa ? 'vs ' : '@ ', escudo(p.prox.adversario), T[p.prox.adversario] ? T[p.prox.adversario].sigla : '')));
-    } else {
-      stat.append(el('div', { class: 'chance' }, el('span', { class: 'small', text: 'sem jogos' })));
-    }
     return el('div', { class: 'pl' }, el('span', { class: 'rk num', text: rank }), quem, stat);
   }
 
   function telaArtilharia(app) {
-    app.append(secHead('Artilharia', 'Artilheiros e garçons', 'Ranking de gols e assistências, com a chance de cada jogador marcar ou dar assistência no próximo jogo do seu time.', 'h1'));
+    app.append(secHead('Artilharia', 'Artilheiros e garçons', 'Ranking de gols e assistências do campeonato.', 'h1'));
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Ranking' });
     [['gols', 'Gols'], ['assistencias', 'Assistências']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.artilharia === k), text: txt, onclick: () => { estado.artilharia = k; render(); } }));
@@ -303,9 +295,7 @@
       card.append(linhaJogador(p, rank, modo === 'gols' ? 'gols' : 'assist'));
     });
     app.append(card);
-    app.append(el('p', { class: 'small', text: modo === 'gols'
-      ? 'A chance de gol usa a média de gols do jogador por partida, ajustada pela força do adversário e pela fase do time.'
-      : 'O ranking de assistências considera os 100 maiores artilheiros, que é o que a fonte de dados informa. Um jogador que dá muitas assistências mas marca pouco pode não aparecer.' }));
+    if (modo !== 'gols') app.append(el('p', { class: 'small', text: 'O ranking de assistências considera os 100 maiores artilheiros, que é o que a fonte de dados informa. Um jogador que dá muitas assistências mas marca pouco pode não aparecer.' }));
   }
 
   function telaClube(app, id) {
@@ -371,7 +361,7 @@
     if (js.length) {
       const lista = el('div', { class: 'card players' });
       js.forEach((p, i) => lista.append(linhaJogador(p, i + 1, 'gols')));
-      app.append(el('section', null, secHead('Elenco', 'Artilheiros do clube', 'Chance de marcar no próximo jogo.'), lista));
+      app.append(el('section', null, secHead('Elenco', 'Artilheiros do clube', null), lista));
     }
   }
 
@@ -423,7 +413,6 @@
         el('li', { text: 'A fase recente ajusta ataque e defesa: últimos 5 jogos com peso 60% e últimos 10 com peso 40%.' }),
         el('li', { text: 'Com os gols esperados, a distribuição de Poisson dá a chance de vitória, empate e derrota em cada jogo.' }),
         el('li', { text: `O resto do campeonato é simulado ${D.simulacoes.toLocaleString('pt-BR')} vezes. A chance de cada faixa é a parte das simulações em que o clube termina nela.` }),
-        el('li', { text: 'A chance de gol ou assistência de um jogador usa a média dele por partida, ajustada pelos gols esperados do time no próximo jogo.' }),
         el('li', { text: 'Os dados são atualizados automaticamente alguns minutos depois do fim de cada jogo.' })));
   }
 
