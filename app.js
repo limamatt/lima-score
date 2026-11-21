@@ -5,8 +5,9 @@
   const DATA_URL = 'data/site.json';
   const TZ = 'America/Sao_Paulo';
   let D = null;           // dados do site
+  let N = null;           // notícias
   let T = {};             // times por id
-  let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao' };
+  let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao', clubeNoticias: 'todos' };
 
   // ---------- utilidades
   const $ = (s, r = document) => r.querySelector(s);
@@ -380,6 +381,14 @@
       el('div', null, secHead('Próximos jogos', 'O que falta', 'Com a chance de vitória em cada jogo.'), colA),
       el('div', null, secHead('Resultados', 'Últimos jogos', null), colB)));
 
+    const nc = noticiasDe(String(id)).slice(0, 4);
+    if (nc.length) {
+      const card = el('div', { class: 'card news' });
+      nc.forEach(([n, cid]) => card.append(linhaNoticia(n, cid)));
+      app.append(el('section', null, secHead('Notícias', 'Últimas do ge', null), card,
+        el('p', null, el('a', { href: '#noticias', text: 'Ver todas as notícias →', onclick: () => { estado.clubeNoticias = String(id); } }))));
+    }
+
     // jogadores
     const js = D.jogadores.filter((p) => p.time === id).sort((a, b) => b.gols - a.gols || b.assistencias - a.assistencias);
     if (js.length) {
@@ -430,6 +439,52 @@
     box.replaceChildren(svg, tip);
   }
 
+  function haQuanto(iso) {
+    if (!iso) return '';
+    const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (min < 1) return 'agora';
+    if (min < 60) return `há ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `há ${h} h`;
+    const d = Math.round(h / 24);
+    return d === 1 ? 'ontem' : `há ${d} dias`;
+  }
+  function linhaNoticia(n, id) {
+    return el('a', { class: 'nw', href: n.link, target: '_blank', rel: 'noopener' },
+      escudo(+id, 'md'),
+      el('div', null, el('b', { text: n.titulo }),
+        el('span', { class: 'small', text: [T[id] ? T[id].nome : '', haQuanto(n.data), 'ge'].filter(Boolean).join(' · ') })));
+  }
+  function noticiasDe(id) {
+    if (!N || !N.clubes) return [];
+    if (id !== 'todos') return (N.clubes[id] || []).map((n) => [n, id]);
+    const todas = [];
+    Object.entries(N.clubes).forEach(([cid, l]) => l.forEach((n) => todas.push([n, cid])));
+    const vistos = new Set();
+    return todas.filter(([n]) => (vistos.has(n.link) ? false : vistos.add(n.link)))
+      .sort((a, b) => (b[0].data || '').localeCompare(a[0].data || '')).slice(0, 40);
+  }
+  function telaNoticias(app) {
+    app.append(secHead('Notícias', 'Últimas do ge', 'As manchetes mais recentes do ge sobre cada clube da Série A. Toque para ler a matéria no ge.', 'h1'));
+    const filtro = el('div', { class: 'clubes-filtro', role: 'group', 'aria-label': 'Escolha o clube' });
+    filtro.append(el('button', { type: 'button', class: 'todos', 'aria-pressed': String(estado.clubeNoticias === 'todos'), text: 'Todos',
+      onclick: () => { estado.clubeNoticias = 'todos'; render(); } }));
+    D.times.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).forEach((t) => {
+      filtro.append(el('button', { type: 'button', 'aria-pressed': String(estado.clubeNoticias === String(t.id)), 'aria-label': t.nome, title: t.nome,
+        onclick: () => { estado.clubeNoticias = String(t.id); render(); } }, escudo(t.id, 'tb')));
+    });
+    app.append(filtro);
+    const lista = noticiasDe(estado.clubeNoticias);
+    if (!lista.length) {
+      app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0',
+        text: N ? 'Nenhuma notícia recente deste clube no momento.' : 'As notícias aparecem aqui assim que o robô fizer a próxima atualização.' })));
+      return;
+    }
+    const card = el('div', { class: 'card news' });
+    lista.forEach(([n, id]) => card.append(linhaNoticia(n, id)));
+    app.append(card);
+  }
+
   function metodo() {
     return el('details', { class: 'card how' }, el('summary', { text: 'Como as previsões são feitas' }),
       el('ol', null,
@@ -446,7 +501,7 @@
   function rota() {
     const h = (location.hash || '#inicio').slice(1);
     if (h.startsWith('clube-')) return { tela: 'clube', id: +h.slice(6) };
-    if (['inicio', 'tabela', 'rodadas', 'artilharia'].includes(h)) return { tela: h };
+    if (['inicio', 'tabela', 'rodadas', 'artilharia', 'noticias'].includes(h)) return { tela: h };
     return { tela: 'inicio' };
   }
   function render() {
@@ -459,6 +514,7 @@
     else if (r.tela === 'tabela') telaTabela(app);
     else if (r.tela === 'rodadas') telaRodadas(app);
     else if (r.tela === 'artilharia') telaArtilharia(app);
+    else if (r.tela === 'noticias') telaNoticias(app);
     else telaClube(app, r.id);
     const navKey = r.tela === 'clube' ? 'tabela' : r.tela;
     document.querySelectorAll('[data-nav]').forEach((a) => {
@@ -494,6 +550,20 @@
       if (!silencioso && !D) $('#app').replaceChildren(el('p', { class: 'erro', text: 'Não foi possível carregar os dados agora. Verifique sua conexão e tente de novo.' }));
     }
   }
+
+  async function carregarNoticias() {
+    if (window.__SITE_DATA__) return;
+    try {
+      const r = await fetch('data/noticias.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const novo = await r.json();
+      if (N && novo.atualizado === N.atualizado) return;
+      N = novo;
+      if (D) render();
+    } catch (e) { /* sem notícias por enquanto */ }
+  }
+  carregarNoticias();
+  setInterval(carregarNoticias, 10 * 60 * 1000);
 
   window.addEventListener('hashchange', render);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) carregar(true); });
