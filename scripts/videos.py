@@ -147,7 +147,7 @@ def main():
 
     # só grava quando um vídeo novo foi ligado a um jogo (evita mudanças a cada 15 minutos)
     novo = dict(jogos=videos, ultimo_visto=novos_ultimos)
-    if videos != dados.get("jogos", {}):
+    if videos != dados.get("jogos", {}) or not dados.get("ultimo_visto"):
         OUT.write_text(json.dumps(novo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Vídeos: {len(videos)} jogos com melhores momentos.")
     else:
