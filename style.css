@@ -470,3 +470,25 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .esc-susp{margin-top:.7rem;display:flex;flex-direction:column;gap:.35rem}
 .esc-susp .esc-res{margin:0;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap}
 .cp-tec{margin-left:auto}.clube-tec{margin-top:.2rem}
+/* campinho: técnico, suspensos, marcas e substituições */
+.cp-rot{flex-direction:column;align-items:stretch;gap:.35rem}
+.cp-rot-l{display:flex;align-items:center;gap:.45rem}
+.cp-info{display:flex;flex-wrap:wrap;gap:.3rem .5rem}
+.cp-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.12rem .5rem;border-radius:999px;background:var(--surface-2)}
+.cp-chip.susp{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.cp-ic-tec{font-style:normal;font-size:.8rem}
+.cp-n{position:relative}
+.cp-les{position:absolute;top:-.35rem;right:-.45rem;font-style:normal;font-size:.62rem;font-weight:900;color:#fff;background:var(--bad);width:.95rem;height:.95rem;border-radius:50%;display:grid;place-items:center}
+.cp-j.saiu .cp-n{opacity:.75}
+.cp-m .esc-m{margin:0;justify-content:center}
+.cp-m .esc-t{font-size:.6rem;padding:0 .22rem;background:rgba(255,255,255,.92)}
+.cp-m .cart{width:.5rem;height:.7rem}
+.cp-sub{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.15rem;margin-top:.05rem;padding:.05rem .3rem;border-radius:6px;background:rgba(0,0,0,.35);max-width:100%}
+.cp-sub-ic{display:inline-flex;flex-direction:column;line-height:.55;font-style:normal;font-size:.5rem}
+.cp-sub-ic::before{content:"▲";color:#5be07f}
+.cp-sub-ic::after{content:"▼";color:#ff6b6b}
+.cp-sub-min{font-size:.6rem;font-weight:700;color:#ffd5d5}
+.cp-sub-n{font-size:.64rem;font-weight:700;color:#d6ffe0;max-width:4.2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-sub .esc-m{margin:0}
+.cp-sub .esc-t{font-size:.58rem;padding:0 .2rem;background:rgba(255,255,255,.92)}
+.campo{min-height:38rem}

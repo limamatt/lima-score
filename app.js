@@ -364,19 +364,15 @@
       : (falta <= 60 && !encerrado(j) ? 'A escalação oficial aparece aqui assim que for divulgada. ' : '') +
         'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor). Lesões e decisões do técnico não entram.';
     const fonte = usarOficial ? oficial : prov;
-    const campo = fonte && fonte.casa && fonte.fora ? campinho(j, fonte) : null;
-    // prováveis: só o campinho (e os suspensos); oficiais: campinho + lista com gols, cartões e substituições
-    const susp = !usarOficial ? ['casa', 'fora'].map((l) => (prov[l] && prov[l].desfalques && prov[l].desfalques.length
-      ? el('div', { class: 'small esc-res' }, escudo(j[l]), el('b', { text: ' Suspensos: ' }), prov[l].desfalques.map((p) => p.n).join(', ')) : null)).filter(Boolean) : [];
+    if (!fonte || !fonte.casa || !fonte.fora) return null;
+    const suspensos = usarOficial ? {} : { casa: (prov.casa && prov.casa.desfalques) || [], fora: (prov.fora && prov.fora.desfalques) || [] };
     return el('section', null, secHead('Escalações', titulo, null),
-      campo || el('div', { class: 'card esc' }, coluna('casa'), coluna('fora')),
-      susp.length ? el('div', { class: 'card pad esc-susp' }, susp) : null,
-      usarOficial && campo ? el('div', { class: 'card esc', style: 'margin-top:.7rem' }, coluna('casa'), coluna('fora')) : null,
+      campinho(j, fonte, { marcas: usarOficial ? marcas : null, suspensos }),
       nota ? el('p', { class: 'small', text: nota }) : null);
   }
 
   // campinho: o mandante embaixo, o visitante em cima, cada um em linhas pela posição
-  function campinho(j, fonte) {
+  function campinho(j, fonte, extra = {}) {
     const linhaDe = (pos) => {
       const p = (pos || '').toLowerCase();
       if (p.includes('goleiro')) return 0;
@@ -421,14 +417,31 @@
       const box = el('div', { class: 'cp-metade ' + lado });
       const usadas = linhas.filter((ln) => ln.length);
       (lado === 'casa' ? usadas.slice().reverse() : usadas).forEach((ln) => {
-        box.append(el('div', { class: 'cp-linha' }, ln.map((p) => el('div', { class: 'cp-j', title: p.n },
-          el('span', { class: 'cp-n num', text: p.c || '' }), el('span', { class: 'cp-nome', text: curto(p.n) })))));
+        box.append(el('div', { class: 'cp-linha' }, ln.map((p) => {
+          const m = extra.marcas ? extra.marcas(Object.assign({}, p, { sai: undefined, les: undefined }), lado, false) : null;
+          // substituído: quem entrou no lugar dele, com o minuto
+          const ent = p.por ? ((fonte[lado].reservas || []).find((r) => r.n === p.por) || { n: p.por }) : null;
+          const mEnt = ent && extra.marcas ? extra.marcas(Object.assign({}, ent, { sai: undefined, ent: undefined }), lado, true) : null;
+          return el('div', { class: 'cp-j' + (p.sai != null ? ' saiu' : ''), title: p.n },
+            el('span', { class: 'cp-n num', text: p.c || '' }, p.les ? el('i', { class: 'cp-les', title: 'Saiu machucado', text: '✚' }) : null),
+            el('span', { class: 'cp-nome', text: curto(p.n) }),
+            m ? el('span', { class: 'cp-m' }, m) : null,
+            ent ? el('span', { class: 'cp-sub', title: `${ent.n} entrou no lugar de ${p.n} aos ${p.sai}'` },
+              el('i', { class: 'cp-sub-ic', 'aria-hidden': 'true' }), el('span', { class: 'cp-sub-min num', text: p.sai != null ? p.sai + "'" : '' }),
+              el('span', { class: 'cp-sub-n', text: curto(ent.n) }), mEnt) : (p.sai != null ? el('span', { class: 'cp-sub' }, el('span', { class: 'cp-sub-min num', text: `↓${p.sai}'` })) : null));
+        })));
       });
       return box;
     };
-    const rot = (lado) => el('div', { class: 'cp-rot ' + lado }, escudo(j[lado]), el('b', { text: T[j[lado]] ? T[j[lado]].nome : '' }),
-      el('span', { class: 'small', text: '4-3-3' }),
-      T[j[lado]] && T[j[lado]].tecnico ? el('span', { class: 'small cp-tec', text: `Téc.: ${T[j[lado]].tecnico.nome}${T[j[lado]].tecnico.interino ? ' (int.)' : ''}` }) : null);
+    const rot = (lado) => {
+      const t = T[j[lado]];
+      const susp = (extra.suspensos && extra.suspensos[lado]) || [];
+      return el('div', { class: 'cp-rot ' + lado },
+        el('div', { class: 'cp-rot-l' }, escudo(j[lado]), el('b', { text: t ? t.nome : '' }), el('span', { class: 'small', text: '4-3-3' })),
+        el('div', { class: 'cp-info small' },
+          t && t.tecnico ? el('span', { class: 'cp-chip' }, el('i', { class: 'cp-ic-tec', 'aria-hidden': 'true', text: '📋' }), `Técnico: ${t.tecnico.nome}${t.tecnico.interino ? ' (interino)' : ''}`) : null,
+          susp.length ? el('span', { class: 'cp-chip susp' }, el('i', { class: 'cart vm', 'aria-hidden': 'true' }), `Suspensos: ${susp.map((x) => x.n).join(', ')}`) : null));
+    };
     return el('div', { class: 'card cp-card' }, rot('fora'),
       el('div', { class: 'campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }), metade('fora'), metade('casa')), rot('casa'));
   }

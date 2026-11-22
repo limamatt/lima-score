@@ -296,6 +296,7 @@ def minutos_em_campo(resumo):
     entrou, saiu = {}, {}
     vistos = set()
     lesionados = set()
+    pares = {}  # quem saiu (normalizado) -> nome de quem entrou
     for ev in list(resumo.get("commentary") or []) + list(resumo.get("keyEvents") or []):
         play = ev.get("play") or {}
         tipo = ((ev.get("type") or play.get("type") or {}).get("text") or "").lower()
@@ -311,6 +312,7 @@ def minutos_em_campo(resumo):
                 a, b = _norm_nome(m.group(1)), _norm_nome(m.group(2))
                 if "injury" in texto.lower():
                     lesionados.add(b)
+                pares.setdefault(b, m.group(1).strip())
                 if (a, b) not in vistos:
                     vistos.add((a, b))
                     entrou[a] = minuto
@@ -325,6 +327,7 @@ def minutos_em_campo(resumo):
             if m:
                 saiu.setdefault(_norm_nome(m.group(1)), minuto)
     minutos_em_campo.lesionados = lesionados
+    minutos_em_campo.pares = pares
     return entrou, saiu
 
 
@@ -425,6 +428,7 @@ def escalacao_oficial(resumo, lado_por_espn):
     out = {}
     entrou, saiu = minutos_em_campo(resumo)
     lesionados = getattr(minutos_em_campo, "lesionados", set())
+    pares = getattr(minutos_em_campo, "pares", {})
     for r in resumo.get("rosters") or []:
         lado = lado_por_espn.get(str((r.get("team") or {}).get("id")))
         if not lado:
@@ -442,6 +446,8 @@ def escalacao_oficial(resumo, lado_por_espn):
                 item["ent"] = entrou[nn]
             if nn in lesionados:
                 item["les"] = True
+            if nn in pares:
+                item["por"] = pares[nn]
             (tit if p.get("starter") else res).append(item)
         if len(tit) >= 11:
             out[lado] = dict(formacao=r.get("formation") or r.get("formationName"), titulares=tit, reservas=res)
