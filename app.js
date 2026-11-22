@@ -348,7 +348,7 @@
     pano.append(bloco('Sul-Americana', 'Chance de 7º a 12º', null,
       topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))));
     pano.append(bloco('Rebaixamento', 'Chance de cair', 'Terminar entre os quatro últimos.',
-      topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? 'Caiu' : null))));
+      topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))));
     pano.append(bloco('Copa do Brasil 2027', 'Quem pode ficar de fora',
       'A vaga vem de estar na Série A de 2027, então quem cair perde essa vaga. Ainda pode entrar pelo estadual ou pelo ranking da CBF.',
       topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)',
