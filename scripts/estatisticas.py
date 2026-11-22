@@ -29,7 +29,7 @@ ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada joga
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 5                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 6                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -226,19 +226,32 @@ def ler_lances(comp, resumo, lado_por_espn):
     return lances
 
 
-POSICOES = [("goalkeeper", "Goleiro"), ("center left", "Zagueiro"), ("center right", "Zagueiro"), ("attacking midfielder", "Meia"), ("defensive midfielder", "Volante"),
-             ("midfielder", "Meio-campista"), ("center back", "Zagueiro"), ("centre back", "Zagueiro"),
-             ("left back", "Lateral-esquerdo"), ("right back", "Lateral-direito"), ("wing back", "Ala"),
-             ("defender", "Defensor"), ("winger", "Ponta"), ("left forward", "Ponta"), ("right forward", "Ponta"),
-             ("forward", "Atacante"), ("striker", "Atacante")]
-
-
 def traduz_posicao(txt):
-    t = (txt or "").lower().replace("-", " ")
-    for en, pt in POSICOES:
-        if en in t:
-            return pt
-    return {"G": "Goleiro", "D": "Defensor", "M": "Meio-campista", "F": "Atacante"}.get((txt or "").upper(), txt)
+    """Posição da ESPN em português. 'Substitute' (reserva que entrou) não é posição: volta None."""
+    t = (txt or "").lower().replace("-", " ").strip()
+    if not t or t in ("sub", "substitute") or "substitut" in t:
+        return None
+    if "goalkeeper" in t or t == "g" or t == "gk":
+        return "Goleiro"
+    if "wing back" in t:
+        return "Ala"
+    if "midfielder" in t:
+        if "defensive" in t:
+            return "Volante"
+        if "attacking" in t or (("left" in t or "right" in t) and "center" not in t and "centre" not in t):
+            return "Meia"
+        return "Meio-campista"
+    if "back" in t or "defender" in t:
+        if "left" in t and "center" not in t and "centre" not in t:
+            return "Lateral-esquerdo"
+        if "right" in t and "center" not in t and "centre" not in t:
+            return "Lateral-direito"
+        return "Zagueiro"
+    if "winger" in t or (("left" in t or "right" in t) and "forward" in t):
+        return "Ponta"
+    if "forward" in t or "striker" in t:
+        return "Atacante"
+    return {"d": "Defensor", "m": "Meio-campista", "f": "Atacante"}.get(t, txt)
 
 
 def destaque_do_jogo(resumo, lado_por_espn):
@@ -294,6 +307,7 @@ def jogadores_do_jogo(resumo, lado_por_espn):
             pos = (p.get("position") or {})
             out[lado].append(dict(id=str(a["id"]), nome=a.get("displayName") or a.get("shortName"),
                                   pos=traduz_posicao(pos.get("displayName") or pos.get("abbreviation")),
+                                  pos_espn=pos.get("displayName") or pos.get("abbreviation"),
                                   camisa=p.get("jersey"), titular=titular, entrou=entrou, saiu=bool(p.get("subbedOut")), stats=stats))
     return out
 
