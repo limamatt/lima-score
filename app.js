@@ -425,7 +425,7 @@
   }
 
   function telaTabela(app) {
-    app.append(secHead('Classificação', 'Tabela do Brasileirão', 'Classificação geral, desempenho como mandante e como visitante, e as chances de cada clube ao fim da 38ª rodada.', 'h1'));
+    app.append(secHead('Classificação', 'Tabela do Brasileirão', null, 'h1'));
     const seg = el('div', { class: 'seg quatro', role: 'group', 'aria-label': 'Visão da tabela' });
     [['classificacao', 'Classificação'], ['mandante', 'Mandante'], ['visitante', 'Visitante'], ['chances', 'Chances']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.tabela === k), text: txt, onclick: () => { estado.tabela = k; render(); } }));
