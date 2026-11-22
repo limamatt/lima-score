@@ -133,12 +133,7 @@
       onclick: (e) => { if (!e.target.closest('a')) location.hash = '#jogo-' + j.id; },
       onkeydown: (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) location.hash = '#jogo-' + j.id; } }, top,
       el('div', { class: 'game-row' }, timeCartao(j.casa), placar, timeCartao(j.fora)));
-    // vídeos dos gols no cartão só enquanto o jogo rola; depois ficam na página da partida
-    if (aoVivo(j) && j.gols_video && j.gols_video.length) {
-      const gl = el('div', { class: 'gols-v' }, el('span', { class: 'tv-k', text: 'Gols' }));
-      j.gols_video.forEach((g, i) => gl.append(chipGol(g, i)));
-      card.append(gl);
-    }
+    // vídeos dos gols: só na página da partida
     if (encerrado(j) && j.video) {
       card.append(el('a', { class: 'btn-video', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(j.video), target: '_blank', rel: 'noopener' },
         el('span', { class: 'play', 'aria-hidden': 'true' }), 'Melhores momentos'));
