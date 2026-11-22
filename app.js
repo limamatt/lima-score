@@ -331,8 +331,8 @@
       ['g4', 'G4', 'Vaga direta na fase de grupos da Libertadores.', () => topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))],
       ['pre', 'Pré-Liberta', 'Terminar em 5º ou 6º: fase preliminar da Libertadores.', () => topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))],
       ['sul', 'Sul-Americana', 'Terminar entre 7º e 12º.', () => topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))],
-      ['z4', 'Z4', 'Terminar entre os quatro últimos e cair para a Série B.', () => topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))],
-      ['copa', 'Copa BR', 'Quem cair perde a vaga da Copa do Brasil 2027 pela Série A (ainda pode entrar pelo estadual ou pelo ranking da CBF).', () => topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)', rebaixadoMatematicamente(t) ? '100%' : null))],
+      ['z4', 'Z4', 'Terminar entre os quatro últimos e cair para a Série B.', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))],
+      ['copa', 'Copa BR', 'Quem cair perde a vaga da Copa do Brasil 2027 pela Série A (ainda pode entrar pelo estadual ou pelo ranking da CBF).', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)', rebaixadoMatematicamente(t) ? '100%' : null))],
     ];
     const atual = faixas.find((f) => f[0] === estado.pano) || faixas[0];
     const abas = el('div', { class: 'seg seg-scroll', role: 'group', 'aria-label': 'Faixa da tabela' });
@@ -358,7 +358,8 @@
       if (tem[k]) seg.append(el('button', { type: 'button', 'aria-pressed': String(z === k), text: txt, onclick: () => { estado.cen = k; render(); } }));
     });
     const lista = el('div', { class: 'cen-lista' });
-    C.filter((c) => c.zona === z).forEach((c) => lista.append(cartaoCenario(c)));
+    // G4: da maior para a menor chance; Z4: da menor para a maior chance de cair
+    C.filter((c) => c.zona === z).sort((a, b) => z === 'g4' ? b.chance - a.chance : a.chance - b.chance).forEach((c) => lista.append(cartaoCenario(c)));
     return el('section', null, secHead('Cenários', 'O que cada um precisa', null), seg, lista);
   }
   const nomeT = (id) => (T[id] ? T[id].nome : '?');
