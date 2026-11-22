@@ -332,3 +332,8 @@ a.chip-yt:hover{border-color:var(--bad)}
 .dq-txt{display:flex;flex-direction:column;gap:.15rem;min-width:0}
 .dq-txt b{font-size:1.15rem}
 .dq-mot{font-family:var(--display);font-weight:700;color:var(--good);text-transform:uppercase;letter-spacing:.04em;font-size:.9rem}
+a.lance.vg{text-decoration:none;color:inherit}
+a.lance.vg:last-child{border-bottom:0}
+a.lance.vg:hover{background:color-mix(in srgb,var(--bad) 6%,transparent)}
+.vg-play{color:var(--bad);font-size:.85rem;text-align:center}
+.vg-yt{white-space:nowrap}
