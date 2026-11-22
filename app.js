@@ -325,9 +325,6 @@
       app.append(el('section', { id: 'ao-vivo' }, secHead('Agora', 'Ao vivo', null), g));
     }
 
-    // cenários: quem ainda briga pelo G4 e contra o Z4
-    if (D.cenarios && D.cenarios.length) app.append(secaoCenarios());
-
     // panorama em abas: uma faixa por vez
     const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
       escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
@@ -349,6 +346,9 @@
     app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', null), abas,
       el('div', { class: 'card pano' }, el('p', { class: 'small', style: 'margin:0 0 .6rem', text: atual[2] }),
         el('div', { class: 'pr-list' }, linhas.length ? linhas : el('p', { class: 'small', text: 'Ninguém com chance relevante.' })))));
+
+    // cenários: quem ainda briga pelo G4 e contra o Z4
+    if (D.cenarios && D.cenarios.length) app.append(secaoCenarios());
 
   }
 
