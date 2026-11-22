@@ -630,20 +630,64 @@
     };
     const grupo = (titulo, tiles) => el('div', { class: 'card es-g' }, el('div', { class: 'eyebrow', text: titulo }), el('div', { class: 'es-grid' }, tiles.filter(Boolean)));
     const pctTxt2 = (a, b) => b ? Math.round(100 * a / b) + '%' : '–';
+    const min = x.minutos || 0;
+    const p90 = (v) => (min >= 90 ? ((v || 0) * 90 / min).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–');
+    const dec = (v, c = 1) => (v == null ? '–' : (+v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }));
+    const sinal = (v) => (v > 0 ? '+' : '') + dec(v);
     const grupos = [grupo('Participação', [tile('Jogos', x.jogos, `${x.titular || 0} como titular · ${x.entrou || 0} saindo do banco`, 'jogos'),
-      tile('Participações em gol', (x.gols || 0) + (x.assist || 0), 'gols + assistências', null)])];
+      tile('Minutos', min ? min.toLocaleString('pt-BR') : '–', min && x.jogos ? `${Math.round(min / x.jogos)} por jogo` : null, 'minutos'),
+      tile('Participações em gol', (x.gols || 0) + (x.assist || 0), `${p90((x.gols || 0) + (x.assist || 0))} por 90 min`, null),
+      tile('Minutos por gol', x.gols && min ? Math.round(min / x.gols) : '–', null, null)])];
     if (goleiro) {
-      grupos.push(grupo('Goleiro', [tile('Defesas', x.defesas || 0, `${por(x.defesas)} por jogo`, 'defesas'),
-        tile('Gols sofridos', x.gols_sofridos || 0, `${por(x.gols_sofridos)} por jogo`, null),
+      grupos.push(grupo('Goleiro', [tile('Defesas', x.defesas || 0, `${p90(x.defesas)} por 90 min`, 'defesas'),
+        tile('Gols sofridos', x.gols_sofridos || 0, `${p90(x.gols_sofridos)} por 90 min`, null),
         tile('Jogos sem sofrer gol', x.sem_sofrer || 0, null, 'sem_sofrer'),
         tile('Defesas a cada 100 chutes no gol', (x.defesas || 0) + (x.gols_sofridos || 0) ? Math.round(100 * (x.defesas || 0) / ((x.defesas || 0) + (x.gols_sofridos || 0))) : '–', null, null)]));
+    } else {
+      grupos.push(grupo('Finalização', [tile('Gols', x.gols || 0, `${p90(x.gols)} por 90 min`, 'gols'),
+        tile('xG estimado', dec(x.xg, 2), `${p90(x.xg)} por 90 min`, 'xg'),
+        tile('Gols − xG', x.xg != null ? sinal((x.gols || 0) - (x.xg || 0)) : '–', (x.gols || 0) - (x.xg || 0) >= 0 ? 'acima do esperado' : 'abaixo do esperado', null),
+        tile('Finalizações', x.chutes || 0, `${p90(x.chutes)} por 90 min`, 'chutes'),
+        tile('Chutes no gol', x.no_alvo || 0, `${pctTxt2(x.no_alvo || 0, x.chutes || 0)} das finalizações`, 'no_alvo'),
+        tile('Grandes chances', x.grandes_chances || 0, 'chutes com xG acima de 0,30', 'grandes_chances'),
+        tile('xG por finalização', x.fin ? dec((x.xg || 0) / x.fin, 2) : '–', 'qualidade média dos chutes', null),
+        tile('Cabeceios', x.cabeceios || 0, null, null)]));
+      const z = x.zonas || {};
+      const totZ = (z.pequena_area || 0) + (z.area || 0) + (z.fora || 0) + (z.penalti || 0) + (z.falta || 0);
+      if (totZ) grupos.push(grupo('Zona das finalizações', [tile('Pequena área', z.pequena_area || 0, pctTxt2(z.pequena_area || 0, totZ), null),
+        tile('Dentro da área', z.area || 0, pctTxt2(z.area || 0, totZ), null), tile('Fora da área', z.fora || 0, pctTxt2(z.fora || 0, totZ), null),
+        tile('Pênaltis e faltas diretas', (z.penalti || 0) + (z.falta || 0), pctTxt2((z.penalti || 0) + (z.falta || 0), totZ), null)]));
+      grupos.push(grupo('Criação', [tile('Assistências', x.assist || 0, `${p90(x.assist)} por 90 min`, 'assist'),
+        tile('Passes para finalização', x.chances || 0, `${p90(x.chances)} por 90 min`, 'chances'),
+        tile('xA estimado', dec(x.xa, 2), 'xG dos chutes que ele deu o passe', 'xa'),
+        tile('Assistências − xA', x.xa != null ? sinal((x.assist || 0) - (x.xa || 0)) : '–', null, null)]));
     }
-    grupos.push(grupo('Ataque', [tile('Gols', x.gols || 0, `${por(x.gols)} por jogo`, 'gols'), tile('Assistências', x.assist || 0, `${por(x.assist)} por jogo`, 'assist'),
-      tile('Finalizações', x.chutes || 0, `${por(x.chutes)} por jogo`, 'chutes'), tile('Chutes no gol', x.no_alvo || 0, `${pctTxt2(x.no_alvo || 0, x.chutes || 0)} das finalizações`, 'no_alvo'),
-      tile('Gols por finalização', pctTxt2(x.gols || 0, x.chutes || 0), null, null), tile('Impedimentos', x.impedimentos || 0, null, null)]));
-    grupos.push(grupo('Disciplina', [tile('Faltas cometidas', x.faltas || 0, `${por(x.faltas)} por jogo`, null), tile('Faltas sofridas', x.sofridas || 0, `${por(x.sofridas)} por jogo`, 'sofridas'),
-      tile('Cartões amarelos', x.amarelos || 0, null, null), tile('Cartões vermelhos', x.vermelhos || 0, null, null),
+    grupos.push(grupo('Duelos e disciplina', [tile('Faltas sofridas', x.sofridas || 0, `${p90(x.sofridas)} por 90 min`, 'sofridas'),
+      tile('Faltas cometidas', x.faltas || 0, `${p90(x.faltas)} por 90 min`, null),
+      tile('Pênaltis sofridos', x.penaltis_sofridos || 0, null, null), tile('Pênaltis cometidos', x.penaltis_cometidos || 0, null, null),
+      tile('Impedimentos', x.impedimentos || 0, null, null), tile('Cartões', `${x.amarelos || 0} 🟨 · ${x.vermelhos || 0} 🟥`, null, null),
       x.contra ? tile('Gols contra', x.contra, null, null) : null]));
+    // perfil: percentil contra jogadores da mesma função (com pelo menos 450 minutos)
+    const grp = GRUPO_POS(x.pos);
+    const pares = todos.filter((y) => GRUPO_POS(y.pos) === grp && (y.minutos || 0) >= 450);
+    if (min >= 450 && pares.length >= 10) {
+      const metricas = goleiro
+        ? [['Defesas por 90', (y) => (y.defesas || 0) * 90 / y.minutos], ['Jogos sem sofrer gol', (y) => (y.sem_sofrer || 0) / y.jogos], ['Gols sofridos por 90 (menos é melhor)', (y) => -(y.gols_sofridos || 0) * 90 / y.minutos]]
+        : [['Gols por 90', (y) => (y.gols || 0) * 90 / y.minutos], ['xG por 90', (y) => (y.xg || 0) * 90 / y.minutos], ['Finalizações por 90', (y) => (y.chutes || 0) * 90 / y.minutos],
+          ['Assistências por 90', (y) => (y.assist || 0) * 90 / y.minutos], ['Passes para finalização por 90', (y) => (y.chances || 0) * 90 / y.minutos],
+          ['xA por 90', (y) => (y.xa || 0) * 90 / y.minutos], ['Faltas sofridas por 90', (y) => (y.sofridas || 0) * 90 / y.minutos],
+          ['Disciplina (menos cartões)', (y) => -((y.amarelos || 0) + 3 * (y.vermelhos || 0)) * 90 / y.minutos]];
+      const barras = el('div', { class: 'perfil' });
+      metricas.forEach(([rot, f]) => {
+        const v = f(x);
+        const pc = Math.round(100 * pares.filter((y) => f(y) < v).length / pares.length);
+        barras.append(el('div', { class: 'pf-l' }, el('span', { class: 'pf-r', text: rot }),
+          el('span', { class: 'pf-b' }, el('i', { style: `width:${Math.max(3, pc)}%;background:${pc >= 75 ? 'var(--good)' : pc >= 40 ? 'var(--accent)' : 'var(--bad)'}` })),
+          el('b', { class: 'num pf-v', text: pc })));
+      });
+      app.append(el('section', null, secHead('Perfil', `Comparado a ${NOME_GRUPO[grp].toLowerCase()}`, null),
+        el('div', { class: 'card pad' }, barras, el('p', { class: 'small', style: 'margin:.6rem 0 0', text: `Percentil entre ${pares.length} ${NOME_GRUPO[grp].toLowerCase()} com pelo menos 450 minutos: 90 = melhor que 90% deles.` }))));
+    }
     app.append(el('section', null, secHead('Temporada', 'Números do jogador', null), el('div', { class: 'es-wrap' }, grupos)));
     // últimos jogos
     if (x.ultimos && x.ultimos.length) {
@@ -660,7 +704,7 @@
       });
       app.append(el('section', null, secHead('Jogos', 'Últimos jogos', null), card));
     }
-    app.append(el('p', { class: 'small', text: 'Números somados jogo a jogo da temporada. O número ao lado é a posição do jogador entre todos do campeonato. Fonte: ESPN.' }));
+    app.append(el('p', { class: 'small', text: 'Números somados jogo a jogo da temporada (ESPN). Minutos calculados pelas substituições e expulsões. xG e xA são estimativas do Lima Score a partir da descrição de cada chute (zona, cabeça, pênalti, contra-ataque); não são os números da Opta. O número ao lado é a posição do jogador entre todos do campeonato.' }));
   }
 
   function telaClube(app, id) {
