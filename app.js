@@ -310,8 +310,6 @@
 
   // ---------- telas
   function telaInicio(app) {
-    const porRisco = D.times.slice().sort((a, b) => b.rebaixamento - a.rebaixamento);
-    const abertos = porRisco.filter((t) => t.rebaixamento >= 5 && t.rebaixamento <= 99);
     const r = rodadaAtual();
     const restamRodadas = 38 - r + 1;
 
@@ -329,23 +327,6 @@
 
     // cenários: quem ainda briga pelo G4 e contra o Z4
     if (D.cenarios && D.cenarios.length) app.append(secaoCenarios());
-
-    // próximos jogos
-    const proximos = D.jogos.filter((j) => j.rodada === r && !encerrado(j) && !aoVivo(j));
-    if (proximos.length) {
-      const zr = new Set(abertos.map((t) => t.id));
-      // G4: clubes que ainda podem entrar ou sair da faixa da Libertadores direta
-      const zg = new Set(D.times.filter((t) => t.libertadores >= 5 && t.libertadores <= 99).map((t) => t.id));
-      const mexe = (j) => {
-        const z4 = zr.has(j.casa) || zr.has(j.fora), g4 = zg.has(j.casa) || zg.has(j.fora);
-        return z4 && g4 ? 'Mexe com o G4 e o Z4' : g4 ? 'Mexe com o G4' : z4 ? 'Mexe com o Z4' : null;
-      };
-      proximos.sort((a, b) => (!!mexe(b)) - (!!mexe(a)) || a.data.localeCompare(b.data));
-      const g = el('div', { class: 'games' });
-      proximos.forEach((j) => g.append(cartaoJogo(j, { destaque: mexe(j) })));
-      app.append(el('section', null, secHead(`${r}ª rodada`, 'Próximos jogos', null), legendaJogo(), g,
-        el('p', null, el('a', { href: '#rodadas', text: 'Ver todas as rodadas →' }))));
-    }
 
     // panorama em abas: uma faixa por vez
     const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
@@ -369,12 +350,6 @@
       el('div', { class: 'card pano' }, el('p', { class: 'small', style: 'margin:0 0 .6rem', text: atual[2] }),
         el('div', { class: 'pr-list' }, linhas.length ? linhas : el('p', { class: 'small', text: 'Ninguém com chance relevante.' })))));
 
-    // artilheiros
-    const top = D.jogadores.slice().sort((a, b) => b.gols - a.gols || a.jogos - b.jogos).slice(0, 3);
-    const lista = el('div', { class: 'card players' });
-    top.forEach((p, i) => lista.append(linhaJogador(p, i + 1, 'gols')));
-    app.append(el('section', null, secHead('Artilharia', 'Goleadores', null), lista,
-      el('p', null, el('a', { href: '#artilharia', text: 'Ver artilheiros e garçons →' }))));
   }
 
   // ---------- cenários (G4 e Z4)
