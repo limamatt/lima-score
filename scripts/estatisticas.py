@@ -28,7 +28,7 @@ OUT = ROOT / "data" / "estatisticas.json"
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 3                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 4                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -89,7 +89,20 @@ def arbitro(resumo):
     return o.get("displayName") or o.get("fullName") or None
 
 
-def lances_var(comp, resumo, lado_por_espn, tipos_vistos, amostras=None):
+def lado_do_texto(texto, lado_por_clube):
+    """Acha o time citado no texto da revisão: '(Coritiba)', 'Penalty Remo', 'No Penalty RB Bragantino'."""
+    cands = re.findall(r"\(([^()]+)\)", texto)
+    m = re.search(r"(?:no )?penalty\s+([^.]+)\.?$", texto, re.I)
+    if m:
+        cands.insert(0, m.group(1))
+    for c in cands:
+        cid = clube_por_nome(c)
+        if cid in lado_por_clube:
+            return lado_por_clube[cid]
+    return None
+
+
+def lances_var(comp, resumo, lado_por_espn, tipos_vistos, amostras=None, lado_por_clube=None):
     """Revisões do VAR. A ESPN não tem um tipo próprio para o VAR: a revisão aparece no texto
     do lance ("Goal awarded following VAR Review", "VAR Decision: No Goal" etc.), tanto nos
     lances principais quanto na narração (commentary). 'lado' é o time a quem o lance se refere."""
@@ -107,13 +120,19 @@ def lances_var(comp, resumo, lado_por_espn, tipos_vistos, amostras=None):
             amostras.append(texto[:220])
         time_ev = ev.get("team") or play.get("team") or {}
         lado = lado_por_espn.get(str(time_ev.get("id")))
+        if not lado and lado_por_clube:
+            lado = lado_do_texto(texto, lado_por_clube)
         relogio = ev.get("clock") or play.get("clock") or ev.get("time") or {}
         minuto = (relogio.get("displayValue") or "").strip() or None
         if re.search(r"no penalty|penalty (cancel|overturn|not given|rescinded)", t):
-            dec = "penalti_anulado"
+            dec = "penalti_anulado"       # pênalti que o time 'lado' tinha ganho e o VAR tirou
         elif re.search(r"penalty awarded|var decision: penalty|penalty given", t):
-            dec = "penalti_marcado"
-        elif re.search(r"no goal|goal (disallowed|cancelled|ruled out|overturned)|disallowed", t):
+            dec = "penalti_marcado"       # pênalti a favor do time 'lado'
+        elif re.search(r"no red card|red card (cancel|overturn|rescinded)|card downgraded", t):
+            dec = "vermelho_anulado"      # expulsão de jogador do 'lado' desfeita pelo VAR
+        elif re.search(r"card upgraded", t):
+            dec = "vermelho"              # amarelo virou vermelho para jogador do 'lado'
+        elif re.search(r"no goal|goal (disallowed|cancelled|ruled out|overturned)|overturned by var|disallowed|ruled out", t):
             dec = "gol_anulado"
         elif re.search(r"goal awarded", t):
             dec = "gol_validado"          # gol que tinha sido anulado e o VAR deu
@@ -383,7 +402,7 @@ def main():
         arb = arbitro(resumo)
         if arb:
             novo["arbitro"] = arb
-        var = lances_var(comp, resumo, lado_por_espn, tipos_vistos, amostras_var)
+        var = lances_var(comp, resumo, lado_por_espn, tipos_vistos, amostras_var, {j["casa"]: "casa", j["fora"]: "fora"})
         if var:
             novo["var"] = var
         pp = penaltis_perdidos(comp, resumo, lado_por_espn)

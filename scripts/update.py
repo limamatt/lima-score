@@ -427,7 +427,7 @@ def main():
             if ld not in ("casa", "fora"):
                 continue
             outro = "fora" if ld == "casa" else "casa"
-            if x["decisao"] in ("penalti_marcado", "gol_validado"):
+            if x["decisao"] in ("penalti_marcado", "gol_validado", "vermelho_anulado"):
                 vf[ld] += 1; vc[outro] += 1
             elif x["decisao"] in ("penalti_anulado", "gol_anulado", "vermelho"):
                 vc[ld] += 1; vf[outro] += 1
