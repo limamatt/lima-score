@@ -366,8 +366,7 @@ def main():
                 pen[ld] += n
         if tem:
             a["com_dados"] += 1
-            a["var_chamadas"] = a.get("var_chamadas", 0)
-        a["var"] = a["var_chamadas"]  # compatibilidade com quem ainda está com a versão anterior do site aberta + len(e.get("var") or [])  # vezes que o VAR chamou o árbitro
+            a["var_chamadas"] = a.get("var_chamadas", 0) + len(e.get("var") or [])  # vezes que o VAR chamou o árbitro
         for ld in ("casa", "fora"):
             outro = "fora" if ld == "casa" else "casa"
             st, so = e.get(ld) or {}, e.get(outro) or {}
