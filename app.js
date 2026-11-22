@@ -362,7 +362,7 @@
     const titulo = usarOficial ? 'Escalações oficiais' : 'Prováveis escalações';
     const nota = usarOficial ? null
       : (falta <= 60 && !encerrado(j) ? 'A escalação oficial aparece aqui assim que for divulgada. ' : '') +
-        'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor, marcado com •). Lesões e decisões do técnico não entram.';
+        'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor). Lesões e decisões do técnico não entram.';
     return el('section', null, secHead('Escalações', titulo, null),
       el('div', { class: 'card esc' }, coluna('casa'), coluna('fora')),
       nota ? el('p', { class: 'small', text: nota }) : null);
