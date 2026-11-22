@@ -69,11 +69,101 @@ def times_no_titulo(titulo_norm):
     return [c for _, c in achados]
 
 
+# títulos que falam de gol mas não são um gol que valeu (ou repetem um gol já publicado)
+NAO_E_GOL = re.compile(
+    r"QUASE|ANULAD|\bANULA|NAO VALEU|INVALIDAD|DEFENDE|DEFESA|DEFESACA|EVITA|SALVA |PERIGO|"
+    r"OUTRO ANGULO|OUTROS ANGULOS|NOVO ANGULO|REPLAY|DE NOVO|REVEJA|COMEMORA|APELO|AUTOR DO GOL|ABRACA|"
+    r"PERDE |PERDEU|DESPERDICA|TRAVE|TRAVESSAO|NA TRAVE|CHORA|PROVOCA|ENTREVISTA|BASTIDOR|TORCIDA FAZ")
+
+
 def eh_video_de_gol(t):
-    """Títulos de vídeo de um gol só (não melhores momentos, nem jogo completo)."""
+    """Títulos de vídeo de um gol só (não melhores momentos, nem jogo completo, nem 'quase gol')."""
     if "MELHORES MOMENTOS" in t or "JOGO COMPLETO" in t or "COLETIVA" in t or "PRE-JOGO" in t:
         return False
-    return bool(re.match(r"^\W*(GOL|GOLACO|GOOO+L)\b", t)) or " GOL D" in t[:40]
+    if NAO_E_GOL.search(t):
+        return False
+    return bool(re.match(r"^\W*(E )?(GOL|GOLACO|GOOO+L)", t)) or " GOL D" in t[:60] or "GOLACO" in t[:40]
+
+
+def lado_do_gol(t, jogo):
+    """Qual time marcou, pelo título: 'GOL DO X' -> X; '... CONTRA O X' / 'SOBRE O X' -> o outro."""
+    parte = t.split("|")[0]
+    lados = {jogo["casa"]: "casa", jogo["fora"]: "fora"}
+    outro = {"casa": "fora", "fora": "casa"}
+    citados = [c for c in times_no_titulo(t) if c in lados]
+    if not citados:
+        return None
+    # placar no título: 'O GOL DE VASCO 0 X 1 BAHIA'
+    m = re.search(r"(\d+)\s*X\s*(\d+)", parte)
+    if m and len(citados) == 2:
+        a, b = int(m.group(1)), int(m.group(2))
+        if (a > 0) != (b > 0):
+            return lados[citados[0] if a > 0 else citados[1]]
+    lado = None
+    for c in citados:
+        for n in NOMES[c]:
+            if re.search(r"(CONTRA|SOBRE|DIANTE D[OAE]|EM CIMA D[OAE])\W+(O |A |DO |DA )?" + re.escape(n) + r"(?![A-Z])", parte):
+                lado = outro[lados[c]]
+                break
+        if lado:
+            break
+    if not lado:
+        lado = lados[citados[0]]
+    if "GOL CONTRA" in parte:
+        lado = outro[lado]
+    return lado
+
+
+def minuto_real(txt):
+    """Minutos desde o início do jogo, contando o intervalo: "23'" -> 23, "67'" -> 84, "45'+2'" -> 47."""
+    nums = [int(x) for x in re.findall(r"\d+", txt or "")]
+    if not nums:
+        return None
+    base, extra = nums[0], (nums[1] if len(nums) > 1 else 0)
+    return base + extra + (17 if base > 45 else 0)
+
+
+def palavras_do_nome(nome):
+    return [p for p in norm(nome or "").replace("-", " ").split() if len(p) >= 4 and p not in ("JUNIOR", "FILHO", "NETO")]
+
+
+def montar_gols(jogo, brutos, lances):
+    """
+    Liga cada vídeo a um gol que valeu. Regras:
+    - cada gol real recebe no máximo um vídeo (o primeiro que sair);
+    - vídeo de um time que não tem mais gol 'livre' é descartado (repetição, outro ângulo, gol anulado);
+    - com os lances da ESPN, o vídeo precisa sair depois do gol e, se citar o autor, vai para o gol dele.
+    Sem os lances, cada time fica com no máximo tantos vídeos quantos gols tem no placar.
+    """
+    placar = {"casa": jogo.get("gols_casa") or 0, "fora": jogo.get("gols_fora") or 0}
+    ini = datetime.fromisoformat(jogo["data"].replace("Z", "+00:00"))
+    saida = []
+    for lado in ("casa", "fora"):
+        vids = sorted((v for v in brutos if v.get("lado") == lado), key=lambda v: v["publicado"])
+        gols_reais = [g for g in (lances or []) if g["tipo"] == "gol" and g["lado"] == lado]
+        if lances is not None and len(gols_reais) == placar[lado]:
+            livres = [dict(g, quando=ini + timedelta(minutes=(minuto_real(g.get("minuto")) or 0) - 8)) for g in gols_reais]
+            usados = []
+            for v in vids:
+                pub = datetime.fromisoformat(v["publicado"].replace("Z", "+00:00"))
+                aptos = [g for g in livres if g["quando"] <= pub]
+                t = norm(v["titulo"])
+                # cita o autor de um gol que já tem vídeo? é repetição
+                if any(any(re.search(r"\b" + re.escape(p) + r"\b", t) for p in palavras_do_nome(g.get("jogador"))) for g in usados) \
+                        and not any(any(re.search(r"\b" + re.escape(p) + r"\b", t) for p in palavras_do_nome(g.get("jogador"))) for g in aptos):
+                    continue
+                if not aptos:
+                    continue
+                escolhido = next((g for g in aptos if any(re.search(r"\b" + re.escape(p) + r"\b", t) for p in palavras_do_nome(g.get("jogador")))), aptos[0])
+                livres.remove(escolhido)
+                usados.append(escolhido)
+                saida.append(dict(id=v["id"], titulo=v["titulo"], publicado=v["publicado"], lado=lado,
+                                  minuto=escolhido.get("minuto"), jogador=escolhido.get("jogador")))
+        else:
+            for v in vids[:placar[lado]]:
+                saida.append(dict(id=v["id"], titulo=v["titulo"], publicado=v["publicado"], lado=lado))
+    saida.sort(key=lambda g: (minuto_real(g.get("minuto")) if g.get("minuto") else 999, g["publicado"]))
+    return saida
 
 
 def main():
@@ -96,8 +186,15 @@ def main():
 
     dados = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
     videos = dados.get("jogos", {})
-    gols = dados.get("gols", {})
-    gols_antes = json.dumps(gols, sort_keys=True)
+    gols_antes = json.dumps(dados.get("gols", {}), sort_keys=True)
+    jogo_por_id = {str(j["id"]): j for j in site["jogos"]}
+    brutos = dados.get("gols_brutos")
+    if brutos is None:  # primeira vez com a regra nova: aproveita os vídeos já encontrados
+        brutos = {}
+        for jid, lista in dados.get("gols", {}).items():
+            if jid in jogo_por_id:
+                brutos[jid] = [dict(id=g["id"], titulo=g["titulo"], publicado=g["publicado"]) for g in lista]
+    brutos_antes = json.dumps(brutos, sort_keys=True)
     jogos_por_time = {}
     for j in site["jogos"]:
         for t in (j["casa"], j["fora"]):
@@ -140,7 +237,7 @@ def main():
                         cands = [x for x in jogos_por_time.get(cid, [])
                                  if timedelta(minutes=-5) <= pub - datetime.fromisoformat(x["data"].replace("Z", "+00:00")) <= timedelta(hours=4)]
                         if len(cands) == 1:
-                            lista = gols.setdefault(str(cands[0]["id"]), [])
+                            lista = brutos.setdefault(str(cands[0]["id"]), [])
                             if all(g["id"] != vid for g in lista):
                                 lista.append(dict(id=vid, titulo=sn.get("title", ""), publicado=sn["publishedAt"]))
                                 lista.sort(key=lambda g: g["publicado"])
@@ -170,9 +267,29 @@ def main():
                 break
         print(f"@{handle}: {paginas} páginas, {lidos} vídeos lidos, {ligados} melhores momentos ligados")
 
-    # só grava quando um vídeo novo foi ligado a um jogo (evita mudanças a cada 15 minutos)
-    novo = dict(jogos=videos, gols=gols, ultimo_visto=novos_ultimos)
-    if videos != dados.get("jogos", {}) or json.dumps(gols, sort_keys=True) != gols_antes or not dados.get("ultimo_visto"):
+    # confere cada vídeo de gol com o placar (e com os lances, quando houver)
+    arq_est = ROOT / "data" / "estatisticas.json"
+    est = json.loads(arq_est.read_text(encoding="utf-8")).get("jogos", {}) if arq_est.exists() else {}
+    gols = {}
+    for jid, lista in brutos.items():
+        jogo = jogo_por_id.get(jid)
+        if not jogo:
+            continue
+        lista[:] = [v for v in lista if eh_video_de_gol(norm(v["titulo"]))]
+        for v in lista:
+            v["lado"] = lado_do_gol(norm(v["titulo"]), jogo)
+        lances = (est.get(jid) or {}).get("lances")
+        if not est.get(jid) or not (est[jid].get("casa") or est[jid].get("fora") or lances):
+            lances = None
+        valem = montar_gols(jogo, lista, lances)
+        if valem:
+            gols[jid] = valem
+    brutos = {k: v for k, v in brutos.items() if v}
+
+    # só grava quando algo mudou (evita mudanças a cada volta)
+    novo = dict(jogos=videos, gols=gols, gols_brutos=brutos, ultimo_visto=novos_ultimos)
+    if videos != dados.get("jogos", {}) or json.dumps(gols, sort_keys=True) != gols_antes \
+            or json.dumps(brutos, sort_keys=True) != brutos_antes or not dados.get("ultimo_visto"):
         OUT.write_text(json.dumps(novo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Vídeos: {len(videos)} jogos com melhores momentos.")
     else:

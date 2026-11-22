@@ -258,7 +258,8 @@ def main():
             previsao=prev.get(j["id"]),
             canais=(canais.get(str(j["id"])) or {}).get("canais"),
             video=(videos.get(str(j["id"])) or {}).get("id"),
-            gols_video=[g["id"] for g in videos_gols.get(str(j["id"]), [])] or None,
+            gols_video=[{k: v for k, v in dict(id=g["id"], lado=g.get("lado"), minuto=g.get("minuto"), jogador=g.get("jogador")).items() if v}
+                        for g in videos_gols.get(str(j["id"]), [])] or None,
         ))
 
     # artilheiros e garçons, com chance de gol/assistência no próximo jogo

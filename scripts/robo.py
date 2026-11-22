@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 NOTICIAS = ROOT / "data" / "noticias.json"
-ARQUIVOS = ["data/site.json", "data/noticias.json", "data/videos.json"]
+ARQUIVOS = ["data/site.json", "data/noticias.json", "data/videos.json", "data/estatisticas.json"]
 DURACAO_MAX = int(5.5 * 3600)  # fica ligado enquanto houver jogo (limite de segurança: 5h30)
 INTERVALO = 60              # segundos entre conferências durante os jogos
 ESPACO_ENTRE_PUBLICACOES = 120  # evita publicar mais de uma vez a cada 2 min
@@ -100,6 +100,7 @@ def main():
     volta = 0
     while True:
         t0 = time.time()
+        rodar("estatisticas.py")        # posse, finalizações, cartões e lances (ESPN), a cada volta
         if volta % 3 == 0 and (volta == 0 or jogo_rolando()):
             rodar("videos.py")          # melhores momentos e gols (a cada ~3 min no modo ao vivo)
         rodar("update.py")              # placar, tabela e previsões

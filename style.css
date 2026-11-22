@@ -285,3 +285,40 @@ a.chip-gol:hover{border-color:var(--bad)}
 .team.sigla{flex-direction:column;gap:.15rem}
 .mini-live{font-family:var(--display);font-weight:800;font-size:.72rem;line-height:1;padding:.12rem .3rem;border-radius:4px;color:#fff;background:var(--muted)}
 .mini-live.V{background:var(--good)} .mini-live.D{background:var(--bad)}
+
+/* Cartão de jogo clicável e página do jogo */
+.game.clicavel{cursor:pointer;transition:border-color .15s}
+.game.clicavel:hover{border-color:var(--pitch)}
+.ver-jogo{align-self:flex-end;font-size:.82rem;font-weight:700;color:var(--good);text-decoration:none}
+.ver-jogo:hover{text-decoration:underline}
+.jg-head{padding:1rem;display:flex;flex-direction:column;gap:.7rem;align-items:center;text-align:center}
+.jg-placar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:.8rem;align-items:center;width:100%}
+.jg-time{display:flex;flex-direction:column;align-items:center;gap:.4rem;text-decoration:none;min-width:0}
+.jg-time b{font-family:var(--display);font-weight:800;font-size:clamp(1.05rem,4vw,1.4rem);text-transform:uppercase;line-height:1.05}
+.jg-time:hover b{text-decoration:underline}
+.jg-meio{display:flex;flex-direction:column;align-items:center;gap:.45rem}
+.jg-meio .sc{font-size:2.2rem;padding:.1rem .7rem}
+.jg-head .crest.lg{width:56px;height:56px}
+.lances{display:flex;flex-direction:column}
+.lance{display:grid;grid-template-columns:3.2rem 1.4rem minmax(0,1fr) auto;gap:.5rem;align-items:center;padding:.6rem 1rem;border-bottom:1px solid var(--line)}
+.lance:last-child{border-bottom:0}
+.lance.fora{background:var(--surface-2)}
+.lc-min{font-family:var(--display);font-weight:800;color:var(--muted)}
+.lc-ic{display:inline-block;text-align:center}
+.lc-ic.amarelo,.lc-ic.vermelho{width:.75rem;height:1rem;border-radius:2px;justify-self:center}
+.lc-ic.amarelo{background:#f2c200}
+.lc-ic.vermelho{background:var(--bad)}
+.lc-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.estat{padding:.4rem 1rem .8rem}
+.es-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0}
+.es-l{padding:.45rem 0}
+.es-top{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;font-size:.9rem}
+.es-top span{color:var(--muted);text-align:center}
+.es-top b{font-family:var(--display);font-weight:800;font-size:1.15rem;min-width:2.5rem}
+.es-top b:last-child{text-align:right}
+.es-top b.lider{color:var(--fg)}
+.es-top b:not(.lider){color:var(--muted)}
+.es-bar{display:flex;gap:3px;height:7px;margin-top:.25rem}
+.es-bar span{display:block;height:100%;border-radius:4px}
+.es-bar .c{background:var(--pitch)}
+.es-bar .f{background:var(--accent)}

@@ -7,6 +7,7 @@
   let D = null;           // dados do site
   let N = null;           // notícias
   let T = {};             // times por id
+  let E = null;           // estatísticas e lances dos jogos
   let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao', clubeNoticias: 'todos' };
 
   // ---------- utilidades
@@ -120,11 +121,15 @@
     if (encerrado(j)) placar = el('div', { class: 'sc final num', text: `${j.gols_casa} × ${j.gols_fora}` });
     else if (aoVivo(j) && j.gols_casa != null) placar = el('div', { class: 'sc live num', text: `${j.gols_casa} × ${j.gols_fora}` });
     else placar = el('div', { class: 'sc vs', 'aria-hidden': 'true', text: '×' });
-    const card = el('article', { class: 'card game' + (aoVivo(j) ? ' is-live' : '') }, top,
-      el('div', { class: 'game-row' }, timeLink(j.casa, 'md'), placar, timeLink(j.fora, 'md')));
+    const timeCartao = (id) => { const t = T[id]; return el('span', { class: 'team' }, escudo(id, 'md'), el('span', { text: t ? t.nome : '?' })); };
+    const card = el('article', { class: 'card game clicavel' + (aoVivo(j) ? ' is-live' : ''), tabindex: '0', role: 'link',
+      'aria-label': `${T[j.casa] ? T[j.casa].nome : ''} x ${T[j.fora] ? T[j.fora].nome : ''}: ver detalhes do jogo`,
+      onclick: (e) => { if (!e.target.closest('a')) location.hash = '#jogo-' + j.id; },
+      onkeydown: (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) location.hash = '#jogo-' + j.id; } }, top,
+      el('div', { class: 'game-row' }, timeCartao(j.casa), placar, timeCartao(j.fora)));
     if (j.gols_video && j.gols_video.length) {
       const gl = el('div', { class: 'gols-v' }, el('span', { class: 'tv-k', text: 'Gols' }));
-      j.gols_video.forEach((id, i) => gl.append(el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(id), target: '_blank', rel: 'noopener', 'aria-label': `Ver gol ${i + 1} no YouTube` }, `▶ Gol ${i + 1}`)));
+      j.gols_video.forEach((g, i) => gl.append(chipGol(g, i)));
       card.append(gl);
     }
     if (encerrado(j) && j.video) {
@@ -142,6 +147,7 @@
         el('span', null, 'Fora ', el('b', { class: 'num', text: pct(p.fora) })));
       card.append(bar, pr);
     }
+    if (encerrado(j) || aoVivo(j)) card.append(el('a', { class: 'ver-jogo', href: '#jogo-' + j.id }, 'Estatísticas e lances ›'));
     if (!encerrado(j)) {
       const tv = el('div', { class: 'tv' }, el('span', { class: 'tv-k', text: 'Onde assistir' }));
       if (j.canais && j.canais.length) j.canais.forEach((c) => tv.append(el('span', { class: 'chip', text: c })));
@@ -150,6 +156,101 @@
     }
     return card;
   }
+  const sobrenome = (n) => { const p = String(n || '').trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
+  function chipGol(g, i) {
+    const id = typeof g === 'string' ? g : g.id;
+    const txt = typeof g === 'object' && g.minuto ? `▶ ${g.minuto} ${sobrenome(g.jogador)}`.trim() : `▶ Gol ${i + 1}`;
+    const quem = typeof g === 'object' && g.jogador ? ` de ${g.jogador}` : ` ${i + 1}`;
+    return el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(id), target: '_blank', rel: 'noopener', 'aria-label': `Ver gol${quem} no YouTube` }, txt);
+  }
+
+  // ---------- página do jogo
+  const ESTAT_LINHAS = [
+    ['posse', 'Posse de bola', '%'], ['finalizacoes', 'Finalizações'], ['no_alvo', 'Chutes no gol'],
+    ['escanteios', 'Escanteios'], ['faltas', 'Faltas'], ['amarelos', 'Cartões amarelos'], ['vermelhos', 'Cartões vermelhos'],
+    ['impedimentos', 'Impedimentos'], ['defesas', 'Defesas do goleiro'], ['passes', 'Passes'], ['precisao_passes', 'Precisão dos passes', '%'],
+  ];
+  function telaJogo(app, id) {
+    const j = D.jogos.find((x) => x.id === id);
+    if (!j) { app.append(el('p', { class: 'erro', text: 'Jogo não encontrado.' })); return; }
+    const e = E && E.jogos ? E.jogos[String(id)] : null;
+    app.append(el('a', { class: 'back', href: '#rodadas', text: '← Voltar',
+      onclick: (ev) => { if (history.length > 1) { ev.preventDefault(); history.back(); } } }));
+    if (estado.rodada == null) estado.rodada = j.rodada;
+
+    // placar
+    const st = aoVivo(j) ? el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo · ' + (e && e.relogio ? e.relogio : minuto(j)))
+      : encerrado(j) ? el('span', { class: 'small', text: 'Encerrado' }) : el('span', { class: 'small', text: 'Não começou' });
+    const sc = encerrado(j) || (aoVivo(j) && j.gols_casa != null)
+      ? el('div', { class: 'sc num ' + (aoVivo(j) ? 'live' : 'final'), text: `${j.gols_casa} × ${j.gols_fora}` })
+      : el('div', { class: 'sc vs', text: '×' });
+    const lado = (tid) => el('a', { class: 'jg-time', href: '#clube-' + tid }, escudo(tid, 'lg'), el('b', { text: T[tid] ? T[tid].nome : '?' }));
+    app.append(el('section', { class: 'card jg-head' + (aoVivo(j) ? ' is-live' : '') },
+      el('div', { class: 'small', text: `${j.rodada}ª rodada · ${dataHora(j.data)}` }),
+      el('div', { class: 'jg-placar' }, lado(j.casa), el('div', { class: 'jg-meio' }, sc, st), lado(j.fora))));
+
+    if (encerrado(j) && j.video) {
+      app.append(el('a', { class: 'btn-video', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(j.video), target: '_blank', rel: 'noopener' },
+        el('span', { class: 'play', 'aria-hidden': 'true' }), 'Melhores momentos'));
+    }
+
+    if (!encerrado(j) && !aoVivo(j)) {
+      const card = cartaoJogo(j); card.classList.remove('clicavel'); card.removeAttribute('role'); card.removeAttribute('tabindex');
+      app.append(el('section', null, secHead('Antes do jogo', 'Palpite e onde assistir', 'As estatísticas aparecem aqui quando a bola rolar.'), legendaJogo(), card));
+      return;
+    }
+
+    // lances: gols e cartões
+    const vids = (j.gols_video || []).filter((g) => typeof g === 'object');
+    const lances = e && e.lances ? e.lances : [];
+    const lista = el('div', { class: 'card lances' });
+    if (lances.length) {
+      const usados = new Set();
+      lances.forEach((l) => {
+        let v = null;
+        if (l.tipo === 'gol') {
+          v = vids.find((g) => !usados.has(g.id) && g.lado === l.lado && g.minuto === l.minuto) || vids.find((g) => !usados.has(g.id) && g.lado === l.lado && !g.minuto);
+          if (v) usados.add(v.id);
+        }
+        const ic = { gol: '⚽', amarelo: '', vermelho: '' }[l.tipo];
+        const extra = l.contra ? ' (contra)' : l.penalti ? ' (pênalti)' : '';
+        lista.append(el('div', { class: 'lance ' + l.lado },
+          el('span', { class: 'lc-min num', text: l.minuto || '' }),
+          el('span', { class: 'lc-ic ' + l.tipo, 'aria-label': { gol: 'Gol', amarelo: 'Cartão amarelo', vermelho: 'Cartão vermelho' }[l.tipo] }, ic),
+          el('span', { class: 'lc-txt' }, el('b', { text: (l.jogador || (l.tipo === 'gol' ? 'Gol' : 'Cartão')) + extra }),
+            el('span', { class: 'small', text: ' ' + (T[j[l.lado]] ? T[j[l.lado]].nome : '') })),
+          v ? el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(v.id), target: '_blank', rel: 'noopener', 'aria-label': 'Ver o gol no YouTube' }, '▶ Ver') : null));
+      });
+    } else if (j.gols_video && j.gols_video.length) {
+      const gl = el('div', { class: 'gols-v pad' });
+      j.gols_video.forEach((g, i) => gl.append(chipGol(g, i)));
+      lista.append(gl);
+    } else {
+      lista.append(el('p', { class: 'pad small', style: 'margin:0', text: E ? 'Ainda sem lances para mostrar.' : 'Carregando…' }));
+    }
+    app.append(el('section', null, secHead('Lances', 'Gols e cartões', null), lista));
+
+    // estatísticas
+    const box = el('div', { class: 'card estat' });
+    const linhas = e ? ESTAT_LINHAS.filter(([k]) => e.casa && e.fora && (e.casa[k] != null || e.fora[k] != null)) : [];
+    if (linhas.length) {
+      linhas.forEach(([k, rot, suf]) => {
+        const a = +(e.casa[k] || 0), b = +(e.fora[k] || 0), tot = a + b;
+        const fmt = (v) => (suf === '%' ? Math.round(v) + '%' : String(v));
+        const pa = tot ? (a / tot) * 100 : 50;
+        box.append(el('div', { class: 'es-l' },
+          el('div', { class: 'es-top' }, el('b', { class: 'num' + (a > b ? ' lider' : ''), text: fmt(a) }), el('span', { text: rot }), el('b', { class: 'num' + (b > a ? ' lider' : ''), text: fmt(b) })),
+          el('div', { class: 'es-bar', role: 'img', 'aria-label': `${rot}: ${fmt(a)} a ${fmt(b)}` },
+            el('span', { class: 'c', style: `width:${tot ? pa : 0}%` }), el('span', { class: 'f', style: `width:${tot ? 100 - pa : 0}%` }))));
+      });
+      box.prepend(el('div', { class: 'es-head' }, escudo(j.casa), el('span', { class: 'small', text: aoVivo(j) ? 'Atualiza sozinho a cada minuto' : '' }), escudo(j.fora)));
+    } else {
+      box.append(el('p', { class: 'pad small', style: 'margin:0', text: E ? 'As estatísticas deste jogo ainda não estão disponíveis. Elas costumam aparecer poucos minutos depois do início.' : 'Carregando estatísticas…' }));
+    }
+    app.append(el('section', null, secHead('Estatísticas', 'Números da partida', null), box,
+      el('p', { class: 'small', text: 'Fonte das estatísticas e dos lances: ESPN.' })));
+  }
+
   const legendaJogo = () => el('div', { class: 'legend' },
     el('span', null, el('i', { style: 'background:var(--good)' }), 'Mandante vence'),
     el('span', null, el('i', { style: 'background:var(--muted)' }), 'Empate'),
@@ -529,6 +630,7 @@
   function rota() {
     const h = (location.hash || '#inicio').slice(1);
     if (h.startsWith('clube-')) return { tela: 'clube', id: +h.slice(6) };
+    if (h.startsWith('jogo-')) return { tela: 'jogo', id: +h.slice(5) };
     if (['inicio', 'tabela', 'rodadas', 'artilharia', 'noticias'].includes(h)) return { tela: h };
     return { tela: 'inicio' };
   }
@@ -547,12 +649,15 @@
     else if (r.tela === 'rodadas') telaRodadas(app);
     else if (r.tela === 'artilharia') telaArtilharia(app);
     else if (r.tela === 'noticias') telaNoticias(app);
+    else if (r.tela === 'jogo') { telaJogo(app, r.id); if (!E) carregarEstat(); }
     else telaClube(app, r.id);
-    const navKey = r.tela === 'clube' ? 'tabela' : r.tela;
+    const navKey = r.tela === 'clube' ? 'tabela' : r.tela === 'jogo' ? 'rodadas' : r.tela;
     document.querySelectorAll('[data-nav]').forEach((a) => {
       if (a.dataset.nav === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    document.title = r.tela === 'clube' && T[r.id] ? `${T[r.id].nome} · Termômetro do Brasileirão` : 'Termômetro do Brasileirão';
+    const jg = r.tela === 'jogo' ? D.jogos.find((x) => x.id === r.id) : null;
+    document.title = r.tela === 'clube' && T[r.id] ? `${T[r.id].nome} · Termômetro do Brasileirão`
+      : jg && T[jg.casa] && T[jg.fora] ? `${T[jg.casa].nome} x ${T[jg.fora].nome} · Termômetro do Brasileirão` : 'Termômetro do Brasileirão';
     if (render._ultima === location.hash) window.scrollTo(0, y);
     else window.scrollTo(0, 0);
     render._ultima = location.hash;
@@ -597,6 +702,20 @@
   carregarNoticias();
   setInterval(carregarNoticias, 10 * 60 * 1000);
 
+  let estatCarregando = false;
+  async function carregarEstat() {
+    if (window.__SITE_DATA__ || estatCarregando) return;
+    estatCarregando = true;
+    try {
+      const r = await fetch('data/estatisticas.json?t=' + Date.now(), { cache: 'no-store' });
+      const novo = r.ok ? await r.json() : { jogos: {} };
+      const mudou = !E || JSON.stringify(novo) !== JSON.stringify(E);
+      E = novo;
+      if (mudou && D && rota().tela === 'jogo') render();
+    } catch (e) { if (!E) { E = { jogos: {} }; if (D && rota().tela === 'jogo') render(); } }
+    estatCarregando = false;
+  }
+
   window.addEventListener('hashchange', render);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) carregar(true); });
   // com jogo rolando, confere a cada 1 minuto; fora disso, a cada 5 minutos
@@ -606,7 +725,7 @@
     return D.jogos.some((j) => aoVivo(j) || (!encerrado(j) && Math.abs(agora - new Date(j.data).getTime() - 60 * 60 * 1000) < 80 * 60 * 1000));
   }
   (function ciclo() {
-    setTimeout(async () => { await carregar(true); ciclo(); }, temJogoAgora() ? 60 * 1000 : 5 * 60 * 1000);
+    setTimeout(async () => { await carregar(true); if (rota().tela === 'jogo') await carregarEstat(); ciclo(); }, temJogoAgora() ? 60 * 1000 : 5 * 60 * 1000);
   })();
   carregar(false);
 
