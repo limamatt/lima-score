@@ -274,6 +274,8 @@ def main():
             previsao=prev.get(j["id"]),
             canais=(canais.get(str(j["id"])) or {}).get("canais"),
             lives=lives.get(str(j["id"])) or None,
+            arbitro=next((r.get("name") for r in (j.get("referees") or []) if r.get("type") == "REFEREE" and r.get("name")), None)
+                    or e.get("arbitro") or None,
             video=(videos.get(str(j["id"])) or {}).get("id"),
             gols_video=[{k: v for k, v in dict(id=g["id"], lado=g.get("lado"), minuto=g.get("minuto"), jogador=g.get("jogador")).items() if v}
                         for g in videos_gols.get(str(j["id"]), [])] or None,
@@ -303,11 +305,92 @@ def main():
                                 assistencia=round((1 - math.exp(-lam_a)) * 100, 1))
         saida_jogadores.append(item)
 
+    # arbitragem: números de cada árbitro e de cada clube com cada árbitro (cartões, pênaltis e VAR vêm da ESPN)
+    arb, var_clube = {}, {}
+    jogos_com_espn = 0
+
+    def novo_reg():
+        return dict(jogos=0, com_dados=0, v=0, e=0, d=0, gols_pro=0, gols_contra=0, amarelos=0, vermelhos=0,
+                    amarelos_adv=0, vermelhos_adv=0, pen_favor=0, pen_contra=0, faltas=0, var_favor=0, var_contra=0)
+
+    for jg in saida_jogos:
+        if jg["status"] != "FINISHED":
+            continue
+        e = espn.get(str(jg["id"])) or {}
+        tem = bool(e.get("casa") or e.get("fora") or e.get("lances"))
+        jogos_com_espn += tem
+        # VAR de cada lado: a favor = decisão que beneficiou o time; contra = que o prejudicou
+        vf, vc = {"casa": 0, "fora": 0}, {"casa": 0, "fora": 0}
+        for x in e.get("var") or []:
+            ld = x.get("lado")
+            if ld not in ("casa", "fora"):
+                continue
+            outro = "fora" if ld == "casa" else "casa"
+            if x["decisao"] == "penalti_marcado":
+                vf[ld] += 1; vc[outro] += 1
+            elif x["decisao"] in ("penalti_anulado", "gol_anulado", "vermelho"):
+                vc[ld] += 1; vf[outro] += 1
+        for ld in ("casa", "fora"):
+            cid = jg[ld]
+            vcb = var_clube.setdefault(cid, dict(favor=0, contra=0, lances=[]))
+            vcb["favor"] += vf[ld]; vcb["contra"] += vc[ld]
+        for x in e.get("var") or []:
+            if x.get("lado") in ("casa", "fora") and x["decisao"] != "outro":
+                var_clube[jg[x["lado"]]]["lances"].append(dict(jogo=jg["id"], decisao=x["decisao"], minuto=x.get("minuto")))
+        if not jg.get("arbitro"):
+            continue
+        a = arb.setdefault(jg["arbitro"], dict(nome=jg["arbitro"], **novo_reg(), mandante=[0, 0, 0], ultimos=[], clubes={}))
+        res = 0 if jg["gols_casa"] > jg["gols_fora"] else 1 if jg["gols_casa"] == jg["gols_fora"] else 2
+        a["jogos"] += 1
+        a["mandante"][res] += 1
+        a["gols_pro"] += jg["gols_casa"] + jg["gols_fora"]
+        a["ultimos"].append(jg["id"])
+        pen = {"casa": 0, "fora": 0}
+        for l in e.get("lances") or []:
+            if l.get("tipo") == "gol" and l.get("penalti") and l.get("lado") in pen:
+                pen[l["lado"]] += 1
+        for ld, n in (e.get("penaltis_perdidos") or {}).items():
+            if ld in pen:
+                pen[ld] += n
+        if tem:
+            a["com_dados"] += 1
+        for ld in ("casa", "fora"):
+            outro = "fora" if ld == "casa" else "casa"
+            st, so = e.get(ld) or {}, e.get(outro) or {}
+            c = a["clubes"].setdefault(str(jg[ld]), novo_reg())
+            c["jogos"] += 1
+            gp, gc = (jg["gols_casa"], jg["gols_fora"]) if ld == "casa" else (jg["gols_fora"], jg["gols_casa"])
+            c["gols_pro"] += gp; c["gols_contra"] += gc
+            c["v" if gp > gc else "e" if gp == gc else "d"] += 1
+            if tem:
+                c["com_dados"] += 1
+                for k_, src, chave in (("amarelos", st, "amarelos"), ("vermelhos", st, "vermelhos"),
+                                       ("amarelos_adv", so, "amarelos"), ("vermelhos_adv", so, "vermelhos")):
+                    c[k_] += int(src.get(chave) or 0)
+                c["faltas"] += int(st.get("faltas") or 0)
+                c["pen_favor"] += pen[ld]; c["pen_contra"] += pen[outro]
+                c["var_favor"] += vf[ld]; c["var_contra"] += vc[ld]
+                a["amarelos"] += int(st.get("amarelos") or 0)
+                a["vermelhos"] += int(st.get("vermelhos") or 0)
+                a["faltas"] += int(st.get("faltas") or 0)
+                a["pen_favor"] += pen[ld]
+                a["var_favor"] += vf[ld]
+    arbitros = sorted(arb.values(), key=lambda a: (-a["jogos"], a["nome"]))
+    for a in arbitros:
+        a["penaltis"] = a.pop("pen_favor")
+        a["var"] = a.pop("var_favor")
+        for k_ in ("v", "e", "d", "gols_contra", "amarelos_adv", "vermelhos_adv", "pen_contra", "var_contra"):
+            a.pop(k_, None)
+        a["ultimos"] = a["ultimos"][-5:]
+    arbitragem = dict(arbitros=arbitros, var=var_clube, jogos_com_espn=jogos_com_espn,
+                      jogos_encerrados=sum(1 for jg in saida_jogos if jg["status"] == "FINISHED"))
+
     agora = datetime.now(timezone.utc).isoformat(timespec="seconds")
     site = dict(
         temporada=dict(inicio=temporada["startDate"], fim=temporada["endDate"],
                        rodada_atual=temporada.get("currentMatchday")),
         simulacoes=N_SIM, times=saida_times, jogos=saida_jogos, jogadores=saida_jogadores,
+        arbitragem=arbitragem,
     )
 
     # só grava (e muda a data) se algum número mudou

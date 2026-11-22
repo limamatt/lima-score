@@ -8,7 +8,7 @@
   let N = null;           // notícias
   let T = {};             // times por id
   let E = null;           // estatísticas e lances dos jogos
-  let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao', clubeNoticias: 'todos' };
+  let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao', clubeNoticias: 'todos', arb: 'arbitros', arbClube: null, arbAberto: null };
 
   // ---------- utilidades
   const $ = (s, r = document) => r.querySelector(s);
@@ -153,6 +153,7 @@
         el('span', null, 'Fora ', el('b', { class: 'num', text: pct(p.fora) })));
       card.append(bar, pr);
     }
+    if ((encerrado(j) || aoVivo(j)) && arbitroDoJogo(j)) card.append(el('div', { class: 'small arb-linha', text: 'Árbitro: ' + arbitroDoJogo(j) }));
     if (encerrado(j) || aoVivo(j)) card.append(el('a', { class: 'ver-jogo', href: '#jogo-' + j.id }, 'Estatísticas e lances ›'));
     if (!encerrado(j)) {
       const tv = el('div', { class: 'tv' }, el('span', { class: 'tv-k', text: 'Onde assistir' }));
@@ -205,7 +206,9 @@
     const lado = (tid) => el('a', { class: 'jg-time', href: '#clube-' + tid }, escudo(tid, 'lg'), el('b', { text: T[tid] ? T[tid].nome : '?' }));
     app.append(el('section', { class: 'card jg-head' + (aoVivo(j) ? ' is-live' : '') },
       el('div', { class: 'small', text: `${j.rodada}ª rodada · ${dataHora(j.data)}` }),
-      el('div', { class: 'jg-placar' }, lado(j.casa), el('div', { class: 'jg-meio' }, sc, st), lado(j.fora))));
+      el('div', { class: 'jg-placar' }, lado(j.casa), el('div', { class: 'jg-meio' }, sc, st), lado(j.fora)),
+      el('div', { class: 'small jg-arb' }, 'Árbitro: ', arbitroDoJogo(j) ? el('a', { href: '#arbitragem', text: arbitroDoJogo(j),
+        onclick: () => { estado.arb = 'arbitros'; estado.arbAberto = arbitroDoJogo(j); } }) : el('span', { text: 'a definir' }))));
 
     if (encerrado(j) && j.video) {
       app.append(el('a', { class: 'btn-video', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(j.video), target: '_blank', rel: 'noopener' },
@@ -642,6 +645,159 @@
     return todas.filter(([n]) => (vistos.has(n.link) ? false : vistos.add(n.link)))
       .sort((a, b) => (b[0].data || '').localeCompare(a[0].data || '')).slice(0, 40);
   }
+  // ---------- arbitragem
+  function arbitroDoJogo(j) {
+    return j.arbitro || (E && E.jogos && E.jogos[j.id] && E.jogos[j.id].arbitro) || null;
+  }
+  const media = (n, d, casas = 1) => d ? (n / d).toFixed(casas).replace('.', ',') : '–';
+  const pctTxt = (n, d) => d ? Math.round(100 * n / d) + '%' : '–';
+  const VAR_TXT = { penalti_marcado: 'Pênalti marcado pelo VAR', penalti_anulado: 'Pênalti anulado pelo VAR', gol_anulado: 'Gol anulado pelo VAR', vermelho: 'Expulsão após revisão do VAR' };
+
+  function telaArbitragem(app) {
+    const A = D.arbitragem;
+    app.append(secHead('Arbitragem', 'Árbitros e VAR', 'Os números de cada árbitro na temporada, como cada clube se sai com cada um e quem o VAR mais ajudou ou prejudicou.', 'h1'));
+    if (!A || !A.arbitros) {
+      app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0', text: 'Os dados de arbitragem aparecem aqui na próxima atualização do robô.' })));
+      return;
+    }
+    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Visão da arbitragem' });
+    [['arbitros', 'Árbitros'], ['clube', 'Por clube'], ['var', 'VAR']].forEach(([k, txt]) => {
+      seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.arb === k), text: txt, onclick: () => { estado.arb = k; render(); } }));
+    });
+    app.append(seg);
+    if (estado.arb === 'clube') arbClube(app, A);
+    else if (estado.arb === 'var') arbVar(app, A);
+    else arbArbitros(app, A);
+    app.append(el('p', { class: 'small nota-arb', text: `Árbitros: football-data e ESPN. Cartões, faltas, pênaltis e VAR: ESPN, disponíveis em ${A.jogos_com_espn} de ${A.jogos_encerrados} jogos encerrados — o robô completa o restante aos poucos. Médias de cartões e pênaltis consideram só os jogos com esses dados.` }));
+  }
+
+  function arbArbitros(app, A) {
+    const lista = el('div', { class: 'arb-lista' });
+    A.arbitros.forEach((a) => {
+      const aberto = estado.arbAberto === a.nome;
+      const n = a.com_dados;
+      const det = el('details', { class: 'card arb', open: aberto || null, ontoggle: (ev) => { if (ev.target.open) estado.arbAberto = a.nome; } },
+        el('summary', null,
+          el('span', { class: 'arb-nome' }, el('b', { text: a.nome }), el('span', { class: 'small', text: `${a.jogos} jogo${a.jogos === 1 ? '' : 's'}` })),
+          el('span', { class: 'arb-kpis' },
+            el('span', { class: 'kpi' }, el('i', { class: 'cart am', 'aria-hidden': 'true' }), el('b', { class: 'num', text: media(a.amarelos, n) }), el('small', { text: 'por jogo' })),
+            el('span', { class: 'kpi' }, el('i', { class: 'cart vm', 'aria-hidden': 'true' }), el('b', { class: 'num', text: String(n ? a.vermelhos : '–') }), el('small', { text: 'vermelhos' })))));
+      const m = a.mandante;
+      det.append(el('div', { class: 'arb-grid' },
+        bloco('Jogos', a.jogos), bloco('Com dados', n),
+        bloco('Amarelos', n ? a.amarelos : '–'), bloco('Vermelhos', n ? a.vermelhos : '–'),
+        bloco('Faltas por jogo', media(a.faltas, n)), bloco('Pênaltis', n ? a.penaltis : '–'),
+        bloco('Pênaltis por jogo', media(a.penaltis, n, 2)), bloco('Gols por jogo', media(a.gols_pro, a.jogos)), bloco('Decisões do VAR', n ? a.var : '–'),
+        bloco('Mandante vence', pctTxt(m[0], a.jogos)), bloco('Empates', pctTxt(m[1], a.jogos)), bloco('Visitante vence', pctTxt(m[2], a.jogos))));
+      // clubes com esse árbitro
+      const linhas = Object.entries(a.clubes).sort((x, y) => y[1].jogos - x[1].jogos || (T[x[0]] ? T[x[0]].nome : '').localeCompare(T[y[0]] ? T[y[0]].nome : ''));
+      det.append(tabelaClubes(linhas.map(([cid, c]) => [escudoLink(+cid), c]), 'Clube'));
+      const ult = (a.ultimos || []).map((id) => D.jogos.find((j) => j.id === id)).filter(Boolean).reverse();
+      if (ult.length) {
+        const ul = el('div', { class: 'arb-ult' }, el('span', { class: 'tv-k', text: 'Últimos jogos' }));
+        ult.forEach((j) => ul.append(el('a', { class: 'chip', href: '#jogo-' + j.id, text: `${T[j.casa] ? T[j.casa].sigla : ''} ${j.gols_casa}×${j.gols_fora} ${T[j.fora] ? T[j.fora].sigla : ''}` })));
+        det.append(ul);
+      }
+      lista.append(det);
+    });
+    app.append(lista);
+    if (estado.arbAberto) setTimeout(() => { const d = app.querySelector('details[open]'); if (d) d.scrollIntoView({ block: 'start' }); }, 0);
+  }
+  function bloco(rot, val) {
+    return el('div', { class: 'arb-b' }, el('small', { text: rot }), el('b', { class: 'num', text: String(val) }));
+  }
+  function escudoLink(cid) {
+    return el('a', { href: '#clube-' + cid, 'aria-label': T[cid] ? T[cid].nome : '', title: T[cid] ? T[cid].nome : '' }, escudo(cid, 'tb'));
+  }
+  // tabela de desempenho: primeira coluna = clube ou árbitro
+  function tabelaClubes(linhas, rotulo) {
+    const tb = el('tbody');
+    linhas.forEach(([quem, c]) => {
+      const n = c.com_dados;
+      tb.append(el('tr', null,
+        el('td', { class: 'l sticky-col' }, quem),
+        el('td', { class: 'num', text: c.jogos }),
+        el('td', { class: 'num', text: c.v }), el('td', { class: 'num', text: c.e }), el('td', { class: 'num', text: c.d }),
+        el('td', { class: 'num', text: `${c.gols_pro}:${c.gols_contra}` }),
+        el('td', { class: 'num', text: n ? c.amarelos : '–' }), el('td', { class: 'num', text: n ? c.vermelhos : '–' }),
+        el('td', { class: 'num', text: n ? `${c.pen_favor}/${c.pen_contra}` : '–' }),
+        el('td', { class: 'num', text: n ? `${c.var_favor}/${c.var_contra}` : '–' })));
+    });
+    return el('div', { class: 'tbl-wrap' }, el('table', { class: 'arb-tbl' },
+      el('thead', null, el('tr', null, el('th', { class: 'l sticky-col', text: rotulo }), el('th', { text: 'J', title: 'Jogos' }),
+        el('th', { text: 'V', title: 'Vitórias' }), el('th', { text: 'E', title: 'Empates' }), el('th', { text: 'D', title: 'Derrotas' }),
+        el('th', { text: 'Gols', title: 'Gols pró : contra' }),
+        el('th', { title: 'Cartões amarelos recebidos' }, el('i', { class: 'cart am', 'aria-label': 'Amarelos' })),
+        el('th', { title: 'Cartões vermelhos recebidos' }, el('i', { class: 'cart vm', 'aria-label': 'Vermelhos' })),
+        el('th', { text: 'Pên.', title: 'Pênaltis a favor / contra' }), el('th', { text: 'VAR', title: 'Decisões do VAR a favor / contra' }))),
+      tb));
+  }
+
+  function arbClube(app, A) {
+    if (!estado.arbClube) estado.arbClube = String(D.times.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))[0].id);
+    const filtro = el('div', { class: 'clubes-filtro', role: 'group', 'aria-label': 'Escolha o clube' });
+    D.times.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).forEach((t) => {
+      filtro.append(el('button', { type: 'button', 'aria-pressed': String(estado.arbClube === String(t.id)), 'aria-label': t.nome, title: t.nome,
+        onclick: () => { estado.arbClube = String(t.id); render(); } }, escudo(t.id, 'tb')));
+    });
+    app.append(filtro);
+    const cid = estado.arbClube, t = T[cid];
+    const linhas = A.arbitros.filter((a) => a.clubes[cid]).map((a) => [a.nome, a.clubes[cid]])
+      .sort((x, y) => y[1].jogos - x[1].jogos || x[0].localeCompare(y[0]));
+    const tot = linhas.reduce((acc, [, c]) => { ['jogos', 'v', 'e', 'd'].forEach((k) => acc[k] += c[k]); return acc; }, { jogos: 0, v: 0, e: 0, d: 0 });
+    // frases automáticas
+    const frases = [];
+    const comMin = linhas.filter(([, c]) => c.jogos >= 2);
+    const aprove = (c) => (3 * c.v + c.e) / (3 * c.jogos);
+    if (comMin.length) {
+      const melhor = comMin.slice().sort((x, y) => aprove(y[1]) - aprove(x[1]) || y[1].jogos - x[1].jogos)[0];
+      const pior = comMin.slice().sort((x, y) => aprove(x[1]) - aprove(y[1]) || y[1].jogos - x[1].jogos)[0];
+      frases.push(`Melhor aproveitamento com ${melhor[0]}: ${melhor[1].v}V ${melhor[1].e}E ${melhor[1].d}D (${Math.round(aprove(melhor[1]) * 100)}%).`);
+      if (pior[0] !== melhor[0]) frases.push(`Pior aproveitamento com ${pior[0]}: ${pior[1].v}V ${pior[1].e}E ${pior[1].d}D (${Math.round(aprove(pior[1]) * 100)}%).`);
+      const cart = comMin.filter(([, c]) => c.com_dados >= 2).sort((x, y) => y[1].amarelos / y[1].com_dados - x[1].amarelos / x[1].com_dados)[0];
+      if (cart) frases.push(`Quem mais amarela o ${t ? t.nome : 'clube'}: ${cart[0]}, ${media(cart[1].amarelos, cart[1].com_dados)} por jogo.`);
+    }
+    app.append(el('section', { class: 'card pad arb-resumo' },
+      el('div', { class: 'arb-clube' }, escudo(+cid, 'md'), el('div', null, el('b', { text: t ? t.nome : '' }),
+        el('div', { class: 'small', text: `${tot.jogos} jogos com árbitro identificado · ${tot.v}V ${tot.e}E ${tot.d}D · ${linhas.length} árbitros diferentes` }))),
+      frases.length ? el('ul', { class: 'arb-frases' }, frases.map((f) => el('li', { text: f }))) : null));
+    if (!linhas.length) { app.append(el('p', { class: 'small', text: 'Ainda sem jogos com árbitro identificado para este clube.' })); return; }
+    app.append(el('div', { class: 'card' }, tabelaClubes(linhas.map(([nome, c]) => [el('span', { class: 'arb-n', text: nome }), c]), 'Árbitro')));
+    app.append(el('p', { class: 'small', text: 'Cartões: recebidos pelo clube. Pên. e VAR: a favor / contra.' }));
+  }
+
+  function arbVar(app, A) {
+    const linhas = D.times.map((t) => { const v = (A.var && A.var[t.id]) || { favor: 0, contra: 0, lances: [] }; return { t, ...v, saldo: v.favor - v.contra }; });
+    const total = linhas.reduce((n, x) => n + x.favor + x.contra, 0);
+    if (!total) {
+      app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0',
+        text: 'Ainda não há decisões do VAR registradas. O robô lê os lances de revisão da ESPN (gols anulados, pênaltis marcados ou anulados e expulsões após revisão) e o ranking aparece aqui conforme os jogos forem processados.' })));
+      return;
+    }
+    const ord = linhas.slice().sort((a, b) => b.saldo - a.saldo || b.favor - a.favor);
+    const top = ord[0], fundo = ord[ord.length - 1];
+    app.append(el('div', { class: 'var-dest' },
+      el('div', { class: 'card pad var-card bom' }, el('small', { text: 'Mais favorecido pelo VAR' }), el('div', { class: 'arb-clube' }, escudo(top.t.id, 'md'),
+        el('div', null, el('b', { text: top.t.nome }), el('div', { class: 'small', text: `${top.favor} a favor · ${top.contra} contra · saldo ${top.saldo > 0 ? '+' : ''}${top.saldo}` })))),
+      el('div', { class: 'card pad var-card ruim' }, el('small', { text: 'Mais prejudicado pelo VAR' }), el('div', { class: 'arb-clube' }, escudo(fundo.t.id, 'md'),
+        el('div', null, el('b', { text: fundo.t.nome }), el('div', { class: 'small', text: `${fundo.favor} a favor · ${fundo.contra} contra · saldo ${fundo.saldo > 0 ? '+' : ''}${fundo.saldo}` }))))));
+    const tb = el('tbody');
+    ord.forEach((x, i) => {
+      const cont = {}; x.lances.forEach((l) => { cont[l.decisao] = (cont[l.decisao] || 0) + 1; });
+      tb.append(el('tr', null, el('td', { class: 'pos', text: i + 1 }), el('td', { class: 'l sticky-col' }, escudoLink(x.t.id)),
+        el('td', { class: 'num', text: x.favor }), el('td', { class: 'num', text: x.contra }),
+        el('td', { class: 'num pts', text: (x.saldo > 0 ? '+' : '') + x.saldo }),
+        el('td', { class: 'num', text: cont.gol_anulado || 0 }), el('td', { class: 'num', text: cont.penalti_marcado || 0 }),
+        el('td', { class: 'num', text: cont.penalti_anulado || 0 }), el('td', { class: 'num', text: cont.vermelho || 0 })));
+    });
+    app.append(el('div', { class: 'card' }, el('div', { class: 'tbl-wrap' }, el('table', null,
+      el('thead', null, el('tr', null, el('th', { text: '#' }), el('th', { class: 'l sticky-col', text: 'Clube' }),
+        el('th', { text: 'A favor' }), el('th', { text: 'Contra' }), el('th', { text: 'Saldo' }),
+        el('th', { text: 'Gols anul.', title: 'Gols do clube anulados pelo VAR' }), el('th', { text: 'Pên. +', title: 'Pênaltis a favor marcados pelo VAR' }),
+        el('th', { text: 'Pên. −', title: 'Pênaltis a favor anulados pelo VAR' }), el('th', { text: 'Expulsões', title: 'Expulsões do clube após revisão' }))), tb))));
+    app.append(el('p', { class: 'small', text: 'A favor: decisões que beneficiaram o clube (pênalti marcado para ele, gol do rival anulado, rival expulso após revisão). Contra: o inverso. Só entram as decisões que a ESPN registra nos lances.' }));
+  }
+
   function telaNoticias(app) {
     app.append(secHead('Notícias', 'Últimas do ge', 'As manchetes mais recentes do ge sobre cada clube da Série A. Toque para ler a matéria no ge.', 'h1'));
     const filtro = el('div', { class: 'clubes-filtro', role: 'group', 'aria-label': 'Escolha o clube' });
@@ -680,7 +836,7 @@
     const h = (location.hash || '#inicio').slice(1);
     if (h.startsWith('clube-')) return { tela: 'clube', id: +h.slice(6) };
     if (h.startsWith('jogo-')) return { tela: 'jogo', id: +h.slice(5) };
-    if (['inicio', 'tabela', 'rodadas', 'artilharia', 'noticias'].includes(h)) return { tela: h };
+    if (['inicio', 'tabela', 'rodadas', 'artilharia', 'noticias', 'arbitragem'].includes(h)) return { tela: h };
     return { tela: 'inicio' };
   }
   window.addEventListener('error', () => {
@@ -698,6 +854,7 @@
     else if (r.tela === 'rodadas') telaRodadas(app);
     else if (r.tela === 'artilharia') telaArtilharia(app);
     else if (r.tela === 'noticias') telaNoticias(app);
+    else if (r.tela === 'arbitragem') telaArbitragem(app);
     else if (r.tela === 'jogo') { telaJogo(app, r.id); if (!E) carregarEstat(); }
     else telaClube(app, r.id);
     const navKey = r.tela === 'clube' ? 'tabela' : r.tela === 'jogo' ? 'rodadas' : r.tela;

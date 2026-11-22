@@ -26,7 +26,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 OUT = ROOT / "data" / "estatisticas.json"
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
-MAX_ENCERRADOS_POR_VEZ = 8
+MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
+MAX_ENCERRADOS_SEM_JOGO = 40    # sem jogo, completa a temporada mais rápido
+VERSAO = 2                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -73,6 +75,60 @@ def ler_estatisticas(times_box):
                     v *= 100
                 d[k] = round(v, 1) if k in ("posse", "precisao_passes") else int(round(v))
         out[str((t.get("team") or {}).get("id"))] = d
+    return out
+
+
+def arbitro(resumo):
+    """Nome do árbitro principal (a ESPN lista a equipe de arbitragem em gameInfo.officials)."""
+    ofs = ((resumo.get("gameInfo") or {}).get("officials")) or []
+    for o in ofs:
+        pos = norm(str(((o.get("position") or {}).get("displayName")) or ((o.get("position") or {}).get("name")) or ""))
+        if "REFEREE" in pos and "ASSIST" not in pos and "VIDEO" not in pos and "FOURTH" not in pos:
+            return o.get("displayName") or o.get("fullName")
+    o = ofs[0] if ofs else {}
+    return o.get("displayName") or o.get("fullName") or None
+
+
+def lances_var(comp, resumo, lado_por_espn, tipos_vistos):
+    """Decisões do VAR que a ESPN registra (gol anulado, pênalti marcado/anulado, expulsão após revisão).
+    'lado' é o time a quem o lance se refere (quem fez o gol anulado, quem sofreu/cometeu etc.)."""
+    brutos = list(resumo.get("keyEvents") or []) + list(comp.get("details") or [])
+    out, vistos = [], set()
+    for ev in brutos:
+        tipo = ((ev.get("type") or {}).get("text") or "").strip()
+        tipos_vistos.add(tipo)
+        txt = (tipo + " " + ((ev.get("type") or {}).get("type") or "") + " " + (ev.get("text") or "")).lower()
+        if not re.search(r"\bvar\b|video assistant|review|disallow|overturn|chalked off|ruled out", txt):
+            continue
+        lado = lado_por_espn.get(str((ev.get("team") or {}).get("id")))
+        minuto = ((ev.get("clock") or {}).get("displayValue") or "").strip() or None
+        if "penalty" in txt and re.search(r"cancel|overturn|no penalty|not given|rescind", txt):
+            dec = "penalti_anulado"      # pênalti para o time 'lado' que o VAR tirou
+        elif "penalty" in txt:
+            dec = "penalti_marcado"      # pênalti para o time 'lado' após revisão
+        elif re.search(r"goal|disallow|chalked off|ruled out", txt) and re.search(r"disallow|cancel|overturn|no goal|chalked off|ruled out|offside", txt):
+            dec = "gol_anulado"          # gol do time 'lado' anulado
+        elif "red" in txt:
+            dec = "vermelho"             # expulsão de jogador do time 'lado' após revisão
+        else:
+            dec = "outro"
+        chave = (dec, lado, minuto)
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        out.append(dict(decisao=dec, lado=lado, minuto=minuto, texto=(ev.get("text") or tipo)[:160]))
+    return out
+
+
+def penaltis_perdidos(comp, resumo, lado_por_espn):
+    """Pênaltis desperdiçados (perdidos ou defendidos) por lado, fora da disputa de pênaltis."""
+    brutos = comp.get("details") or resumo.get("keyEvents") or []
+    out = {}
+    for ev in brutos:
+        txt = ((ev.get("type") or {}).get("text") or "").lower() + " " + ((ev.get("type") or {}).get("type") or "").lower()
+        lado = lado_por_espn.get(str((ev.get("team") or {}).get("id")))
+        if lado and not ev.get("shootout") and "penalty" in txt and any(x in txt for x in ("miss", "saved")):
+            out[lado] = out.get(lado, 0) + 1
     return out
 
 
@@ -185,10 +241,10 @@ def main():
         guardado = jogos_dados.get(str(j["id"])) or {}
         if j["status"] in ("IN_PLAY", "PAUSED") or (j["status"] not in ("FINISHED",) and inicio(j) <= agora <= inicio(j) + timedelta(hours=3)):
             ao_vivo.append(j)
-        elif j["status"] == "FINISHED" and not guardado.get("final") and guardado.get("tentativas", 0) < MAX_TENTATIVAS:
+        elif j["status"] == "FINISHED" and (not guardado.get("final") or guardado.get("v") != VERSAO) and guardado.get("tentativas", 0) < MAX_TENTATIVAS:
             encerrados.append(j)
     encerrados.sort(key=lambda j: j["data"], reverse=True)  # os mais recentes primeiro
-    alvo = ao_vivo + encerrados[:MAX_ENCERRADOS_POR_VEZ]
+    alvo = ao_vivo + encerrados[:MAX_ENCERRADOS_POR_VEZ if ao_vivo else MAX_ENCERRADOS_SEM_JOGO]
     if not alvo:
         print("Estatísticas: nada para buscar.")
         return
@@ -242,6 +298,7 @@ def main():
 
     diag = dict(hora=agora.isoformat(timespec="seconds"), eventos_espn=len(placar.get("events", [])),
                 reconhecidos=len(eventos), alvo=len(alvo), janelas=len(janelas), erros=erros[:6], ok=ok[:6], sem_par=[])
+    tipos_vistos = set(dados.get("tipos_espn") or [])
     lidos = 0
     for j in alvo:
         chave = str(j["id"])
@@ -287,6 +344,16 @@ def main():
         novo = dict(espn=ev["id"], casa=est["casa"], fora=est["fora"], lances=lances,
                     final=bool(j["status"] == "FINISHED" and estado == "post"))
         novo["estado"] = estado
+        novo["v"] = VERSAO
+        arb = arbitro(resumo)
+        if arb:
+            novo["arbitro"] = arb
+        var = lances_var(comp, resumo, lado_por_espn, tipos_vistos)
+        if var:
+            novo["var"] = var
+        pp = penaltis_perdidos(comp, resumo, lado_por_espn)
+        if pp:
+            novo["penaltis_perdidos"] = pp
         if estado in ("in", "post"):
             placar_espn = {}
             for c in comp.get("competitors", []):
@@ -330,7 +397,7 @@ def main():
         lidos += 1
 
     if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists() or "erro" in dados or not jogos_dados:
-        OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, tipos_espn=sorted(tipos_vistos)[:300], jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Estatísticas: {lidos} jogos lidos ({len(ao_vivo)} ao vivo).")
     else:
         print("Estatísticas: nada mudou.")
