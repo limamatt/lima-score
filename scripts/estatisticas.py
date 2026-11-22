@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 OUT = ROOT / "data" / "estatisticas.json"
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
-MAX_ENCERRADOS_POR_VEZ = 40
+MAX_ENCERRADOS_POR_VEZ = 8
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -182,15 +182,33 @@ def main():
     # a ESPN recusa intervalos longos de datas: busca em janelas curtas (dia do jogo ± 1)
     janelas = sorted({((inicio(j) - timedelta(days=1)).strftime("%Y%m%d"), (inicio(j) + timedelta(days=1)).strftime("%Y%m%d"))
                       for j in alvo})
-    todos, vistos, erros = [], set(), []
-    for a, b in janelas:
+    todos, vistos, erros, ok = [], set(), [], []
+
+    def juntar(caminho):
         try:
-            for ev in baixar(f"/scoreboard?dates={a}-{b}&limit=100").get("events", []):
-                if ev.get("id") not in vistos:
-                    vistos.add(ev.get("id"))
-                    todos.append(ev)
+            evs = baixar(caminho).get("events", [])
         except Exception as e:
-            erros.append(f"{a}-{b}: {e.__class__.__name__} {e}"[:120])
+            corpo = ""
+            try:
+                corpo = e.read().decode("utf-8", "ignore")[:160]
+            except Exception:
+                pass
+            erros.append(f"{caminho}: {e.__class__.__name__} {e} {corpo}"[:300])
+            return False
+        ok.append(f"{caminho}: {len(evs)}")
+        for ev in evs:
+            if ev.get("id") not in vistos:
+                vistos.add(ev.get("id"))
+                todos.append(ev)
+        return True
+
+    juntar("/scoreboard")  # jogos de hoje (sem parâmetros: o formato mais simples)
+    for a, b in janelas:
+        # tenta formatos diferentes até um funcionar
+        if not juntar(f"/scoreboard?dates={a}-{b}"):
+            d0 = datetime.strptime(a, "%Y%m%d")
+            for k in range(3):
+                juntar(f"/scoreboard?dates={(d0 + timedelta(days=k)):%Y%m%d}")
     placar = {"events": todos}
     eventos = []
     for ev in placar.get("events", []):
@@ -205,7 +223,7 @@ def main():
                                 casa=ids["home"], fora=ids["away"]))
 
     diag = dict(hora=agora.isoformat(timespec="seconds"), eventos_espn=len(placar.get("events", [])),
-                reconhecidos=len(eventos), alvo=len(alvo), janelas=len(janelas), erros=erros[:5], sem_par=[])
+                reconhecidos=len(eventos), alvo=len(alvo), janelas=len(janelas), erros=erros[:6], ok=ok[:6], sem_par=[])
     lidos = 0
     for j in alvo:
         chave = str(j["id"])
