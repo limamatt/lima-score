@@ -352,7 +352,7 @@
     pano.append(bloco('Copa do Brasil 2027', 'Quem pode ficar de fora',
       'A vaga vem de estar na Série A de 2027, então quem cair perde essa vaga. Ainda pode entrar pelo estadual ou pelo ranking da CBF.',
       topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)',
-        rebaixadoMatematicamente(t) ? 'Fora' : t.rebaixamento > 99 ? 'Fora' : pct(t.rebaixamento)))));
+        rebaixadoMatematicamente(t) ? '100%' : pct(t.rebaixamento)))));
     app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', null), pano));
 
     // próximos jogos
