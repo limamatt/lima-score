@@ -363,9 +363,64 @@
     const nota = usarOficial ? null
       : (falta <= 60 && !encerrado(j) ? 'A escalação oficial aparece aqui assim que for divulgada. ' : '') +
         'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor). Lesões e decisões do técnico não entram.';
+    const fonte = usarOficial ? oficial : prov;
+    const campo = fonte && fonte.casa && fonte.fora ? campinho(j, fonte) : null;
+    // prováveis: só o campinho (e os suspensos); oficiais: campinho + lista com gols, cartões e substituições
+    const susp = !usarOficial ? ['casa', 'fora'].map((l) => (prov[l] && prov[l].desfalques && prov[l].desfalques.length
+      ? el('div', { class: 'small esc-res' }, escudo(j[l]), el('b', { text: ' Suspensos: ' }), prov[l].desfalques.map((p) => p.n).join(', ')) : null)).filter(Boolean) : [];
     return el('section', null, secHead('Escalações', titulo, null),
-      el('div', { class: 'card esc' }, coluna('casa'), coluna('fora')),
+      campo || el('div', { class: 'card esc' }, coluna('casa'), coluna('fora')),
+      susp.length ? el('div', { class: 'card pad esc-susp' }, susp) : null,
+      usarOficial && campo ? el('div', { class: 'card esc', style: 'margin-top:.7rem' }, coluna('casa'), coluna('fora')) : null,
       nota ? el('p', { class: 'small', text: nota }) : null);
+  }
+
+  // campinho: o mandante embaixo, o visitante em cima, cada um em linhas pela posição
+  function campinho(j, fonte) {
+    const linhaDe = (pos) => {
+      const p = (pos || '').toLowerCase();
+      if (p.includes('goleiro')) return 0;
+      if (/zagueiro|lateral|ala|defensor/.test(p)) return 1;
+      if (/volante|meio-campista/.test(p)) return 2;
+      if (p.includes('meia')) return 3;
+      if (/atacante|ponta/.test(p)) return 4;
+      return 2;
+    };
+    const ordemLado = (pos) => {
+      const p = (pos || '').toLowerCase();
+      if (p.includes('esquerd')) return 0;
+      if (p.includes('direit')) return 4;
+      if (p.includes('ponta') || p.includes('ala')) return 0.5;
+      return 2;
+    };
+    const curto = (n) => {
+      const ps = (n || '').trim().split(/\s+/);
+      if (ps.length === 1 || (n || '').length <= 11) return n;
+      return ps[ps.length - 1].length > 2 ? ps[ps.length - 1] : ps.slice(-2).join(' ');
+    };
+    const metade = (lado) => {
+      const tit = (fonte[lado] && fonte[lado].titulares) || [];
+      const linhas = [[], [], [], [], []];
+      tit.forEach((p) => linhas[linhaDe(p.p)].push(p));
+      // pontas sem lado definido: abre um em cada ponta
+      linhas.forEach((ln) => {
+        let alt = 0;
+        ln.forEach((p) => { p._o = ordemLado(p.p); if (p._o === 0.5) { p._o = alt++ % 2 === 0 ? 0 : 4; } });
+        // o visitante ataca para baixo: a esquerda dele fica à direita da tela
+        ln.sort((a, b) => (lado === 'fora' ? b._o - a._o : a._o - b._o));
+      });
+      const box = el('div', { class: 'cp-metade ' + lado });
+      const usadas = linhas.filter((ln) => ln.length);
+      (lado === 'casa' ? usadas.slice().reverse() : usadas).forEach((ln) => {
+        box.append(el('div', { class: 'cp-linha' }, ln.map((p) => el('div', { class: 'cp-j', title: p.n },
+          el('span', { class: 'cp-n num', text: p.c || '' }), el('span', { class: 'cp-nome', text: curto(p.n) })))));
+      });
+      return box;
+    };
+    const rot = (lado) => el('div', { class: 'cp-rot ' + lado }, escudo(j[lado]), el('b', { text: T[j[lado]] ? T[j[lado]].nome : '' }),
+      fonte[lado] && fonte[lado].formacao ? el('span', { class: 'small', text: fonte[lado].formacao }) : null);
+    return el('div', { class: 'card cp-card' }, rot('fora'),
+      el('div', { class: 'campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }), metade('fora'), metade('casa')), rot('casa'));
   }
 
   const legendaJogo = () => el('div', { class: 'legend' },
