@@ -116,6 +116,21 @@ def ler_lances(comp, resumo, lado_por_espn):
     return lances
 
 
+POSICOES = [("goalkeeper", "Goleiro"), ("attacking midfielder", "Meia"), ("defensive midfielder", "Volante"),
+             ("midfielder", "Meio-campista"), ("center back", "Zagueiro"), ("centre back", "Zagueiro"),
+             ("left back", "Lateral-esquerdo"), ("right back", "Lateral-direito"), ("wing back", "Ala"),
+             ("defender", "Defensor"), ("winger", "Ponta"), ("left forward", "Ponta"), ("right forward", "Ponta"),
+             ("forward", "Atacante"), ("striker", "Atacante")]
+
+
+def traduz_posicao(txt):
+    t = (txt or "").lower().replace("-", " ")
+    for en, pt in POSICOES:
+        if en in t:
+            return pt
+    return {"G": "Goleiro", "D": "Defensor", "M": "Meio-campista", "F": "Atacante"}.get((txt or "").upper(), txt)
+
+
 def destaque_do_jogo(resumo, lado_por_espn):
     """Destaque pelos números da ESPN: gols, assistências, finalizações, defesas.
     Não é o "melhor em campo" oficial; é quem mais pesou nas estatísticas."""
@@ -142,7 +157,7 @@ def destaque_do_jogo(resumo, lado_por_espn):
                     motivo.append(f"{v} {rot if v == 1 else plural}")
             if melhor is None or nota > melhor["nota"]:
                 melhor = dict(nome=nome, lado=lado, nota=round(nota, 1), motivo=", ".join(motivo[:3]),
-                              posicao=((p.get("position") or {}).get("displayName") or (p.get("position") or {}).get("abbreviation")))
+                              posicao=traduz_posicao((p.get("position") or {}).get("displayName") or (p.get("position") or {}).get("abbreviation")))
     return melhor
 
 
@@ -202,13 +217,16 @@ def main():
                 todos.append(ev)
         return True
 
+    dias_lidos = set()
     juntar("/scoreboard")  # jogos de hoje (sem parâmetros: o formato mais simples)
     for a, b in janelas:
-        # tenta formatos diferentes até um funcionar
-        if not juntar(f"/scoreboard?dates={a}-{b}"):
-            d0 = datetime.strptime(a, "%Y%m%d")
-            for k in range(3):
-                juntar(f"/scoreboard?dates={(d0 + timedelta(days=k)):%Y%m%d}")
+        # a ESPN só aceita um dia por vez (intervalos dão erro 400)
+        d0 = datetime.strptime(a, "%Y%m%d")
+        for k in range(3):
+            dia = f"{(d0 + timedelta(days=k)):%Y%m%d}"
+            if dia not in dias_lidos:
+                dias_lidos.add(dia)
+                juntar(f"/scoreboard?dates={dia}")
     placar = {"events": todos}
     eventos = []
     for ev in placar.get("events", []):
