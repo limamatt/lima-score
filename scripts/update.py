@@ -10,6 +10,7 @@ Também roda no seu computador:  FOOTBALL_DATA_TOKEN=suachave python scripts/upd
 """
 import json
 import math
+import re
 import os
 import sys
 import urllib.request
@@ -54,6 +55,98 @@ def baixar(caminho, token):
     req = urllib.request.Request(API + caminho, headers={"X-Auth-Token": token})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r)
+
+
+def estatisticas_dos_clubes(saida_jogos, espn):
+    """Números de cada clube na temporada, a partir das estatísticas e dos lances da ESPN,
+    com a posição do clube entre os 20 em cada número."""
+    def minuto(txt):
+        nums = [int(x) for x in re.findall(r"\d+", txt or "")]
+        return (nums[0] + (nums[1] if len(nums) > 1 else 0)) if nums else None
+
+    reg = {}
+    for jg in saida_jogos:
+        if jg["status"] != "FINISHED":
+            continue
+        e = espn.get(str(jg["id"])) or {}
+        for ld, outro in (("casa", "fora"), ("fora", "casa")):
+            cid = jg[ld]
+            r = reg.setdefault(cid, dict(jogos=0, com_dados=0, soma={}, sofrido={}, gols=0, sofridos=0, sem_sofrer=0, sem_marcar=0,
+                                         g1t=0, g2t=0, s1t=0, s2t=0, g_final=0, s_final=0, g_pen=0, s_pen=0,
+                                         virada_pts=0, cedeu_pts=0, saiu_atras=0, saiu_frente=0, maior_v=None, maior_d=None))
+            gp, gc = (jg["gols_casa"], jg["gols_fora"]) if ld == "casa" else (jg["gols_fora"], jg["gols_casa"])
+            r["jogos"] += 1
+            r["gols"] += gp; r["sofridos"] += gc
+            r["sem_sofrer"] += gc == 0; r["sem_marcar"] += gp == 0
+            if gp > gc and (r["maior_v"] is None or gp - gc > r["maior_v"][0]):
+                r["maior_v"] = (gp - gc, jg["id"])
+            if gp < gc and (r["maior_d"] is None or gc - gp > r["maior_d"][0]):
+                r["maior_d"] = (gc - gp, jg["id"])
+            st, so = e.get(ld) or {}, e.get(outro) or {}
+            if st:
+                r["com_dados"] += 1
+                for k, v in st.items():
+                    if isinstance(v, (int, float)):
+                        r["soma"][k] = r["soma"].get(k, 0) + v
+                for k, v in so.items():
+                    if isinstance(v, (int, float)):
+                        r["sofrido"][k] = r["sofrido"].get(k, 0) + v
+            # gols por momento do jogo e viradas (só quando os lances batem com o placar)
+            gols = [l for l in e.get("lances") or [] if l.get("tipo") == "gol"]
+            if gols and sum(1 for l in gols if l["lado"] == ld) == gp and sum(1 for l in gols if l["lado"] == outro) == gc:
+                placar = [0, 0]
+                atras = frente = False
+                for l in gols:
+                    m = minuto(l.get("minuto")) or 0
+                    base = int((re.findall(r"\d+", l.get("minuto") or "0") or ["0"])[0])
+                    meu = l["lado"] == ld
+                    placar[0 if meu else 1] += 1
+                    pre = "g" if meu else "s"
+                    r[pre + ("1t" if base <= 45 else "2t")] += 1
+                    if m >= 76:
+                        r[pre + "_final"] += 1
+                    if l.get("penalti"):
+                        r[pre + "_pen"] += 1
+                    if placar[0] < placar[1]:
+                        atras = True
+                    if placar[0] > placar[1]:
+                        frente = True
+                pts = 3 if gp > gc else 1 if gp == gc else 0
+                if atras:
+                    r["saiu_atras"] += 1; r["virada_pts"] += pts
+                if frente:
+                    r["saiu_frente"] += 1; r["cedeu_pts"] += 3 - pts
+    out = {}
+    for cid, r in reg.items():
+        n = r["com_dados"] or 1
+        med = lambda d, k, c=1: round(d.get(k, 0) / n, c)
+        out[cid] = dict(
+            jogos=r["jogos"], com_dados=r["com_dados"],
+            gols_jogo=round(r["gols"] / max(r["jogos"], 1), 2), sofridos_jogo=round(r["sofridos"] / max(r["jogos"], 1), 2),
+            sem_sofrer=r["sem_sofrer"], sem_marcar=r["sem_marcar"],
+            posse=med(r["soma"], "posse"), finalizacoes=med(r["soma"], "finalizacoes"), no_alvo=med(r["soma"], "no_alvo"),
+            finalizacoes_sofridas=med(r["sofrido"], "finalizacoes"), no_alvo_sofridos=med(r["sofrido"], "no_alvo"),
+            escanteios=med(r["soma"], "escanteios"), faltas=med(r["soma"], "faltas"), faltas_sofridas=med(r["sofrido"], "faltas"),
+            impedimentos=med(r["soma"], "impedimentos"), defesas=med(r["soma"], "defesas"), passes=med(r["soma"], "passes", 0),
+            precisao_passes=med(r["soma"], "precisao_passes"),
+            amarelos=int(r["soma"].get("amarelos", 0)), vermelhos=int(r["soma"].get("vermelhos", 0)),
+            aproveitamento_chutes=round(100 * r["gols"] / r["soma"]["no_alvo"], 1) if r["soma"].get("no_alvo") else None,
+            g1t=r["g1t"], g2t=r["g2t"], s1t=r["s1t"], s2t=r["s2t"], g_final=r["g_final"], s_final=r["s_final"],
+            g_pen=r["g_pen"], s_pen=r["s_pen"],
+            saiu_atras=r["saiu_atras"], virada_pts=r["virada_pts"], saiu_frente=r["saiu_frente"], cedeu_pts=r["cedeu_pts"],
+            maior_v=r["maior_v"][1] if r["maior_v"] else None, maior_d=r["maior_d"][1] if r["maior_d"] else None,
+        )
+    # posição de cada clube em cada número (1º = melhor; para números "ruins", menor é melhor)
+    menor_melhor = {"sofridos_jogo", "finalizacoes_sofridas", "no_alvo_sofridos", "faltas", "amarelos", "vermelhos", "sem_marcar",
+                    "impedimentos", "s1t", "s2t", "s_final", "s_pen", "cedeu_pts"}
+    for k in ("gols_jogo", "sofridos_jogo", "sem_sofrer", "posse", "finalizacoes", "no_alvo", "finalizacoes_sofridas",
+              "no_alvo_sofridos", "escanteios", "faltas", "faltas_sofridas", "impedimentos", "defesas", "passes",
+              "precisao_passes", "amarelos", "vermelhos", "aproveitamento_chutes", "virada_pts", "cedeu_pts", "g_final", "s_final"):
+        vals = sorted(((v[k], c) for c, v in out.items() if v.get(k) is not None), reverse=k not in menor_melhor)
+        for pos, (val, c) in enumerate(vals, 1):
+            empate = next(i for i, (x, _) in enumerate(vals, 1) if x == val)
+            out[c].setdefault("rank", {})[k] = empate
+    return out
 
 
 def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts):
@@ -393,6 +486,10 @@ def main():
                                 gol=round((1 - math.exp(-lam_g)) * 100, 1),
                                 assistencia=round((1 - math.exp(-lam_a)) * 100, 1))
         saida_jogadores.append(item)
+
+    est_clubes = estatisticas_dos_clubes(saida_jogos, espn)
+    for tt in saida_times:
+        tt["estat"] = est_clubes.get(tt["id"])
 
     # arbitragem: números de cada árbitro e de cada clube com cada árbitro (cartões, pênaltis e VAR vêm da ESPN)
     arb, var_clube = {}, {}

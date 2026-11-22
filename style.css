@@ -400,3 +400,16 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .cen-decide.bom{background:color-mix(in srgb,var(--good) 14%,transparent)}
 .cen-decide.ruim{background:color-mix(in srgb,var(--bad) 12%,transparent)}
 .cen-meta{margin:0;font-size:.92rem;padding-top:.55rem;border-top:1px solid var(--line)}
+/* estatísticas do clube */
+.es-wrap{display:grid;gap:.7rem;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))}
+.es-g{padding:.9rem 1rem}
+.es-g .eyebrow{margin-bottom:.6rem}
+.es-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem 1rem}
+.es-t small{display:block;color:var(--muted);font-size:.76rem;line-height:1.25}
+.es-v{display:flex;align-items:baseline;gap:.4rem;margin-top:.15rem}
+.es-v b{font-family:var(--display);font-weight:800;font-size:1.25rem}
+.es-r{font-size:.72rem;font-weight:700;padding:.05rem .35rem;border-radius:5px;background:var(--surface-2);color:var(--muted)}
+.es-r.top{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.es-r.bot{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.es-ext{display:flex;flex-direction:column;gap:.2rem;margin-top:.8rem}
+.es-ext a{color:inherit;font-weight:600}

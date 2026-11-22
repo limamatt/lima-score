@@ -581,6 +581,9 @@
     app.append(el('section', { class: 'split' }, el('div', null, secHead('Chances', 'Para onde vai', null), faixas), el('div', null, secHead('Posição final', 'Distribuição', null), distCard)));
     requestAnimationFrame(() => desenharDist(dist, t));
 
+    // estatísticas da temporada
+    if (t.estat) app.append(secaoEstatClube(t));
+
     // jogos
     const meus = D.jogos.filter((j) => j.casa === id || j.fora === id);
     const feitos = meus.filter(encerrado).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
@@ -625,6 +628,43 @@
       js.forEach((p, i) => lista.append(linhaJogador(p, i + 1, 'gols')));
       app.append(el('section', null, secHead('Elenco', 'Artilheiros do clube', null), lista));
     }
+  }
+
+  function secaoEstatClube(t) {
+    const x = t.estat, rk = x.rank || {};
+    const n1v = (v) => (v == null ? '–' : (+v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }));
+    const n2v = (v) => (v == null ? '–' : (+v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const tile = (rot, val, chave) => {
+      const r = chave ? rk[chave] : null;
+      return el('div', { class: 'es-t' }, el('small', { text: rot }),
+        el('div', { class: 'es-v' }, el('b', { class: 'num', text: val }),
+          r ? el('span', { class: 'es-r ' + (r <= 4 ? 'top' : r >= 17 ? 'bot' : ''), title: `${r}º entre os 20 clubes`, text: `${r}º` }) : null));
+    };
+    const grupo = (titulo, tiles) => el('div', { class: 'card es-g' }, el('div', { class: 'eyebrow', text: titulo }), el('div', { class: 'es-grid' }, tiles));
+    const jogoTxt = (id) => {
+      const j = D.jogos.find((y) => y.id === id);
+      if (!j) return null;
+      return el('a', { href: '#jogo-' + j.id, text: `${T[j.casa] ? T[j.casa].nome : ''} ${j.gols_casa}×${j.gols_fora} ${T[j.fora] ? T[j.fora].nome : ''}` });
+    };
+    const grade = el('div', { class: 'es-wrap' },
+      grupo('Ataque', [tile('Gols por jogo', n2v(x.gols_jogo), 'gols_jogo'), tile('Finalizações', n1v(x.finalizacoes), 'finalizacoes'),
+        tile('Chutes no gol', n1v(x.no_alvo), 'no_alvo'), tile('Gols a cada 100 chutes no gol', n1v(x.aproveitamento_chutes), 'aproveitamento_chutes'),
+        tile('Escanteios', n1v(x.escanteios), 'escanteios'), tile('Gols de pênalti', String(x.g_pen), null)]),
+      grupo('Defesa', [tile('Gols sofridos por jogo', n2v(x.sofridos_jogo), 'sofridos_jogo'), tile('Jogos sem sofrer gol', String(x.sem_sofrer), 'sem_sofrer'),
+        tile('Finalizações sofridas', n1v(x.finalizacoes_sofridas), 'finalizacoes_sofridas'), tile('Chutes no gol sofridos', n1v(x.no_alvo_sofridos), 'no_alvo_sofridos'),
+        tile('Defesas do goleiro', n1v(x.defesas), null), tile('Pênaltis sofridos (gols)', String(x.s_pen), null)]),
+      grupo('Estilo', [tile('Posse de bola', n1v(x.posse) + '%', 'posse'), tile('Passes', n1v(x.passes), 'passes'),
+        tile('Acerto de passes', n1v(x.precisao_passes) + '%', 'precisao_passes'), tile('Impedimentos', n1v(x.impedimentos), null)]),
+      grupo('Disciplina', [tile('Faltas cometidas', n1v(x.faltas), 'faltas'), tile('Faltas sofridas', n1v(x.faltas_sofridas), null),
+        tile('Cartões amarelos', String(x.amarelos), 'amarelos'), tile('Cartões vermelhos', String(x.vermelhos), 'vermelhos')]),
+      grupo('Momentos do jogo', [tile('Gols no 1º tempo (pró × contra)', `${x.g1t} × ${x.s1t}`, null), tile('Gols no 2º tempo (pró × contra)', `${x.g2t} × ${x.s2t}`, null),
+        tile('Gols marcados após os 75′', String(x.g_final), 'g_final'), tile('Gols sofridos após os 75′', String(x.s_final), 's_final'),
+        tile(`Pontos buscados saindo atrás (${x.saiu_atras} jogos)`, String(x.virada_pts), 'virada_pts'), tile(`Pontos cedidos estando na frente (${x.saiu_frente} jogos)`, String(x.cedeu_pts), 'cedeu_pts')]));
+    const extremos = el('div', { class: 'es-ext small' },
+      x.maior_v ? el('span', null, 'Maior vitória: ', jogoTxt(x.maior_v)) : null,
+      x.maior_d ? el('span', null, 'Maior derrota: ', jogoTxt(x.maior_d)) : null);
+    return el('section', null, secHead('Estatísticas', 'Números da temporada', null), grade, extremos,
+      el('p', { class: 'small', text: 'Médias por jogo. O número ao lado é a posição do clube entre os 20 (1º = melhor). Fonte: ESPN.' }));
   }
 
   function desenharDist(box, t) {
