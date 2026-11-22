@@ -379,7 +379,6 @@
     app.append(el('section', null, secHead('Artilharia', 'Goleadores do campeonato', null), lista,
       el('p', null, el('a', { href: '#artilharia', text: 'Ver artilheiros e garçons →' }))));
 
-    app.append(metodo());
   }
 
   function telaTabela(app) {
