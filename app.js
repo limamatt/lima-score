@@ -155,13 +155,24 @@
     if (encerrado(j) || aoVivo(j)) card.append(el('a', { class: 'ver-jogo', href: '#jogo-' + j.id }, 'Estatísticas e lances ›'));
     if (!encerrado(j)) {
       const tv = el('div', { class: 'tv' }, el('span', { class: 'tv-k', text: 'Onde assistir' }));
-      if (j.canais && j.canais.length) j.canais.forEach((c) => tv.append(el('span', { class: 'chip', text: c })));
+      if (j.canais && j.canais.length) j.canais.forEach((c) => {
+        const yt = canalYouTube(c);
+        tv.append(yt && !encerrado(j)
+          ? el('a', { class: 'chip chip-yt', href: yt, target: '_blank', rel: 'noopener', 'aria-label': `Assistir no YouTube (${c})` }, '▶ ' + c)
+          : el('span', { class: 'chip', text: c }));
+      });
       else tv.append(el('span', { class: 'small', text: 'A definir' }));
       card.append(tv);
     }
     return card;
   }
   const sobrenome = (n) => { const p = String(n || '').trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
+  // canais que transmitem no YouTube: o link /live abre a transmissão que estiver no ar
+  const CANAIS_YT = { 'cazetv': 'CazeTV', 'ge tv': 'getv', 'getv': 'getv' };
+  function canalYouTube(nome) {
+    const k = (nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    return CANAIS_YT[k] ? `https://www.youtube.com/@${CANAIS_YT[k]}/live` : null;
+  }
   function chipGol(g, i) {
     const id = typeof g === 'string' ? g : g.id;
     const txt = typeof g === 'object' && g.minuto ? `▶ ${g.minuto} ${sobrenome(g.jogador)}`.trim() : `▶ Gol ${i + 1}`;

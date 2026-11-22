@@ -270,6 +270,8 @@ tr.z-reb .sticky-col2{background:color-mix(in srgb,var(--bad) 5%,var(--surface))
 .gols-v{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem}
 a.chip-gol{text-decoration:none;border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
 a.chip-gol:hover{border-color:var(--bad)}
+a.chip-yt{text-decoration:none;font-weight:600;border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+a.chip-yt:hover{border-color:var(--bad)}
 .game.is-live{border-color:color-mix(in srgb,var(--bad) 55%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--bad) 30%,transparent)}
 .live-tag{display:inline-flex;align-items:center;gap:.35rem}
 .live-tag .dot{width:7px;height:7px;border-radius:50%;background:#fff;display:inline-block}
