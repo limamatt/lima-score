@@ -353,15 +353,21 @@
       'A vaga vem de estar na Série A de 2027, então quem cair perde essa vaga. Ainda pode entrar pelo estadual ou pelo ranking da CBF.',
       topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)',
         rebaixadoMatematicamente(t) ? 'Fora' : t.rebaixamento > 99 ? 'Fora' : pct(t.rebaixamento)))));
-    app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', `Resultado de ${D.simulacoes.toLocaleString('pt-BR')} simulações do resto do campeonato.`), pano));
+    app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', null), pano));
 
     // próximos jogos
     const proximos = D.jogos.filter((j) => j.rodada === r && !encerrado(j) && !aoVivo(j));
     if (proximos.length) {
       const zr = new Set(abertos.map((t) => t.id));
-      proximos.sort((a, b) => (zr.has(b.casa) || zr.has(b.fora)) - (zr.has(a.casa) || zr.has(a.fora)) || a.data.localeCompare(b.data));
+      // G4: clubes que ainda podem entrar ou sair da faixa da Libertadores direta
+      const zg = new Set(D.times.filter((t) => t.libertadores >= 5 && t.libertadores <= 99).map((t) => t.id));
+      const mexe = (j) => {
+        const z4 = zr.has(j.casa) || zr.has(j.fora), g4 = zg.has(j.casa) || zg.has(j.fora);
+        return z4 && g4 ? 'Mexe com o G4 e o Z4' : g4 ? 'Mexe com o G4' : z4 ? 'Mexe com o Z4' : null;
+      };
+      proximos.sort((a, b) => (!!mexe(b)) - (!!mexe(a)) || a.data.localeCompare(b.data));
       const g = el('div', { class: 'games' });
-      proximos.forEach((j) => g.append(cartaoJogo(j, { destaque: zr.has(j.casa) || zr.has(j.fora) ? 'Mexe com o Z4' : null })));
+      proximos.forEach((j) => g.append(cartaoJogo(j, { destaque: mexe(j) })));
       app.append(el('section', null, secHead(`${r}ª rodada`, 'Palpites dos próximos jogos', 'Chance de vitória de cada time e de empate.'), legendaJogo(), g,
         el('p', null, el('a', { href: '#rodadas', text: 'Ver todas as rodadas →' }))));
     }
