@@ -332,7 +332,7 @@
         if (banco.length) box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'No banco: ' }), banco.map((p) => p.n).join(', ')));
       }
       if (!usarOficial && d.desfalques && d.desfalques.length) {
-        box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'Suspensos: ' }), d.desfalques.map((p) => `${p.n} (${p.motivo})`).join(', ')));
+        box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'Suspensos: ' }), d.desfalques.map((p) => p.n).join(', ')));
       }
       return box;
     };
