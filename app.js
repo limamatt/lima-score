@@ -294,7 +294,7 @@
       box.append(el('p', { class: 'pad small', style: 'margin:0', text: E ? 'As estatísticas deste jogo ainda não estão disponíveis. Elas costumam aparecer poucos minutos depois do início.' : 'Carregando estatísticas…' }));
     }
     app.append(el('section', null, secHead('Estatísticas', 'Números da partida', null), box,
-      el('p', { class: 'small', text: 'Fonte das estatísticas e dos lances: ESPN.' })));
+    ));
   }
 
   const legendaJogo = () => el('div', { class: 'legend' },
@@ -532,8 +532,86 @@
   }
 
   // ---------- jogadores
-  const GRUPO_POS = (pos) => /goleiro/i.test(pos || '') ? 0 : /zagueiro|lateral|ala|defensor/i.test(pos || '') ? 1 : /meia|volante|meio/i.test(pos || '') ? 2 : /atacante|ponta/i.test(pos || '') ? 3 : 4;
-  const NOME_GRUPO = ['Goleiros', 'Defensores', 'Meio-campistas', 'Atacantes', 'Só entraram no decorrer dos jogos'];
+  // grupos da lista do elenco; quem não tem posição informada fica com os atacantes
+  const GRUPO_POS = (pos) => /goleiro/i.test(pos || '') ? 0 : /zagueiro|lateral|ala|defensor/i.test(pos || '') ? 1 : /meia|volante|meio/i.test(pos || '') ? 2 : 3;
+  const NOME_GRUPO = ['Goleiros', 'Defensores', 'Meio-campistas', 'Atacantes'];
+  // função para o scout (mais detalhada que o grupo)
+  const FUNCAO = (pos) => /goleiro/i.test(pos || '') ? 'goleiro' : /zagueiro|defensor/i.test(pos || '') ? 'zagueiro'
+    : /lateral|ala/i.test(pos || '') ? 'lateral' : /volante|meio-campista/i.test(pos || '') ? 'volante' : /meia/i.test(pos || '') ? 'meia'
+      : /ponta/i.test(pos || '') ? 'ponta' : 'centroavante';
+  const NOME_FUNCAO = { goleiro: 'goleiros', zagueiro: 'zagueiros', lateral: 'laterais', volante: 'volantes e meio-campistas', meia: 'meias ofensivos', ponta: 'pontas', centroavante: 'atacantes e centroavantes' };
+  const RES_FUNCAO = { goleiro: 'Goleiro', zagueiro: 'Zagueiro', lateral: 'Lateral', volante: 'Volante', meia: 'Meia ofensivo', ponta: 'Ponta', centroavante: 'Centroavante' };
+  const p90f = (v, y) => (y.minutos ? (v || 0) * 90 / y.minutos : 0);
+  const n2f = (v) => (+v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const pcf = (v) => Math.round(v * 100) + '%';
+  // [rótulo, valor, formato, menor é melhor?]
+  const METRICAS = {
+    goleiro: [
+      ['Defesas por 90', (y) => p90f(y.defesas, y), n2f],
+      ['% de defesas', (y) => ((y.defesas || 0) + (y.gols_sofridos || 0) ? (y.defesas || 0) / ((y.defesas || 0) + (y.gols_sofridos || 0)) : 0), pcf],
+      ['Gols sofridos por 90', (y) => p90f(y.gols_sofridos, y), n2f, true],
+      ['Jogos sem sofrer gol', (y) => (y.titular ? (y.sem_sofrer || 0) / y.titular : 0), pcf],
+      ['Defesas em chutes de dentro da área por 90', (y) => p90f(y.def_area, y), n2f],
+      ['xG defendido por 90', (y) => p90f(y.xg_defendido, y), n2f],
+      ['Pênaltis defendidos', (y) => y.def_pen || 0, (v) => String(v)],
+    ],
+    zagueiro: [
+      ['Gols sofridos com ele em campo por 90', (y) => p90f(y.gols_sofridos, y), n2f, true],
+      ['Faltas cometidas por 90', (y) => p90f(y.faltas, y), n2f, true],
+      ['Cartões por 90', (y) => p90f((y.amarelos || 0) + 2 * (y.vermelhos || 0), y), n2f, true],
+      ['Pênaltis cometidos', (y) => y.penaltis_cometidos || 0, (v) => String(v), true],
+      ['Cabeceios para o gol por 90', (y) => p90f(y.cabeceios, y), n2f],
+      ['Gols', (y) => y.gols || 0, (v) => String(v)],
+      ['Passes para finalização por 90', (y) => p90f(y.chances, y), n2f],
+    ],
+    lateral: [
+      ['Passes para finalização por 90', (y) => p90f(y.chances, y), n2f],
+      ['Cruzamentos que viraram finalização por 90', (y) => p90f(y.ch_cruz, y), n2f],
+      ['Assistências por 90', (y) => p90f(y.assist, y), n2f],
+      ['xA por 90', (y) => p90f(y.xa, y), n2f],
+      ['Faltas sofridas por 90', (y) => p90f(y.sofridas, y), n2f],
+      ['Gols sofridos com ele em campo por 90', (y) => p90f(y.gols_sofridos, y), n2f, true],
+      ['Faltas cometidas por 90', (y) => p90f(y.faltas, y), n2f, true],
+    ],
+    volante: [
+      ['Gols sofridos com ele em campo por 90', (y) => p90f(y.gols_sofridos, y), n2f, true],
+      ['Faltas cometidas por 90', (y) => p90f(y.faltas, y), n2f, true],
+      ['Cartões por 90', (y) => p90f((y.amarelos || 0) + 2 * (y.vermelhos || 0), y), n2f, true],
+      ['Faltas sofridas por 90', (y) => p90f(y.sofridas, y), n2f],
+      ['Passes para finalização por 90', (y) => p90f(y.chances, y), n2f],
+      ['Chutes de fora da área por 90', (y) => p90f(y.chutes_fora, y), n2f],
+      ['Participações em gol por 90', (y) => p90f((y.gols || 0) + (y.assist || 0), y), n2f],
+    ],
+    meia: [
+      ['Passes para finalização por 90', (y) => p90f(y.chances, y), n2f],
+      ['xA por 90', (y) => p90f(y.xa, y), n2f],
+      ['Assistências por 90', (y) => p90f(y.assist, y), n2f],
+      ['Passes em profundidade para finalização por 90', (y) => p90f(y.ch_enfiada, y), n2f],
+      ['Chances em bola parada por 90', (y) => p90f(y.ch_parada, y), n2f],
+      ['Gols por 90', (y) => p90f(y.gols, y), n2f],
+      ['xG por 90', (y) => p90f(y.xg, y), n2f],
+      ['Faltas sofridas por 90', (y) => p90f(y.sofridas, y), n2f],
+    ],
+    ponta: [
+      ['Gols por 90', (y) => p90f(y.gols, y), n2f],
+      ['xG por 90', (y) => p90f(y.xg, y), n2f],
+      ['Finalizações por 90', (y) => p90f(y.chutes, y), n2f],
+      ['Passes para finalização por 90', (y) => p90f(y.chances, y), n2f],
+      ['Cruzamentos que viraram finalização por 90', (y) => p90f(y.ch_cruz, y), n2f],
+      ['Assistências por 90', (y) => p90f(y.assist, y), n2f],
+      ['Faltas sofridas por 90', (y) => p90f(y.sofridas, y), n2f],
+    ],
+    centroavante: [
+      ['Gols por 90', (y) => p90f(y.gols, y), n2f],
+      ['xG por 90', (y) => p90f(y.xg, y), n2f],
+      ['Gols − xG', (y) => (y.gols || 0) - (y.xg || 0), (v) => (v > 0 ? '+' : '') + v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })],
+      ['Gols por finalização', (y) => (y.chutes ? (y.gols || 0) / y.chutes : 0), pcf],
+      ['% de chutes no gol', (y) => (y.chutes ? (y.no_alvo || 0) / y.chutes : 0), pcf],
+      ['Grandes chances por 90', (y) => p90f(y.grandes_chances, y), n2f],
+      ['Gols de cabeça', (y) => y.gols_cabeca || 0, (v) => String(v)],
+      ['Impedimentos por 90', (y) => p90f(y.impedimentos, y), n2f, true],
+    ],
+  };
   function telaJogadores(app) {
     app.append(secHead('Jogadores', 'Jogadores do Brasileirão', null, 'h1'));
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Visão' });
@@ -568,7 +646,7 @@
     app.append(filtro);
     if (!P) { app.append(el('p', { class: 'small', text: 'Carregando jogadores…' })); carregarJogadores(); return; }
     const cid = +estado.jogClube;
-    const elenco = (P.jogadores || []).filter((x) => x.clube === cid)
+    const elenco = (P.jogadores || []).filter((x) => x.clube === cid && x.jogos > 0)
       .sort((a, b) => GRUPO_POS(a.pos) - GRUPO_POS(b.pos) || b.jogos - a.jogos || a.nome.localeCompare(b.nome));
     if (!elenco.length) { app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0', text: 'Os jogadores deste clube aparecem aqui na próxima atualização do robô.' }))); return; }
     const t = T[cid];
@@ -602,7 +680,7 @@
         el('td', { class: 'num', text: x.amarelos || 0 }), el('td', { class: 'num', text: x.vermelhos || 0 })));
     });
     app.append(blocos);
-    app.append(el('p', { class: 'small', text: 'Toque no jogador para ver a ficha completa. Fonte: ESPN.' }));
+    app.append(el('p', { class: 'small', text: 'Toque no jogador para ver a ficha completa.' }));
   }
 
   function telaJogador(app, pid) {
@@ -690,28 +768,26 @@
       app.append(el('section', null, secHead('Mapa', 'Onde ele finaliza', null), el('div', { class: 'card pad' }, svg, leg)));
     }
 
-    // perfil: percentil contra jogadores da mesma função (com pelo menos 450 minutos)
-    const grp = GRUPO_POS(x.pos);
-    const pares = todos.filter((y) => GRUPO_POS(y.pos) === grp && (y.minutos || 0) >= 450);
-    if (min >= 450 && pares.length >= 10) {
-      const metricas = goleiro
-        ? [['Defesas por 90', (y) => (y.defesas || 0) * 90 / y.minutos], ['Jogos sem sofrer gol', (y) => (y.sem_sofrer || 0) / y.jogos], ['Gols sofridos por 90 (menos é melhor)', (y) => -(y.gols_sofridos || 0) * 90 / y.minutos]]
-        : [['Gols por 90', (y) => (y.gols || 0) * 90 / y.minutos], ['xG por 90', (y) => (y.xg || 0) * 90 / y.minutos], ['Finalizações por 90', (y) => (y.chutes || 0) * 90 / y.minutos],
-          ['Assistências por 90', (y) => (y.assist || 0) * 90 / y.minutos], ['Passes para finalização por 90', (y) => (y.chances || 0) * 90 / y.minutos],
-          ['xA por 90', (y) => (y.xa || 0) * 90 / y.minutos], ['Faltas sofridas por 90', (y) => (y.sofridas || 0) * 90 / y.minutos],
-          ['Disciplina (menos cartões)', (y) => -((y.amarelos || 0) + 3 * (y.vermelhos || 0)) * 90 / y.minutos]];
-      const barras = el('div', { class: 'perfil' });
-      metricas.forEach(([rot, f]) => {
-        const v = f(x);
-        const pc = Math.round(100 * pares.filter((y) => f(y) < v).length / pares.length);
-        barras.append(el('div', { class: 'pf-l' }, el('span', { class: 'pf-r', text: rot }),
-          el('span', { class: 'pf-b' }, el('i', { style: `width:${Math.max(3, pc)}%;background:${pc >= 75 ? 'var(--good)' : pc >= 40 ? 'var(--accent)' : 'var(--bad)'}` })),
-          el('b', { class: 'num pf-v', text: pc })));
-      });
-      app.append(el('section', null, secHead('Perfil', `Comparado a ${NOME_GRUPO[grp].toLowerCase()}`, null),
-        el('div', { class: 'card pad' }, barras, el('p', { class: 'small', style: 'margin:.6rem 0 0', text: `Percentil entre ${pares.length} ${NOME_GRUPO[grp].toLowerCase()} com pelo menos 450 minutos: 90 = melhor que 90% deles.` }))));
-    }
-    app.append(el('section', null, secHead('Temporada', 'Números do jogador', null), el('div', { class: 'es-wrap' }, grupos)));
+    // scout: as métricas principais da função, com percentil contra a mesma função (pelo menos 450 minutos)
+    const fn = FUNCAO(x.pos);
+    let pares = todos.filter((y) => FUNCAO(y.pos) === fn && (y.minutos || 0) >= 450);
+    let rotPares = NOME_FUNCAO[fn];
+    if (pares.length < 10) { pares = todos.filter((y) => GRUPO_POS(y.pos) === GRUPO_POS(x.pos) && (y.minutos || 0) >= 450); rotPares = NOME_GRUPO[GRUPO_POS(x.pos)].toLowerCase(); }
+    const barras = el('div', { class: 'perfil' });
+    const temMin = min >= 450 && pares.length >= 5;
+    METRICAS[fn].forEach(([rot, f, fmt, inv]) => {
+      const v = f(x);
+      const pc = temMin ? Math.round(100 * pares.filter((y) => (inv ? f(y) > v : f(y) < v)).length / pares.length) : null;
+      barras.append(el('div', { class: 'pf-l' + (pc == null ? ' sem' : '') }, el('span', { class: 'pf-r', text: rot }),
+        el('b', { class: 'num pf-x', text: fmt(v) }),
+        pc == null ? el('span', { class: 'pf-b' }) : el('span', { class: 'pf-b' }, el('i', { style: `width:${Math.max(3, pc)}%;background:${pc >= 75 ? 'var(--good)' : pc >= 40 ? 'var(--accent)' : 'var(--bad)'}` })),
+        el('b', { class: 'num pf-v', text: pc == null ? '' : pc })));
+    });
+    app.append(el('section', null, secHead('Scout', RES_FUNCAO[fn], null),
+      el('div', { class: 'card pad' }, barras, el('p', { class: 'small', style: 'margin:.6rem 0 0',
+        text: temMin ? `Barra = percentil entre ${pares.length} ${rotPares} com pelo menos 450 minutos (90 = melhor que 90% deles). Nas métricas em que menos é melhor, a barra já considera isso.`
+          : 'Com menos de 450 minutos jogados, ainda não há comparação justa com os outros jogadores da função.' }))));
+
     // últimos jogos
     if (x.ultimos && x.ultimos.length) {
       const card = el('div', { class: 'card list-games' });
@@ -727,7 +803,7 @@
       });
       app.append(el('section', null, secHead('Jogos', 'Últimos jogos', null), card));
     }
-    app.append(el('p', { class: 'small', text: 'Números somados jogo a jogo da temporada (ESPN). Minutos calculados pelas substituições e expulsões. xG e xA são estimativas do Lima Score a partir da descrição de cada chute (zona, cabeça, pênalti, contra-ataque); não são os números da Opta. O número ao lado é a posição do jogador entre todos do campeonato.' }));
+    app.append(el('p', { class: 'small', text: 'Números somados jogo a jogo da temporada. Minutos calculados pelas substituições e expulsões. xG e xA são estimativas do Lima Score a partir da descrição de cada chute (zona, cabeça, pênalti, contra-ataque); não são os números da Opta. O número ao lado é a posição do jogador entre todos do campeonato.' }));
   }
 
   function telaClube(app, id) {
@@ -842,7 +918,7 @@
       x.maior_v ? el('span', null, 'Maior vitória: ', jogoTxt(x.maior_v)) : null,
       x.maior_d ? el('span', null, 'Maior derrota: ', jogoTxt(x.maior_d)) : null);
     return el('section', null, secHead('Estatísticas', 'Números da temporada', null), grade, extremos,
-      el('p', { class: 'small', text: 'Médias por jogo. O número ao lado é a posição do clube entre os 20 (1º = melhor). Fonte: ESPN.' }));
+      el('p', { class: 'small', text: 'Médias por jogo. O número ao lado é a posição do clube entre os 20 (1º = melhor).' }));
   }
 
   function desenharDist(box, t) {
@@ -935,7 +1011,7 @@
     if (estado.arb === 'clube') arbClube(app, A);
     else if (estado.arb === 'var') arbVar(app, A);
     else arbArbitros(app, A);
-    app.append(el('p', { class: 'small nota-arb', text: `Árbitros: football-data e ESPN. Cartões, faltas, pênaltis e VAR: ESPN, disponíveis em ${A.jogos_com_espn} de ${A.jogos_encerrados} jogos — o robô completa o restante aos poucos. Médias de cartões e pênaltis consideram só os jogos com esses dados.` }));
+    app.append(el('p', { class: 'small nota-arb', text: `Cartões, faltas, pênaltis e VAR disponíveis em ${A.jogos_com_espn} de ${A.jogos_encerrados} jogos. Médias de cartões e pênaltis consideram só os jogos com esses dados.` }));
   }
 
   function arbArbitros(app, A) {
@@ -1038,7 +1114,7 @@
     const total = linhas.reduce((n, x) => n + x.favor + x.contra, 0);
     if (!total) {
       app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0',
-        text: 'Ainda não há decisões do VAR registradas. O robô lê os lances de revisão da ESPN (gols anulados, pênaltis marcados ou anulados e expulsões após revisão) e o ranking aparece aqui conforme os jogos forem processados.' })));
+        text: 'Ainda não há decisões do VAR registradas. O robô lê os lances de revisão (gols anulados, pênaltis marcados ou anulados e expulsões após revisão) e o ranking aparece aqui conforme os jogos forem processados.' })));
       return;
     }
     const ord = linhas.slice().sort((a, b) => b.saldo - a.saldo || b.favor - a.favor);
