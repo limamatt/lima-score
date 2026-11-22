@@ -534,7 +534,7 @@
 
   // ---------- jogadores
   const GRUPO_POS = (pos) => /goleiro/i.test(pos || '') ? 0 : /zagueiro|lateral|ala|defensor/i.test(pos || '') ? 1 : /meia|volante|meio/i.test(pos || '') ? 2 : /atacante|ponta/i.test(pos || '') ? 3 : 4;
-  const NOME_GRUPO = ['Goleiros', 'Defensores', 'Meio-campistas', 'Atacantes', 'Outros'];
+  const NOME_GRUPO = ['Goleiros', 'Defensores', 'Meio-campistas', 'Atacantes', 'Só entraram no decorrer dos jogos'];
   function telaJogadores(app) {
     app.append(secHead('Jogadores', 'Jogadores do Brasileirão', null, 'h1'));
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Visão' });
