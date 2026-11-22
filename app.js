@@ -217,7 +217,7 @@
 
     if (!encerrado(j) && !aoVivo(j)) {
       const card = cartaoJogo(j); card.classList.remove('clicavel'); card.removeAttribute('role'); card.removeAttribute('tabindex');
-      app.append(el('section', null, secHead('Antes do jogo', 'Palpite e onde assistir', 'As estatísticas aparecem aqui quando a bola rolar.'), legendaJogo(), card));
+      app.append(el('section', null, secHead('Antes do jogo', 'Palpite e onde assistir', null), legendaJogo(), card));
       return;
     }
 
@@ -267,7 +267,7 @@
     if (e && e.destaque) {
       const d = e.destaque;
       const ini = d.nome.split(/\s+/).filter(Boolean).map((x) => x[0]).slice(0, 2).join('').toUpperCase();
-      app.append(el('section', null, secHead('Destaque', 'Melhor do jogo', 'Escolhido pelos números da partida: gols, assistências, finalizações e defesas.'),
+      app.append(el('section', null, secHead('Destaque', 'Melhor do jogo', null),
         el('div', { class: 'card destaque' },
           el('div', { class: 'dq-av', 'aria-hidden': 'true' }, el('span', { text: ini }), escudo(j[d.lado], 'md')),
           el('div', { class: 'dq-txt' },
@@ -492,7 +492,7 @@
     if (estado.rodada == null) estado.rodada = rodadaAtual();
     const r = estado.rodada;
     const atual = rodadaAtual();
-    app.append(secHead('Todas as rodadas', 'Rodadas', 'Resultados dos jogos disputados e previsão dos que faltam.', 'h1'));
+    app.append(secHead('Todas as rodadas', 'Rodadas', null, 'h1'));
     const chips = el('div', { class: 'rounds', role: 'group', 'aria-label': 'Escolha a rodada' });
     for (let i = 1; i <= 38; i++) {
       const feitos = D.jogos.filter((j) => j.rodada === i).every(encerrado);
@@ -531,7 +531,7 @@
   }
 
   function telaArtilharia(app) {
-    app.append(secHead('Artilharia', 'Artilheiros e garçons', 'Ranking de gols e assistências do campeonato.', 'h1'));
+    app.append(secHead('Artilharia', 'Artilheiros e garçons', null, 'h1'));
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Ranking' });
     [['gols', 'Gols'], ['assistencias', 'Assistências']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.artilharia === k), text: txt, onclick: () => { estado.artilharia = k; render(); } }));
@@ -607,7 +607,7 @@
     if (!faltam.length) colA.append(el('p', { class: 'pad small', text: 'Sem jogos restantes.' }));
     const colB = el('div', { class: 'card list-games' }); feitos.forEach((j) => colB.append(linha(j)));
     app.append(el('section', { class: 'split' },
-      el('div', null, secHead('Próximos jogos', 'O que falta', 'Com a chance de vitória em cada jogo.'), colA),
+      el('div', null, secHead('Próximos jogos', 'O que falta', null), colA),
       el('div', null, secHead('Resultados', 'Últimos jogos', null), colB)));
 
     const nc = noticiasDe(String(id)).slice(0, 4);
@@ -703,7 +703,7 @@
 
   function telaArbitragem(app) {
     const A = D.arbitragem;
-    app.append(secHead('Arbitragem', 'Árbitros e VAR', 'Os números de cada árbitro na temporada, como cada clube se sai com cada um e quem o VAR mais ajudou ou prejudicou.', 'h1'));
+    app.append(secHead('Arbitragem', 'Árbitros e VAR', null, 'h1'));
     if (!A || !A.arbitros) {
       app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0', text: 'Os dados de arbitragem aparecem aqui na próxima atualização do robô.' })));
       return;
@@ -848,7 +848,7 @@
   }
 
   function telaNoticias(app) {
-    app.append(secHead('Notícias', 'Últimas do ge', 'As manchetes mais recentes do ge sobre cada clube da Série A. Toque para ler a matéria no ge.', 'h1'));
+    app.append(secHead('Notícias', 'Últimas do ge', null, 'h1'));
     const filtro = el('div', { class: 'clubes-filtro', role: 'group', 'aria-label': 'Escolha o clube' });
     filtro.append(el('button', { type: 'button', class: 'todos', 'aria-pressed': String(estado.clubeNoticias === 'todos'), text: 'Todos',
       onclick: () => { estado.clubeNoticias = 'todos'; render(); } }));
