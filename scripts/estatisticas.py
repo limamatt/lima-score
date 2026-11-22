@@ -28,7 +28,7 @@ OUT = ROOT / "data" / "estatisticas.json"
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 40    # sem jogo, completa a temporada mais rápido
-VERSAO = 2                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 3                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -89,35 +89,69 @@ def arbitro(resumo):
     return o.get("displayName") or o.get("fullName") or None
 
 
-def lances_var(comp, resumo, lado_por_espn, tipos_vistos):
-    """Decisões do VAR que a ESPN registra (gol anulado, pênalti marcado/anulado, expulsão após revisão).
-    'lado' é o time a quem o lance se refere (quem fez o gol anulado, quem sofreu/cometeu etc.)."""
-    brutos = list(resumo.get("keyEvents") or []) + list(comp.get("details") or [])
+def lances_var(comp, resumo, lado_por_espn, tipos_vistos, amostras=None):
+    """Revisões do VAR. A ESPN não tem um tipo próprio para o VAR: a revisão aparece no texto
+    do lance ("Goal awarded following VAR Review", "VAR Decision: No Goal" etc.), tanto nos
+    lances principais quanto na narração (commentary). 'lado' é o time a quem o lance se refere."""
+    brutos = list(resumo.get("keyEvents") or []) + list(comp.get("details") or []) + list(resumo.get("commentary") or [])
     out, vistos = [], set()
     for ev in brutos:
-        tipo = ((ev.get("type") or {}).get("text") or "").strip()
+        play = ev.get("play") or {}
+        tipo = ((ev.get("type") or play.get("type") or {}).get("text") or "").strip()
         tipos_vistos.add(tipo)
-        txt = (tipo + " " + ((ev.get("type") or {}).get("type") or "") + " " + (ev.get("text") or "")).lower()
-        if not re.search(r"\bvar\b|video assistant|review|disallow|overturn|chalked off|ruled out", txt):
+        texto = (ev.get("text") or play.get("text") or "").strip()
+        t = (tipo + " " + texto).lower()
+        if not re.search(r"\bvar\b|video assistant", t):
             continue
-        lado = lado_por_espn.get(str((ev.get("team") or {}).get("id")))
-        minuto = ((ev.get("clock") or {}).get("displayValue") or "").strip() or None
-        if "penalty" in txt and re.search(r"cancel|overturn|no penalty|not given|rescind", txt):
-            dec = "penalti_anulado"      # pênalti para o time 'lado' que o VAR tirou
-        elif "penalty" in txt:
-            dec = "penalti_marcado"      # pênalti para o time 'lado' após revisão
-        elif re.search(r"goal|disallow|chalked off|ruled out", txt) and re.search(r"disallow|cancel|overturn|no goal|chalked off|ruled out|offside", txt):
-            dec = "gol_anulado"          # gol do time 'lado' anulado
-        elif "red" in txt:
-            dec = "vermelho"             # expulsão de jogador do time 'lado' após revisão
+        if amostras is not None and len(amostras) < 40 and texto not in amostras:
+            amostras.append(texto[:220])
+        time_ev = ev.get("team") or play.get("team") or {}
+        lado = lado_por_espn.get(str(time_ev.get("id")))
+        relogio = ev.get("clock") or play.get("clock") or ev.get("time") or {}
+        minuto = (relogio.get("displayValue") or "").strip() or None
+        if re.search(r"no penalty|penalty (cancel|overturn|not given|rescinded)", t):
+            dec = "penalti_anulado"
+        elif re.search(r"penalty awarded|var decision: penalty|penalty given", t):
+            dec = "penalti_marcado"
+        elif re.search(r"no goal|goal (disallowed|cancelled|ruled out|overturned)|disallowed", t):
+            dec = "gol_anulado"
+        elif re.search(r"goal awarded", t):
+            dec = "gol_validado"          # gol que tinha sido anulado e o VAR deu
+        elif re.search(r"var decision: goal", t):
+            dec = "confirmado"
+        elif re.search(r"red card|sent off", t) and re.search(r"following|after|var decision", t):
+            dec = "vermelho"
+        elif re.search(r"confirmed|stands|upheld|no change", t):
+            dec = "confirmado"            # revisou e manteve a decisão de campo
         else:
             dec = "outro"
-        chave = (dec, lado, minuto)
+        chave = (dec, minuto)
         if chave in vistos:
+            # mesma revisão na narração e nos lances: fica a versão que sabe o time
+            if lado:
+                for x in out:
+                    if (x["decisao"], x["minuto"]) == chave and not x["lado"]:
+                        x["lado"] = lado
             continue
         vistos.add(chave)
-        out.append(dict(decisao=dec, lado=lado, minuto=minuto, texto=(ev.get("text") or tipo)[:160]))
-    return out
+        out.append(dict(decisao=dec, lado=lado, minuto=minuto, texto=texto[:160]))
+    # várias linhas sobre a mesma revisão (atraso, decisão, lance) viram uma só:
+    # junta o que estiver a até 2 minutos e fica a decisão mais específica
+    prio = {"outro": 0, "confirmado": 1}
+    out.sort(key=lambda x: minuto_num(x["minuto"]))
+    revisoes = []
+    for x in out:
+        ult = revisoes[-1] if revisoes else None
+        if ult and abs(minuto_num(x["minuto"]) - minuto_num(ult["minuto"])) <= 2:
+            if prio.get(x["decisao"], 2) > prio.get(ult["decisao"], 2) or (x["lado"] and not ult["lado"] and x["decisao"] == ult["decisao"]):
+                lado = x["lado"] or ult["lado"]
+                ult.update(x)
+                ult["lado"] = lado
+            elif not ult["lado"] and x["lado"]:
+                ult["lado"] = x["lado"]
+            continue
+        revisoes.append(dict(x))
+    return revisoes
 
 
 def penaltis_perdidos(comp, resumo, lado_por_espn):
@@ -299,6 +333,7 @@ def main():
     diag = dict(hora=agora.isoformat(timespec="seconds"), eventos_espn=len(placar.get("events", [])),
                 reconhecidos=len(eventos), alvo=len(alvo), janelas=len(janelas), erros=erros[:6], ok=ok[:6], sem_par=[])
     tipos_vistos = set(dados.get("tipos_espn") or [])
+    amostras_var = list(dados.get("amostras_var") or [])
     lidos = 0
     for j in alvo:
         chave = str(j["id"])
@@ -348,7 +383,7 @@ def main():
         arb = arbitro(resumo)
         if arb:
             novo["arbitro"] = arb
-        var = lances_var(comp, resumo, lado_por_espn, tipos_vistos)
+        var = lances_var(comp, resumo, lado_por_espn, tipos_vistos, amostras_var)
         if var:
             novo["var"] = var
         pp = penaltis_perdidos(comp, resumo, lado_por_espn)
@@ -397,7 +432,7 @@ def main():
         lidos += 1
 
     if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists() or "erro" in dados or not jogos_dados:
-        OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, tipos_espn=sorted(tipos_vistos)[:300], jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, tipos_espn=sorted(tipos_vistos)[:300], amostras_var=amostras_var[:40], jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Estatísticas: {lidos} jogos lidos ({len(ao_vivo)} ao vivo).")
     else:
         print("Estatísticas: nada mudou.")

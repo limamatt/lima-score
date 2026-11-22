@@ -338,7 +338,7 @@ def main():
             if ld not in ("casa", "fora"):
                 continue
             outro = "fora" if ld == "casa" else "casa"
-            if x["decisao"] == "penalti_marcado":
+            if x["decisao"] in ("penalti_marcado", "gol_validado"):
                 vf[ld] += 1; vc[outro] += 1
             elif x["decisao"] in ("penalti_anulado", "gol_anulado", "vermelho"):
                 vc[ld] += 1; vf[outro] += 1
@@ -347,7 +347,7 @@ def main():
             vcb = var_clube.setdefault(cid, dict(favor=0, contra=0, lances=[]))
             vcb["favor"] += vf[ld]; vcb["contra"] += vc[ld]
         for x in e.get("var") or []:
-            if x.get("lado") in ("casa", "fora") and x["decisao"] != "outro":
+            if x.get("lado") in ("casa", "fora") and x["decisao"] not in ("outro", "confirmado"):
                 var_clube[jg[x["lado"]]]["lances"].append(dict(jogo=jg["id"], decisao=x["decisao"], minuto=x.get("minuto")))
         if not jg.get("arbitro"):
             continue

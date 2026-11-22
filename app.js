@@ -656,7 +656,7 @@
   }
   const media = (n, d, casas = 1) => d ? (n / d).toFixed(casas).replace('.', ',') : '–';
   const pctTxt = (n, d) => d ? Math.round(100 * n / d) + '%' : '–';
-  const VAR_TXT = { penalti_marcado: 'Pênalti marcado pelo VAR', penalti_anulado: 'Pênalti anulado pelo VAR', gol_anulado: 'Gol anulado pelo VAR', vermelho: 'Expulsão após revisão do VAR' };
+  const VAR_TXT = { penalti_marcado: 'Pênalti marcado pelo VAR', penalti_anulado: 'Pênalti anulado pelo VAR', gol_anulado: 'Gol anulado pelo VAR', gol_validado: 'Gol validado pelo VAR', vermelho: 'Expulsão após revisão do VAR' };
 
   function telaArbitragem(app) {
     const A = D.arbitragem;
@@ -793,15 +793,15 @@
       tb.append(el('tr', null, el('td', { class: 'pos', text: i + 1 }), el('td', { class: 'l sticky-col' }, escudoLink(x.t.id)),
         el('td', { class: 'num', text: x.favor }), el('td', { class: 'num', text: x.contra }),
         el('td', { class: 'num pts', text: (x.saldo > 0 ? '+' : '') + x.saldo }),
-        el('td', { class: 'num', text: cont.gol_anulado || 0 }), el('td', { class: 'num', text: cont.penalti_marcado || 0 }),
+        el('td', { class: 'num', text: cont.gol_anulado || 0 }), el('td', { class: 'num', text: cont.gol_validado || 0 }), el('td', { class: 'num', text: cont.penalti_marcado || 0 }),
         el('td', { class: 'num', text: cont.penalti_anulado || 0 }), el('td', { class: 'num', text: cont.vermelho || 0 })));
     });
     app.append(el('div', { class: 'card' }, el('div', { class: 'tbl-wrap' }, el('table', null,
       el('thead', null, el('tr', null, el('th', { text: '#' }), el('th', { class: 'l sticky-col', text: 'Clube' }),
         el('th', { text: 'A favor' }), el('th', { text: 'Contra' }), el('th', { text: 'Saldo' }),
-        el('th', { text: 'Gols anul.', title: 'Gols do clube anulados pelo VAR' }), el('th', { text: 'Pên. +', title: 'Pênaltis a favor marcados pelo VAR' }),
+        el('th', { text: 'Gols anul.', title: 'Gols do clube anulados pelo VAR' }), el('th', { text: 'Gols valid.', title: 'Gols do clube validados pelo VAR' }), el('th', { text: 'Pên. +', title: 'Pênaltis a favor marcados pelo VAR' }),
         el('th', { text: 'Pên. −', title: 'Pênaltis a favor anulados pelo VAR' }), el('th', { text: 'Expulsões', title: 'Expulsões do clube após revisão' }))), tb))));
-    app.append(el('p', { class: 'small', text: 'A favor: decisões que beneficiaram o clube (pênalti marcado para ele, gol do rival anulado, rival expulso após revisão). Contra: o inverso. Só entram as decisões que a ESPN registra nos lances.' }));
+    app.append(el('p', { class: 'small', text: 'A favor: decisões do VAR que beneficiaram o clube (gol dele validado, pênalti marcado para ele, gol do rival anulado, rival expulso após revisão). Contra: o inverso. Revisões que mantiveram a decisão de campo não contam aqui, só nas chamadas do VAR de cada árbitro.' }));
   }
 
   function telaNoticias(app) {
