@@ -116,7 +116,7 @@ def ler_lances(comp, resumo, lado_por_espn):
     return lances
 
 
-POSICOES = [("goalkeeper", "Goleiro"), ("attacking midfielder", "Meia"), ("defensive midfielder", "Volante"),
+POSICOES = [("goalkeeper", "Goleiro"), ("center left", "Zagueiro"), ("center right", "Zagueiro"), ("attacking midfielder", "Meia"), ("defensive midfielder", "Volante"),
              ("midfielder", "Meio-campista"), ("center back", "Zagueiro"), ("centre back", "Zagueiro"),
              ("left back", "Lateral-esquerdo"), ("right back", "Lateral-direito"), ("wing back", "Ala"),
              ("defender", "Defensor"), ("winger", "Ponta"), ("left forward", "Ponta"), ("right forward", "Ponta"),
