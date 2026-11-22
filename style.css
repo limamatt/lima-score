@@ -492,3 +492,17 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .cp-sub .esc-m{margin:0}
 .cp-sub .esc-t{font-size:.58rem;padding:0 .2rem;background:rgba(255,255,255,.92)}
 .campo{min-height:38rem}
+/* banco de reservas */
+.bc-col{padding:.8rem .9rem;min-width:0}
+.bc-col + .bc-col{border-left:1px solid var(--line)}
+.bc-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem}
+.bc-j{display:grid;grid-template-columns:1.6rem 1fr;column-gap:.4rem;align-items:start;font-size:.88rem;color:var(--muted)}
+.bc-j.entrou{color:var(--fg)}
+.bc-j.entrou .bc-num{background:var(--good);color:#fff}
+.bc-num{width:1.5rem;height:1.5rem;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:700;background:var(--surface-2)}
+.bc-txt{display:flex;flex-direction:column;min-width:0}
+.bc-nome{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem;line-height:1.25}
+.bc-sub{display:flex;align-items:center;gap:.3rem;font-size:.75rem;color:var(--muted);margin-top:.1rem}
+.bc-sub .cp-sub-ic{font-size:.55rem}
+.bc-sub b{color:var(--good)}
+@media (max-width:420px){.bc-col{padding:.7rem .6rem}}

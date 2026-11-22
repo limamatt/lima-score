@@ -367,9 +367,37 @@
     if (!fonte || !fonte.casa || !fonte.fora) return null;
     // suspensos aparecem antes e durante o jogo (vêm da provável, que considera cartões e expulsões)
     const suspensos = prov ? { casa: (prov.casa && prov.casa.desfalques) || [], fora: (prov.fora && prov.fora.desfalques) || [] } : {};
-    return el('section', null, secHead('Escalações', titulo, null),
+    // com a escalação oficial, quem foi relacionado não está suspenso (tira da lista)
+    if (usarOficial) ['casa', 'fora'].forEach((l) => {
+      const rel = new Set(((oficial[l].titulares || []).concat(oficial[l].reservas || [])).map((p) => p.n));
+      suspensos[l] = (suspensos[l] || []).filter((x) => !rel.has(x.n));
+    });
+    // banco de reservas (só na escalação oficial): quem entrou, quando e no lugar de quem
+    let banco = null;
+    if (usarOficial && ((oficial.casa.reservas || []).length || (oficial.fora.reservas || []).length)) {
+      const col = (lado) => {
+        const d = oficial[lado];
+        const res = (d.reservas || []).slice().sort((a, b) => (a.ent == null) - (b.ent == null) || (a.ent || 0) - (b.ent || 0));
+        const ul = el('ul', { class: 'bc-lista' });
+        res.forEach((p) => {
+          const saiu = (d.titulares || []).concat(d.reservas || []).find((x) => x.por === p.n);
+          const m = marcas(Object.assign({}, p, { ent: undefined, sai: undefined }), lado, true);
+          ul.append(el('li', { class: 'bc-j' + (p.ent != null ? ' entrou' : '') },
+            el('span', { class: 'bc-num num', text: p.c || '' }),
+            el('span', { class: 'bc-txt' },
+              el('span', { class: 'bc-nome' }, el('span', { text: p.n }), m),
+              p.ent != null ? el('span', { class: 'bc-sub' }, el('i', { class: 'cp-sub-ic', 'aria-hidden': 'true' }),
+                el('b', { class: 'num', text: `${p.ent}'` }), saiu ? ` no lugar de ${saiu.n}` : ' entrou') : null)));
+        });
+        const usados = res.filter((p) => p.ent != null).length;
+        return el('div', { class: 'bc-col' }, el('div', { class: 'esc-time' }, escudo(j[lado]), el('b', { text: T[j[lado]] ? T[j[lado]].nome : '' }),
+          el('span', { class: 'small', text: `${usados} de ${res.length} entraram` })), ul);
+      };
+      banco = el('section', null, secHead('Reservas', 'Banco de reservas', null), el('div', { class: 'card esc' }, col('casa'), col('fora')));
+    }
+    return el('div', null, el('section', null, secHead('Escalações', titulo, null),
       campinho(j, fonte, { marcas: usarOficial ? marcas : null, suspensos }),
-      nota ? el('p', { class: 'small', text: nota }) : null);
+      nota ? el('p', { class: 'small', text: nota }) : null), banco);
   }
 
   // campinho: o mandante embaixo, o visitante em cima, cada um em linhas pela posição
