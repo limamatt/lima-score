@@ -1,6 +1,6 @@
 // Service worker simples: sempre busca na internet. Só usa a cópia guardada se estiver sem conexão.
-const CACHE = 'termometro-v29';
-const BASE = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'assets/icon-192.png'];
+const CACHE = 'termometro-v30';
+const BASE = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'assets/icon-192.png', 'assets/logo.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(BASE)).catch(() => {}).then(() => self.skipWaiting()));

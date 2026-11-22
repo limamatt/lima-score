@@ -1,6 +1,6 @@
 {
-  "name": "Termômetro do Brasileirão",
-  "short_name": "Termômetro",
+  "name": "Lima Score · Brasileirão",
+  "short_name": "Lima Score",
   "description": "Tabela, rodadas, artilharia e previsões do Brasileirão, atualizadas após cada jogo.",
   "lang": "pt-BR",
   "start_url": "./#inicio",

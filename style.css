@@ -1,4 +1,4 @@
-/* Termômetro do Brasileirão
+/* Lima Score
    Layout: app de liga — barra superior verde-gramado, conteúdo em coluna, abas inferiores no celular */
 :root{
   --bg:#f2f4f0; --surface:#ffffff; --surface-2:#f7f9f6; --fg:#13201a; --muted:#5a6a60; --line:#dde3dc;
@@ -39,9 +39,7 @@ h1,h2,h3{font-family:var(--display);font-weight:800;line-height:1.05;margin:0;te
 .topbar{background:var(--pitch);color:var(--pitch-ink);position:sticky;top:0;z-index:20;padding-top:env(safe-area-inset-top,0px)}
 .topbar-in{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:58px}
 .brand{display:flex;align-items:center;gap:.6rem;text-decoration:none}
-.brand-mark{width:30px;height:30px;border-radius:8px;background:var(--accent);position:relative;flex:none}
-.brand-mark::before{content:"";position:absolute;left:12px;top:5px;width:6px;height:15px;border-radius:3px;background:var(--pitch)}
-.brand-mark::after{content:"";position:absolute;left:9px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--pitch)}
+.brand-mark{width:44px;height:41px;flex:none;display:block}
 .brand-txt{display:flex;flex-direction:column;line-height:1}
 .brand-txt b{font-family:var(--display);font-weight:800;font-size:1.35rem;text-transform:uppercase;letter-spacing:.02em}
 .brand-txt small{font-family:var(--display);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.14em;opacity:.8}

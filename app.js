@@ -1,4 +1,4 @@
-/* Termômetro do Brasileirão — app */
+/* Lima Score — app */
 (function () {
   'use strict';
 
@@ -863,8 +863,8 @@
       if (a.dataset.nav === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     const jg = r.tela === 'jogo' ? D.jogos.find((x) => x.id === r.id) : null;
-    document.title = r.tela === 'clube' && T[r.id] ? `${T[r.id].nome} · Termômetro do Brasileirão`
-      : jg && T[jg.casa] && T[jg.fora] ? `${T[jg.casa].nome} x ${T[jg.fora].nome} · Termômetro do Brasileirão` : 'Termômetro do Brasileirão';
+    document.title = r.tela === 'clube' && T[r.id] ? `${T[r.id].nome} · Lima Score`
+      : jg && T[jg.casa] && T[jg.fora] ? `${T[jg.casa].nome} x ${T[jg.fora].nome} · Lima Score` : 'Lima Score';
     if (render._ultima === location.hash) window.scrollTo(0, y);
     else window.scrollTo(0, 0);
     render._ultima = location.hash;
