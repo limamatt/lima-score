@@ -154,7 +154,6 @@
         el('span', null, 'Fora ', el('b', { class: 'num', text: pct(p.fora) })));
       card.append(bar, pr);
     }
-    if ((encerrado(j) || aoVivo(j)) && arbitroDoJogo(j)) card.append(el('div', { class: 'small arb-linha', text: 'Árbitro: ' + arbitroDoJogo(j) }));
     if (encerrado(j) || aoVivo(j)) card.append(el('a', { class: 'ver-jogo', href: '#jogo-' + j.id }, 'Estatísticas e lances ›'));
     if (!encerrado(j)) {
       const tv = el('div', { class: 'tv' }, el('span', { class: 'tv-k', text: 'Onde assistir' }));
