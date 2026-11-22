@@ -56,6 +56,92 @@ def baixar(caminho, token):
         return json.load(r)
 
 
+def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts):
+    """Para cada clube que ainda briga pelo G4 ou contra o Z4: o que muda com o resultado do
+    próximo jogo, para quem torcer (quem secar) e quantos pontos deixam a vaga praticamente certa.
+    Tudo sai das mesmas simulações do fim do campeonato."""
+    if not restantes:
+        return []
+    n_sim = posicoes.shape[0]
+    tabela = sorted(ids, key=lambda t: times[t]["position"])
+    pts_de = {t: times[t]["points"] for t in ids}
+    faltam = {t: sum(1 for j in restantes if t in (j["homeTeam"]["id"], j["awayTeam"]["id"])) for t in ids}
+    saida = []
+    for zona, lo, hi in (("g4", 1, 4), ("z4", 17, 20)):
+        for t in ids:
+            i = idx[t]
+            dentro = (posicoes[:, i] >= lo) & (posicoes[:, i] <= hi)
+            chance = float(dentro.mean()) * 100
+            if not (1 <= chance <= 99) or t not in proximo:
+                continue
+            pc = lambda m: round(float(dentro[m].mean()) * 100, 1) if m.sum() >= 30 else None
+            jogo, adv, em_casa = proximo[t]
+            res = resultados[jogo["id"]]
+            vence, empata, perde = (res == (0 if em_casa else 2)), (res == 1), (res == (2 if em_casa else 0))
+            prox = dict(jogo=jogo["id"], adversario=adv, em_casa=em_casa,
+                        vence=pc(vence), empata=pc(empata), perde=pc(perde))
+            # quem secar: jogos da mesma rodada (sem o clube) cujo resultado mais mexe na chance dele
+            rodada = jogo["matchday"]
+            torcidas = []
+            for j in restantes:
+                if j["matchday"] != rodada or t in (j["homeTeam"]["id"], j["awayTeam"]["id"]) or j["id"] not in resultados:
+                    continue
+                r = resultados[j["id"]]
+                ch = [pc(r == k) for k in range(3)]
+                if None in ch:
+                    continue
+                melhor = (max if zona == "g4" else min)(range(3), key=lambda k: ch[k])
+                pior = (min if zona == "g4" else max)(range(3), key=lambda k: ch[k])
+                impacto = abs(ch[melhor] - ch[pior])
+                if impacto >= 1.5:
+                    torcidas.append(dict(jogo=j["id"], torcer=["casa", "empate", "fora"][melhor],
+                                         se_der=ch[melhor], se_nao=ch[pior], impacto=round(impacto, 1)))
+            torcidas.sort(key=lambda x: -x["impacto"])
+            # pontos que deixam a situação praticamente resolvida (95% das simulações)
+            final = pts[:, i]
+            meta = None
+            # menor total final a partir do qual o clube fica na faixa (G4) ou fora dela (Z4)
+            # em pelo menos 95% das simulações que terminam com aquele total
+            base = int(pts_de[t])
+            ok_por_p = {}
+            for p in range(base, base + 3 * faltam[t] + 1):
+                m = final == p
+                if m.sum() >= 30:
+                    ok_por_p[p] = float(dentro[m].mean()) if zona == "g4" else float((~dentro[m]).mean())
+            for p in sorted(ok_por_p):
+                if all(v >= 0.95 for q, v in ok_por_p.items() if q >= p):
+                    if p > base:
+                        meta = dict(pontos=p, faltam=p - base, jogos=faltam[t])
+                    break
+            # combinação que decide já nesta rodada (vencer/perder + o resultado de quem secar)
+            decide = None
+            if torcidas:
+                alvo = torcidas[0]
+                r = resultados[alvo["jogo"]]
+                k = ["casa", "empate", "fora"].index(alvo["torcer"])
+                if zona == "g4":
+                    m = vence & (r == k)
+                    v = pc(m)
+                    if v is not None and v >= 99.5:
+                        decide = dict(tipo="garante", com="vence", jogo=alvo["jogo"], torcer=alvo["torcer"])
+                else:
+                    m = perde & (r != k)
+                    v = pc(m)
+                    if v is not None and v >= 99.5:
+                        decide = dict(tipo="cai", com="perde", jogo=alvo["jogo"], torcer=alvo["torcer"])
+            # distância para a linha (4º/5º ou 16º/17º)
+            pos = times[t]["position"]
+            if zona == "g4":
+                ref = tabela[4] if pos <= 4 else tabela[3]
+            else:
+                ref = tabela[16] if pos <= 16 else tabela[15]
+            saida.append(dict(time=t, zona=zona, chance=round(chance, 1), pos=pos, pts=pts_de[t], jogos=faltam[t],
+                              linha=dict(time=ref, pos=times[ref]["position"], dif=pts_de[t] - pts_de[ref]),
+                              proximo=prox, secar=torcidas[:3], meta=meta, decide=decide))
+    saida.sort(key=lambda c: (c["zona"], c["pos"]))
+    return saida
+
+
 def nome(team):
     return NOMES.get(team["shortName"], team["shortName"])
 
@@ -181,6 +267,7 @@ def main():
     sg = np.repeat(sg0[None, :], N_SIM, 0)
     vit = np.repeat(vit0[None, :], N_SIM, 0)
     pontos_esperados = pts0.copy()
+    resultados = {}  # resultado de cada jogo em cada simulação: 0 = mandante vence, 1 = empate, 2 = visitante vence
     for j in restantes:
         h, a = idx[j["homeTeam"]["id"]], idx[j["awayTeam"]["id"]]
         p = prev[j["id"]]
@@ -190,6 +277,7 @@ def main():
         pts[:, a] += np.where(ga > gh, 3, np.where(gh == ga, 1, 0))
         vit[:, h] += gh > ga
         vit[:, a] += ga > gh
+        resultados[j["id"]] = np.where(gh > ga, 0, np.where(gh == ga, 1, 2)).astype(np.int8)
         sg[:, h] += gh - ga
         sg[:, a] += ga - gh
         pontos_esperados[h] += (3 * p["casa"] + p["empate"]) / 100
@@ -238,6 +326,7 @@ def main():
             **faixas,
         ))
     saida_times.sort(key=lambda x: x["pos"])
+    cenarios = montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts)
 
     # canais de transmissão (preenchidos em data/transmissoes.json)
     arq_canais = ROOT / "data" / "transmissoes.json"
@@ -405,7 +494,7 @@ def main():
         temporada=dict(inicio=temporada["startDate"], fim=temporada["endDate"],
                        rodada_atual=temporada.get("currentMatchday")),
         simulacoes=N_SIM, times=saida_times, jogos=saida_jogos, jogadores=saida_jogadores,
-        arbitragem=arbitragem,
+        arbitragem=arbitragem, cenarios=cenarios,
     )
 
     # só grava (e muda a data) se algum número mudou

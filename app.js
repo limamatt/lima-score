@@ -8,7 +8,7 @@
   let N = null;           // notícias
   let T = {};             // times por id
   let E = null;           // estatísticas e lances dos jogos
-  let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao', clubeNoticias: 'todos', arb: 'arbitros', arbClube: null, arbAberto: null };
+  let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao', clubeNoticias: 'todos', arb: 'arbitros', arbClube: null, arbAberto: null, cen: null, pano: 'titulo' };
 
   // ---------- utilidades
   const $ = (s, r = document) => r.querySelector(s);
@@ -324,36 +324,11 @@
     if (vivos.length) {
       const g = el('div', { class: 'games' });
       vivos.forEach((j) => g.append(cartaoJogo(j)));
-      app.append(el('section', { id: 'ao-vivo' }, secHead('Agora', 'Ao vivo', 'O placar se atualiza sozinho a cada minuto.'), g));
+      app.append(el('section', { id: 'ao-vivo' }, secHead('Agora', 'Ao vivo', null), g));
     }
 
-    // panorama: título, G4, Sul-Americana, rebaixamento e Copa do Brasil
-    const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
-      escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
-      el('span', { class: 'pr-bar' }, el('span', { style: `width:${Math.max(v > 0 ? 2 : 0, Math.min(100, v))}%;background:${cor}` })),
-      el('span', { class: 'pr-v num', text: extra || pct(v) }));
-    const bloco = (eyebrow, titulo, nota, linhas) => el('div', { class: 'card pano' },
-      el('div', { class: 'eyebrow', text: eyebrow }), el('h3', { text: titulo }),
-      nota ? el('p', { class: 'small', text: nota }) : null,
-      el('div', { class: 'pr-list' }, linhas.length ? linhas : el('p', { class: 'small', text: 'Ninguém com chance relevante.' })));
-    const topo = (campo, min, max) => D.times.filter((t) => t[campo] >= min).sort((a, b) => b[campo] - a[campo]).slice(0, max);
-
-    const pano = el('div', { class: 'pano-grid' });
-    pano.append(bloco('Título', 'Quem pode ser campeão', null,
-      topo('titulo', 0.1, 6).map((t) => linhaProb(t, t.titulo, 'var(--accent)'))));
-    pano.append(bloco('Libertadores', 'Chance de G4', 'Vaga direta na fase de grupos.',
-      topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))));
-    pano.append(bloco('Pré-Libertadores', 'Chance de 5º ou 6º', 'Vaga na fase preliminar da Libertadores.',
-      topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))));
-    pano.append(bloco('Sul-Americana', 'Chance de 7º a 12º', null,
-      topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))));
-    pano.append(bloco('Rebaixamento', 'Chance de cair', 'Terminar entre os quatro últimos.',
-      topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))));
-    pano.append(bloco('Copa do Brasil 2027', 'Quem pode ficar de fora',
-      'A vaga vem de estar na Série A de 2027, então quem cair perde essa vaga. Ainda pode entrar pelo estadual ou pelo ranking da CBF.',
-      topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)',
-        rebaixadoMatematicamente(t) ? '100%' : pct(t.rebaixamento)))));
-    app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', null), pano));
+    // cenários: quem ainda briga pelo G4 e contra o Z4
+    if (D.cenarios && D.cenarios.length) app.append(secaoCenarios());
 
     // próximos jogos
     const proximos = D.jogos.filter((j) => j.rodada === r && !encerrado(j) && !aoVivo(j));
@@ -368,17 +343,118 @@
       proximos.sort((a, b) => (!!mexe(b)) - (!!mexe(a)) || a.data.localeCompare(b.data));
       const g = el('div', { class: 'games' });
       proximos.forEach((j) => g.append(cartaoJogo(j, { destaque: mexe(j) })));
-      app.append(el('section', null, secHead(`${r}ª rodada`, 'Palpites dos próximos jogos', 'Chance de vitória de cada time e de empate.'), legendaJogo(), g,
+      app.append(el('section', null, secHead(`${r}ª rodada`, 'Próximos jogos', null), legendaJogo(), g,
         el('p', null, el('a', { href: '#rodadas', text: 'Ver todas as rodadas →' }))));
     }
 
+    // panorama em abas: uma faixa por vez
+    const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
+      escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
+      el('span', { class: 'pr-bar' }, el('span', { style: `width:${Math.max(v > 0 ? 2 : 0, Math.min(100, v))}%;background:${cor}` })),
+      el('span', { class: 'pr-v num', text: extra || pct(v) }));
+    const topo = (campo, min, max) => D.times.filter((t) => t[campo] >= min).sort((a, b) => b[campo] - a[campo]).slice(0, max);
+    const faixas = [
+      ['titulo', 'Título', 'Chance de ser campeão.', () => topo('titulo', 0.1, 6).map((t) => linhaProb(t, t.titulo, 'var(--accent)'))],
+      ['g4', 'G4', 'Vaga direta na fase de grupos da Libertadores.', () => topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))],
+      ['pre', 'Pré-Liberta', 'Terminar em 5º ou 6º: fase preliminar da Libertadores.', () => topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))],
+      ['sul', 'Sul-Americana', 'Terminar entre 7º e 12º.', () => topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))],
+      ['z4', 'Z4', 'Terminar entre os quatro últimos e cair para a Série B.', () => topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))],
+      ['copa', 'Copa do Brasil', 'Quem cair perde a vaga da Copa do Brasil 2027 pela Série A (ainda pode entrar pelo estadual ou pelo ranking da CBF).', () => topo('rebaixamento', 1, 10).map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)', rebaixadoMatematicamente(t) ? '100%' : null))],
+    ];
+    const atual = faixas.find((f) => f[0] === estado.pano) || faixas[0];
+    const abas = el('div', { class: 'seg seg-scroll', role: 'group', 'aria-label': 'Faixa da tabela' });
+    faixas.forEach(([k, txt]) => abas.append(el('button', { type: 'button', 'aria-pressed': String(atual[0] === k), text: txt, onclick: () => { estado.pano = k; render(); } })));
+    const linhas = atual[3]();
+    app.append(el('section', null, secHead('Panorama', 'Chances de cada clube', null), abas,
+      el('div', { class: 'card pano' }, el('p', { class: 'small', style: 'margin:0 0 .6rem', text: atual[2] }),
+        el('div', { class: 'pr-list' }, linhas.length ? linhas : el('p', { class: 'small', text: 'Ninguém com chance relevante.' })))));
+
     // artilheiros
-    const top = D.jogadores.slice().sort((a, b) => b.gols - a.gols || a.jogos - b.jogos).slice(0, 5);
+    const top = D.jogadores.slice().sort((a, b) => b.gols - a.gols || a.jogos - b.jogos).slice(0, 3);
     const lista = el('div', { class: 'card players' });
     top.forEach((p, i) => lista.append(linhaJogador(p, i + 1, 'gols')));
-    app.append(el('section', null, secHead('Artilharia', 'Goleadores do campeonato', null), lista,
+    app.append(el('section', null, secHead('Artilharia', 'Goleadores', null), lista,
       el('p', null, el('a', { href: '#artilharia', text: 'Ver artilheiros e garçons →' }))));
+  }
 
+  // ---------- cenários (G4 e Z4)
+  function secaoCenarios() {
+    const C = D.cenarios;
+    const tem = { g4: C.some((c) => c.zona === 'g4'), z4: C.some((c) => c.zona === 'z4') };
+    if (!tem[estado.cen]) estado.cen = tem.z4 ? 'z4' : 'g4';
+    const z = estado.cen;
+    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Briga' });
+    [['g4', 'Pelo G4'], ['z4', 'Contra o Z4']].forEach(([k, txt]) => {
+      if (tem[k]) seg.append(el('button', { type: 'button', 'aria-pressed': String(z === k), text: txt, onclick: () => { estado.cen = k; render(); } }));
+    });
+    const lista = el('div', { class: 'cen-lista' });
+    C.filter((c) => c.zona === z).forEach((c) => lista.append(cartaoCenario(c)));
+    return el('section', null, secHead('Cenários', 'O que cada um precisa',
+      z === 'g4' ? 'Quem ainda pode entrar ou sair do G4: o peso do próximo jogo, quem secar e quantos pontos bastam.'
+        : 'Quem ainda pode cair: o peso do próximo jogo, quem secar e quantos pontos livram do Z4.'), seg, lista);
+  }
+  const nomeT = (id) => (T[id] ? T[id].nome : '?');
+  function frasesTorcida(x) {
+    const j = D.jogos.find((y) => y.id === x.jogo);
+    if (!j) return null;
+    if (x.torcer === 'empate') return `Torcer pelo empate em ${nomeT(j.casa)} x ${nomeT(j.fora)}`;
+    const quem = x.torcer === 'casa' ? j.casa : j.fora, contra = x.torcer === 'casa' ? j.fora : j.casa;
+    return `Secar o ${nomeT(contra)}: torcer pelo ${nomeT(quem)}`;
+  }
+  function cartaoCenario(c) {
+    const g4 = c.zona === 'g4';
+    const t = T[c.time];
+    const rot = g4 ? 'de G4' : 'de cair';
+    const cor = g4 ? 'var(--info)' : 'var(--bad)';
+    const dif = c.linha.dif;
+    const linhaTxt = dif === 0 ? `Empatado em pontos com o ${nomeT(c.linha.time)} (${c.linha.pos}º)`
+      : dif > 0 ? `${dif} ponto${dif === 1 ? '' : 's'} à frente do ${nomeT(c.linha.time)} (${c.linha.pos}º)`
+        : `${-dif} ponto${dif === -1 ? '' : 's'} atrás do ${nomeT(c.linha.time)} (${c.linha.pos}º)`;
+    const card = el('article', { class: 'card cen ' + c.zona },
+      el('header', { class: 'cen-top' },
+        el('a', { class: 'cen-time', href: '#clube-' + c.time }, escudo(c.time, 'md'),
+          el('span', null, el('b', { text: t ? t.nome : '' }), el('span', { class: 'small', text: `${c.pos}º · ${c.pts} pts · ${c.jogos} jogo${c.jogos === 1 ? '' : 's'}` }))),
+        el('span', { class: 'cen-chance' }, el('b', { class: 'num', style: `color:${cor}`, text: pct(c.chance) }), el('small', { text: rot }))),
+      el('p', { class: 'small cen-linha', text: linhaTxt }));
+
+    // próximo jogo
+    const p = c.proximo;
+    if (p) {
+      const vs = `${p.em_casa ? 'x' : '@'} ${nomeT(p.adversario)}`;
+      const chip = (rotulo, v, cls) => el('span', { class: 'cen-chip ' + cls }, el('small', { text: rotulo }), el('b', { class: 'num', text: v == null ? '–' : pct(v) }));
+      card.append(el('div', { class: 'cen-bloco' },
+        el('div', { class: 'cen-k', text: `Próximo jogo · ${p.em_casa ? 'em casa contra o' : 'fora contra o'} ${nomeT(p.adversario)}` }),
+        el('div', { class: 'cen-chips' }, chip('Se vencer', p.vence, 'v'), chip('Se empatar', p.empata, 'e'), chip('Se perder', p.perde, 'd')),
+        el('div', { class: 'small cen-obs', text: `Chance ${rot} depois de cada resultado.` })));
+    }
+    // decide na rodada
+    if (c.decide) {
+      const j = D.jogos.find((y) => y.id === c.decide.jogo);
+      if (j) {
+        const torc = c.decide.torcer === 'empate' ? `${nomeT(j.casa)} e ${nomeT(j.fora)} empatarem`
+          : `o ${nomeT(c.decide.torcer === 'casa' ? j.casa : j.fora)} vencer o ${nomeT(c.decide.torcer === 'casa' ? j.fora : j.casa)}`;
+        card.append(el('p', { class: 'cen-decide ' + (g4 ? 'bom' : 'ruim'),
+          text: g4 ? `Praticamente garante o G4 já nesta rodada se vencer e ${torc}.`
+            : `Fica praticamente rebaixado nesta rodada se perder e ${c.decide.torcer === 'empate' ? 'não houver empate entre ' + nomeT(j.casa) + ' e ' + nomeT(j.fora) : 'o ' + nomeT(c.decide.torcer === 'casa' ? j.casa : j.fora) + ' não vencer'}.` }));
+      }
+    }
+    // quem secar
+    if (c.secar && c.secar.length) {
+      const ul = el('ul', { class: 'cen-secar' });
+      c.secar.slice(0, 2).forEach((x) => {
+        const f = frasesTorcida(x);
+        if (f) ul.append(el('li', null, el('span', { text: f }), el('span', { class: 'small num', text: ` → ${pct(x.se_der)} ${rot} (senão ${pct(x.se_nao)})` })));
+      });
+      card.append(el('div', { class: 'cen-bloco' }, el('div', { class: 'cen-k', text: 'Quem secar nesta rodada' }), ul));
+    }
+    // meta de pontos
+    const m = c.meta;
+    card.append(el('p', { class: 'cen-meta' }, m
+      ? (g4 ? `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), a vaga fica praticamente garantida.`
+        : `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), fica praticamente livre do Z4.`)
+      : (g4 ? 'Nem vencendo tudo a vaga está garantida: depende também de tropeços dos rivais.'
+        : 'Nem vencendo tudo está garantido: depende também dos resultados dos rivais.')));
+    return card;
   }
 
   function telaTabela(app) {

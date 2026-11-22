@@ -372,3 +372,32 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .var-card.bom{box-shadow:inset 4px 0 0 var(--good)}
 .var-card.ruim{box-shadow:inset 4px 0 0 var(--bad)}
 .arb-ate{margin:-.4rem 0 1rem}
+/* cenários */
+.seg-scroll{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg-scroll::-webkit-scrollbar{display:none}
+.seg-scroll button{flex:none;padding:.5rem .8rem}
+.cen-lista{display:grid;gap:.7rem;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr))}
+.cen{padding:.9rem 1rem;display:flex;flex-direction:column;gap:.65rem}
+.cen.g4{box-shadow:inset 4px 0 0 var(--info)}
+.cen.z4{box-shadow:inset 4px 0 0 var(--bad)}
+.cen-top{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.cen-time{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:inherit;min-width:0}
+.cen-time > span{display:flex;flex-direction:column;min-width:0}
+.cen-time b{font-size:1.05rem}
+.cen-chance{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05;flex:none}
+.cen-chance b{font-family:var(--display);font-weight:800;font-size:1.7rem}
+.cen-chance small{color:var(--muted);font-size:.72rem}
+.cen-linha{margin:-.3rem 0 0}
+.cen-k{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.78rem;color:var(--muted);margin-bottom:.35rem}
+.cen-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+.cen-chip{display:flex;flex-direction:column;align-items:center;padding:.4rem .2rem;border-radius:8px;background:var(--surface-2);border-top:3px solid var(--muted)}
+.cen-chip.v{border-top-color:var(--good)}.cen-chip.d{border-top-color:var(--bad)}
+.cen-chip small{font-size:.72rem;color:var(--muted)}
+.cen-chip b{font-size:1.02rem}
+.cen-obs{margin-top:.3rem}
+.cen-secar{margin:0;padding-left:1.1rem;font-size:.92rem}
+.cen-secar li{margin:.15rem 0}
+.cen-decide{margin:0;padding:.5rem .7rem;border-radius:8px;font-size:.92rem;font-weight:600}
+.cen-decide.bom{background:color-mix(in srgb,var(--good) 14%,transparent)}
+.cen-decide.ruim{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.cen-meta{margin:0;font-size:.92rem;padding-top:.55rem;border-top:1px solid var(--line)}
