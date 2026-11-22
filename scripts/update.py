@@ -13,7 +13,7 @@ import math
 import os
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -313,8 +313,20 @@ def main():
         return dict(jogos=0, com_dados=0, v=0, e=0, d=0, gols_pro=0, gols_contra=0, amarelos=0, vermelhos=0,
                     amarelos_adv=0, vermelhos_adv=0, pen_favor=0, pen_contra=0, faltas=0, var_favor=0, var_contra=0)
 
+    # só entram rodadas encerradas: a aba muda ao fim de cada rodada (jogos adiados para
+    # mais de 7 dias depois da data típica da rodada não seguram a rodada aberta)
+    por_rodada = {}
     for jg in saida_jogos:
-        if jg["status"] != "FINISHED":
+        por_rodada.setdefault(jg["rodada"], []).append(jg)
+    rodadas_fechadas = set()
+    for r, js in por_rodada.items():
+        datas = sorted(datetime.fromisoformat(x["data"].replace("Z", "+00:00")) for x in js)
+        tipica = datas[len(datas) // 2]
+        if all(x["status"] == "FINISHED" or datetime.fromisoformat(x["data"].replace("Z", "+00:00")) > tipica + timedelta(days=7) for x in js):
+            rodadas_fechadas.add(r)
+    ultima_fechada = max((r for r in rodadas_fechadas if all((r2 in rodadas_fechadas) for r2 in range(1, r + 1))), default=0)
+    for jg in saida_jogos:
+        if jg["status"] != "FINISHED" or jg["rodada"] not in rodadas_fechadas:
             continue
         e = espn.get(str(jg["id"])) or {}
         tem = bool(e.get("casa") or e.get("fora") or e.get("lances"))
@@ -382,8 +394,8 @@ def main():
         for k_ in ("v", "e", "d", "gols_contra", "amarelos_adv", "vermelhos_adv", "pen_contra", "var_contra"):
             a.pop(k_, None)
         a["ultimos"] = a["ultimos"][-5:]
-    arbitragem = dict(arbitros=arbitros, var=var_clube, jogos_com_espn=jogos_com_espn,
-                      jogos_encerrados=sum(1 for jg in saida_jogos if jg["status"] == "FINISHED"))
+    arbitragem = dict(arbitros=arbitros, var=var_clube, jogos_com_espn=jogos_com_espn, ate_rodada=ultima_fechada,
+                      jogos_encerrados=sum(1 for jg in saida_jogos if jg["status"] == "FINISHED" and jg["rodada"] in rodadas_fechadas))
 
     agora = datetime.now(timezone.utc).isoformat(timespec="seconds")
     site = dict(

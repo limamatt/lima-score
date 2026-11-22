@@ -665,10 +665,11 @@
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.arb === k), text: txt, onclick: () => { estado.arb = k; render(); } }));
     });
     app.append(seg);
+    if (A.ate_rodada) app.append(el('p', { class: 'small arb-ate', text: `Atualizado ao fim de cada rodada · dados até a ${A.ate_rodada}ª rodada` }));
     if (estado.arb === 'clube') arbClube(app, A);
     else if (estado.arb === 'var') arbVar(app, A);
     else arbArbitros(app, A);
-    app.append(el('p', { class: 'small nota-arb', text: `Árbitros: football-data e ESPN. Cartões, faltas, pênaltis e VAR: ESPN, disponíveis em ${A.jogos_com_espn} de ${A.jogos_encerrados} jogos encerrados — o robô completa o restante aos poucos. Médias de cartões e pênaltis consideram só os jogos com esses dados.` }));
+    app.append(el('p', { class: 'small nota-arb', text: `Árbitros: football-data e ESPN. Cartões, faltas, pênaltis e VAR: ESPN, disponíveis em ${A.jogos_com_espn} de ${A.jogos_encerrados} jogos — o robô completa o restante aos poucos. Médias de cartões e pênaltis consideram só os jogos com esses dados.` }));
   }
 
   function arbArbitros(app, A) {

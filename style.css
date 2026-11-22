@@ -373,3 +373,4 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .var-card small{display:block;color:var(--muted);margin-bottom:.4rem;font-weight:600}
 .var-card.bom{box-shadow:inset 4px 0 0 var(--good)}
 .var-card.ruim{box-shadow:inset 4px 0 0 var(--bad)}
+.arb-ate{margin:-.4rem 0 1rem}
