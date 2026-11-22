@@ -22,7 +22,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 OUT = ROOT / "data" / "videos.json"
 API = "https://www.googleapis.com/youtube/v3"
-CANAIS = ["getv", "geglobo"]  # @getv (ge tv) e, se existir, @geglobo
+# ordem de preferência: 1º ge tv, 2º CazéTV, 3º PernaPlays (só entra se as outras não tiverem o vídeo)
+CANAIS = ["getv", "geglobo", "CazeTV", "PernaPlays"]
+PRIORIDADE = {"getv": 1, "geglobo": 1, "CazeTV": 2, "PernaPlays": 3}
 MAX_PAGINAS = 500
 
 # como cada clube aparece nos títulos do ge (sem acento, maiúsculas)
@@ -243,7 +245,7 @@ def main():
                         if len(cands) == 1:
                             lista = brutos.setdefault(str(cands[0]["id"]), [])
                             if all(g["id"] != vid for g in lista):
-                                lista.append(dict(id=vid, titulo=sn.get("title", ""), publicado=sn["publishedAt"]))
+                                lista.append(dict(id=vid, titulo=sn.get("title", ""), publicado=sn["publishedAt"], canal=handle))
                                 lista.sort(key=lambda g: g["publicado"])
                             break
                     continue
@@ -263,7 +265,8 @@ def main():
                     continue
                 atual = videos.get(str(jogo["id"]))
                 # se houver mais de um vídeo, fica o publicado primeiro (o oficial da partida)
-                if not atual or sn["publishedAt"] < atual["publicado"]:
+                pri, pri_atual = PRIORIDADE.get(handle, 9), PRIORIDADE.get((atual or {}).get("canal"), 9)
+                if not atual or pri < pri_atual or (pri == pri_atual and sn["publishedAt"] < atual["publicado"]):
                     videos[str(jogo["id"])] = dict(id=vid, titulo=sn.get("title", ""), publicado=sn["publishedAt"], canal=handle)
                     ligados += 1
             token = d.get("nextPageToken")
@@ -286,7 +289,22 @@ def main():
         lances = (est.get(jid) or {}).get("lances")
         if not est.get(jid) or not (est[jid].get("casa") or est[jid].get("fora") or lances):
             lances = None
-        valem = montar_gols(jogo, lista, lances)
+        valem, ocupados = [], set()
+        for pri in sorted({PRIORIDADE.get(v.get("canal") or "getv", 9) for v in lista}):
+            do_canal = [v for v in lista if PRIORIDADE.get(v.get("canal") or "getv", 9) == pri]
+            for g in montar_gols(jogo, do_canal, lances):
+                if g.get("minuto"):
+                    chave = (g["lado"], g.get("minuto"), g.get("jogador"))
+                    if chave in ocupados:
+                        continue
+                    ocupados.add(chave)
+                else:
+                    # sem os lances: cada lado fica com no máximo tantos vídeos quantos gols tem
+                    limite = (jogo.get("gols_casa") if g["lado"] == "casa" else jogo.get("gols_fora")) or 0
+                    if sum(1 for x in valem if x["lado"] == g["lado"]) >= limite:
+                        continue
+                valem.append(g)
+        valem.sort(key=lambda g: (minuto_real(g.get("minuto")) if g.get("minuto") else 999, g["publicado"]))
         if valem:
             gols[jid] = valem
     brutos = {k: v for k, v in brutos.items() if v}
