@@ -171,7 +171,7 @@ def montar_jogadores(saida_jogos):
             sofreu = jg["gols_fora"] if lado == "casa" else jg["gols_casa"]
             for p in lados.get(lado) or []:
                 r = jog.setdefault(p["id"], dict(id=p["id"], nome=p["nome"], pos={}, camisa=None, clube=cid,
-                                                  jogos=0, titular=0, entrou=0, sem_sofrer=0, ultimos=[],
+                                                  jogos=0, titular=0, entrou=0, sem_sofrer=0, ultimos=[], minutos=0, jogos_sem_min=0,
                                                   **{v: 0 for v in CAMPOS.values()}))
                 r["nome"] = p["nome"] or r["nome"]
                 r["clube"] = cid  # clube do jogo mais recente (acompanha transferências)
@@ -179,6 +179,10 @@ def montar_jogadores(saida_jogos):
                 if p.get("pos"):
                     r["pos"][p["pos"]] = r["pos"].get(p["pos"], 0) + 1
                 r["jogos"] += 1
+                if p.get("minutos"):
+                    r["minutos"] += int(p["minutos"])
+                else:
+                    r["jogos_sem_min"] += 1
                 r["titular"] += bool(p.get("titular"))
                 r["entrou"] += bool(p.get("entrou"))
                 st = p.get("stats") or {}
