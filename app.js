@@ -365,7 +365,8 @@
         'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor). Lesões e decisões do técnico não entram.';
     const fonte = usarOficial ? oficial : prov;
     if (!fonte || !fonte.casa || !fonte.fora) return null;
-    const suspensos = usarOficial ? {} : { casa: (prov.casa && prov.casa.desfalques) || [], fora: (prov.fora && prov.fora.desfalques) || [] };
+    // suspensos aparecem antes e durante o jogo (vêm da provável, que considera cartões e expulsões)
+    const suspensos = prov ? { casa: (prov.casa && prov.casa.desfalques) || [], fora: (prov.fora && prov.fora.desfalques) || [] } : {};
     return el('section', null, secHead('Escalações', titulo, null),
       campinho(j, fonte, { marcas: usarOficial ? marcas : null, suspensos }),
       nota ? el('p', { class: 'small', text: nota }) : null);

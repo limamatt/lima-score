@@ -201,12 +201,14 @@ def main():
             jogos_por_time.setdefault(t, []).append(j)
     ultimo = dados.get("ultimo_visto", {})  # playlist -> data do vídeo mais novo já lido
     novos_ultimos = dict(ultimo)
+    diag = dict(hora=datetime.now(timezone.utc).isoformat(timespec="seconds"), canais={}, titulos_gol=[], erros=[])
 
     for handle in CANAIS:
         try:
             pl = playlist_de_envios(handle)
         except Exception as e:
             print(f"@{handle}: não deu para ler o canal ({e.__class__.__name__})")
+            diag["erros"].append(f"@{handle}: {e.__class__.__name__} {e}"[:200])
             continue
         if not pl:
             print(f"@{handle}: canal não encontrado")
@@ -231,6 +233,8 @@ def main():
                     novos_ultimos[pl] = pub.isoformat()
                 t = norm(sn.get("title", ""))
                 vid = sn["resourceId"]["videoId"]
+                if eh_video_de_gol(t) and len(diag["titulos_gol"]) < 15:
+                    diag["titulos_gol"].append([sn.get("title", "")[:90], sn["publishedAt"], sorted(times_no_titulo(t))])
                 if eh_video_de_gol(t):
                     # liga o gol ao jogo do clube citado que estava acontecendo quando o vídeo saiu
                     for cid in times_no_titulo(t):
@@ -266,6 +270,7 @@ def main():
             if parar or not token:
                 break
         print(f"@{handle}: {paginas} páginas, {lidos} vídeos lidos, {ligados} melhores momentos ligados")
+        diag["canais"][handle] = dict(paginas=paginas, lidos=lidos)
 
     # confere cada vídeo de gol com o placar (e com os lances, quando houver)
     arq_est = ROOT / "data" / "estatisticas.json"
@@ -287,9 +292,9 @@ def main():
     brutos = {k: v for k, v in brutos.items() if v}
 
     # só grava quando algo mudou (evita mudanças a cada volta)
-    novo = dict(jogos=videos, gols=gols, gols_brutos=brutos, ultimo_visto=novos_ultimos)
+    novo = dict(jogos=videos, gols=gols, gols_brutos=brutos, ultimo_visto=novos_ultimos, diag=diag)
     if videos != dados.get("jogos", {}) or json.dumps(gols, sort_keys=True) != gols_antes \
-            or json.dumps(brutos, sort_keys=True) != brutos_antes or not dados.get("ultimo_visto"):
+            or json.dumps(brutos, sort_keys=True) != brutos_antes or not dados.get("ultimo_visto") or True:  # diag temporário
         OUT.write_text(json.dumps(novo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Vídeos: {len(videos)} jogos com melhores momentos.")
     else:
