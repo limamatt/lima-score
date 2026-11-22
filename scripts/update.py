@@ -149,6 +149,11 @@ def estatisticas_dos_clubes(saida_jogos, espn):
     return out
 
 
+def _sem_acento(n):
+    import unicodedata
+    return unicodedata.normalize("NFKD", n or "").encode("ascii", "ignore").decode().lower().strip()
+
+
 def montar_jogadores(saida_jogos):
     """Números de cada jogador na temporada, somando jogo a jogo as escalações da ESPN
     (data/escalacoes.json). Grava data/jogadores.json, lido pela aba Jogadores."""
@@ -192,6 +197,39 @@ def montar_jogadores(saida_jogos):
                     r["sem_sofrer"] += 1
                 r["ultimos"].append([int(jid), int(st.get("totalGoals") or 0), int(st.get("goalAssists") or 0),
                                      1 if p.get("titular") else 0])
+        # finalizações e passes para finalização (narração): liga o nome ao jogador do elenco daquele jogo
+        nomes = {}
+        for lado in ("casa", "fora"):
+            for p in lados.get(lado) or []:
+                nomes[(p.get("nome") or "")] = p["id"]
+                nomes[_sem_acento(p.get("nome"))] = p["id"]
+        def quem(nome):
+            return nomes.get(nome or "") or nomes.get(_sem_acento(nome))
+        for c in lados.get("chutes") or []:
+            pid = quem(c.get("j"))
+            if pid in jog:
+                r = jog[pid]
+                r["xg"] = round(r.get("xg", 0) + c["xg"], 3)
+                r["fin"] = r.get("fin", 0) + 1
+                z = r.setdefault("zonas", {})
+                z[c["zona"]] = z.get(c["zona"], 0) + 1
+                if c.get("cab"):
+                    r["cabeceios"] = r.get("cabeceios", 0) + 1
+                if c["xg"] >= 0.3 and c["zona"] != "penalti":
+                    r["grandes_chances"] = r.get("grandes_chances", 0) + 1
+                if c.get("x") is not None and len(r.setdefault("mapa", [])) < 150:
+                    r["mapa"].append([round(c["x"], 3), round(c.get("y") or 0, 3), c["res"][0], c["xg"]])
+            aid = quem(c.get("a"))
+            if aid in jog:
+                r = jog[aid]
+                r["chances"] = r.get("chances", 0) + 1
+                r["xa"] = round(r.get("xa", 0) + c["xg"], 3)
+        for nome, acs in (lados.get("acoes") or {}).items():
+            pid = quem(nome)
+            if pid in jog:
+                for k in ("penaltis_sofridos", "penaltis_cometidos"):
+                    if acs.get(k):
+                        jog[pid][k] = jog[pid].get(k, 0) + acs[k]
     saida = []
     for r in jog.values():
         r["pos"] = max(r["pos"], key=r["pos"].get) if r["pos"] else None

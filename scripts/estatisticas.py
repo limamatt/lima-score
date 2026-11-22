@@ -29,7 +29,7 @@ ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada joga
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 7                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 8                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -319,6 +319,87 @@ def minutos_em_campo(resumo):
     return entrou, saiu
 
 
+# xG estimado pela descrição do chute na narração (zona, cabeça, pênalti, falta, contra-ataque).
+# Valores médios de referência para cada tipo de chute; é uma estimativa do Lima Score, não o xG da Opta.
+def xg_estimado(texto):
+    t = texto.lower()
+    if "penalty" in t and ("converts" in t or "penalty missed" in t or "penalty saved" in t):
+        return 0.76, "penalti"
+    if "from a free kick" in t or "direct free kick" in t:
+        return 0.06, "falta"
+    cab = "header" in t
+    if "very close range" in t or "six yard box" in t:
+        base, zona = (0.30 if cab else 0.42), "pequena_area"
+    elif "centre of the box" in t:
+        base, zona = (0.11 if cab else 0.16), "area"
+    elif "side of the box" in t or "difficult angle" in t:
+        base, zona = (0.05 if cab else (0.04 if "difficult angle" in t else 0.07)), "area"
+    elif "outside the box" in t or "long range" in t or "more than" in t:
+        base, zona = 0.03, "fora"
+    else:
+        base, zona = 0.08, "area"
+    if "fast break" in t:
+        base *= 1.35
+    elif "through ball" in t:
+        base *= 1.3
+    if "cross" in t and not cab:
+        base *= 0.9
+    return round(min(base, 0.85), 3), zona
+
+
+def chutes_e_acoes(resumo, lado_por_espn):
+    """Pela narração: cada finalização (quem chutou, quem deu o passe, de onde, resultado, xG
+    estimado, posição no campo) e ações de cada jogador (faltas sofridas/cometidas, pênaltis)."""
+    chutes, acoes = [], {}
+    def soma(nome, k):
+        if nome:
+            d = acoes.setdefault(nome, {})
+            d[k] = d.get(k, 0) + 1
+    for ev in resumo.get("commentary") or []:
+        play = ev.get("play") or {}
+        if not play:
+            continue
+        tipo = ((play.get("type") or {}).get("text") or "").lower()
+        texto = ev.get("text") or play.get("text") or ""
+        t = texto.lower()
+        parts = [((pp.get("athlete") or {}).get("displayName")) for pp in (play.get("participants") or [])]
+        lado = lado_por_espn.get(str((play.get("team") or {}).get("id")))
+        eh_chute = (t.startswith("attempt ") or t.startswith("goal!") or "hits the" in t and ("post" in t or "bar" in t)
+                    or t.startswith("penalty missed") or t.startswith("penalty saved"))
+        if eh_chute and parts and parts[0] and "own goal" not in t:
+            if t.startswith("goal!"):
+                res = "gol"
+            elif "saved" in t:
+                res = "defendido"
+            elif "blocked" in t:
+                res = "bloqueado"
+            elif "hits the" in t:
+                res = "trave"
+            else:
+                res = "fora"
+            xg, zona = xg_estimado(texto)
+            m = re.search(r"assisted by ([^.]+?)(?: with| following|\.|$)", texto, re.I)
+            rel = play.get("clock") or ev.get("time") or {}
+            chutes.append(dict(j=parts[0], a=(parts[1] if len(parts) > 1 and m else None), lado=lado, res=res, xg=xg, zona=zona,
+                               cab="header" in t, x=play.get("fieldPositionX"), y=play.get("fieldPositionY"),
+                               min=(rel.get("displayValue") or "").strip() or None))
+            continue
+        if "wins a free kick" in t and parts:
+            soma(parts[-1], "faltas_sofridas")
+        elif t.startswith("foul by") and parts:
+            soma(parts[0], "faltas_cometidas")
+        elif t.startswith("penalty conceded by") and parts:
+            soma(parts[0], "penaltis_cometidos")
+        elif ("penalty" in t and "wins" in t) or "fouled in the penalty area" in t:
+            if parts:
+                soma(parts[0], "penaltis_sofridos")
+        elif "is caught offside" in t:
+            m = re.search(r"\.\s*([^.]+?) is caught offside", texto)
+            if m:
+                soma(m.group(1).strip(), "impedimentos")
+    return chutes, acoes
+
+
 def jogadores_do_jogo(resumo, lado_por_espn):
     """Quem entrou em campo em cada lado e os números de cada um nesse jogo."""
     out = {"casa": [], "fora": []}
@@ -486,6 +567,10 @@ def main():
         novo["v"] = VERSAO
         try:
             jj = jogadores_do_jogo(resumo, lado_por_espn)
+            try:
+                jj["chutes"], jj["acoes"] = chutes_e_acoes(resumo, lado_por_espn)
+            except Exception:
+                pass
             if jj["casa"] or jj["fora"]:
                 escalacoes[chave] = jj
         except Exception:
