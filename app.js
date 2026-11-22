@@ -315,17 +315,49 @@
       const box = el('div', { class: 'esc-col' }, el('div', { class: 'esc-time' }, escudo(tid), el('b', { text: T[tid] ? T[tid].nome : '' }),
         usarOficial && d && d.formacao ? el('span', { class: 'small', text: d.formacao }) : null));
       if (!d) { box.append(el('p', { class: 'small', text: 'Sem informação.' })); return box; }
+      const linha = (p, banco) => el('li', { class: p.novo ? 'novo' : '' },
+        el('span', { class: 'esc-num num', text: p.c || '' }),
+        el('span', { class: 'esc-n' }, el('span', { text: p.n }), usarOficial ? marcas(p, lado, banco) : null),
+        el('span', { class: 'small esc-p', text: p.p || '' }));
       const ul = el('ul', { class: 'esc-lista' });
-      (d.titulares || []).forEach((p) => ul.append(el('li', { class: p.novo ? 'novo' : '' },
-        el('span', { class: 'esc-num num', text: p.c || '' }), el('span', { class: 'esc-n', text: p.n }), el('span', { class: 'small esc-p', text: p.p || '' }))));
+      (d.titulares || []).forEach((p) => ul.append(linha(p, false)));
       box.append(ul);
       if (usarOficial && d.reservas && d.reservas.length) {
-        box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'Reservas: ' }), d.reservas.map((p) => p.n).join(', ')));
+        const entraram = d.reservas.filter((p) => p.ent != null), banco = d.reservas.filter((p) => p.ent == null);
+        if (entraram.length) {
+          const ue = el('ul', { class: 'esc-lista' });
+          entraram.sort((a, b) => a.ent - b.ent).forEach((p) => ue.append(linha(p, true)));
+          box.append(el('div', { class: 'small esc-sub', text: 'Entraram' }), ue);
+        }
+        if (banco.length) box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'No banco: ' }), banco.map((p) => p.n).join(', ')));
       }
       if (!usarOficial && d.desfalques && d.desfalques.length) {
         box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'Suspensos: ' }), d.desfalques.map((p) => `${p.n} (${p.motivo})`).join(', ')));
       }
       return box;
+    };
+    // gols, assistências e cartões de cada jogador (pelos lances do jogo)
+    const nrm = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const lances = (e && e.lances) || [];
+    const mesmo = (a, b) => { a = nrm(a); b = nrm(b); return !!a && !!b && (a === b || a.endsWith(' ' + b) || b.endsWith(' ' + a) || a.startsWith(b + ' ') || b.startsWith(a + ' ')); };
+    const marcas = (p, lado, banco) => {
+      const out = el('span', { class: 'esc-m' });
+      const meus = lances.filter((l) => l.lado === lado);
+      const gols = meus.filter((l) => l.tipo === 'gol' && !l.contra && mesmo(l.jogador, p.n)).length;
+      const contra = lances.filter((l) => l.tipo === 'gol' && l.contra && l.lado !== lado && mesmo(l.jogador, p.n)).length;
+      const ast = meus.filter((l) => l.tipo === 'gol' && mesmo(l.assistencia, p.n)).length;
+      const am = meus.filter((l) => l.tipo === 'amarelo' && mesmo(l.jogador, p.n)).length;
+      const vm = meus.filter((l) => l.tipo === 'vermelho' && mesmo(l.jogador, p.n)).length;
+      const tag = (txt, cls, tit) => out.append(el('span', { class: 'esc-t ' + cls, title: tit, 'aria-label': tit, text: txt }));
+      if (gols) tag('⚽' + (gols > 1 ? '×' + gols : ''), 'g', `${gols} gol${gols > 1 ? 's' : ''}`);
+      if (contra) tag('⚽ contra', 'gc', 'gol contra');
+      if (ast) tag('A' + (ast > 1 ? '×' + ast : ''), 'a', `${ast} assistência${ast > 1 ? 's' : ''}`);
+      if (am) out.append(el('i', { class: 'cart am', title: 'Cartão amarelo', 'aria-label': 'Cartão amarelo' }));
+      if (vm) out.append(el('i', { class: 'cart vm', title: 'Cartão vermelho', 'aria-label': 'Cartão vermelho' }));
+      if (p.les) tag('✚', 'les', 'Saiu machucado');
+      if (banco && p.ent != null) tag(`↑${p.ent}'`, 'ent', `Entrou aos ${p.ent} minutos`);
+      if (!banco && p.sai != null && !vm) tag(`↓${p.sai}'`, 'sai', `Saiu aos ${p.sai} minutos`);
+      return out.childNodes.length ? out : null;
     };
     const titulo = usarOficial ? 'Escalações oficiais' : 'Prováveis escalações';
     const nota = usarOficial ? null

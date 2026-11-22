@@ -295,6 +295,7 @@ def minutos_em_campo(resumo):
     Devolve {nome normalizado: (entrou_aos, saiu_aos)} só para quem entrou ou saiu."""
     entrou, saiu = {}, {}
     vistos = set()
+    lesionados = set()
     for ev in list(resumo.get("commentary") or []) + list(resumo.get("keyEvents") or []):
         play = ev.get("play") or {}
         tipo = ((ev.get("type") or play.get("type") or {}).get("text") or "").lower()
@@ -308,14 +309,22 @@ def minutos_em_campo(resumo):
             m = re.search(r"\.\s*([^.]+?) replaces ([^.]+?)(?: because of an injury)?\.?$", texto) or re.search(r"([^.,]+?) replaces ([^.]+?)\.", texto)
             if m:
                 a, b = _norm_nome(m.group(1)), _norm_nome(m.group(2))
+                if "injury" in texto.lower():
+                    lesionados.add(b)
                 if (a, b) not in vistos:
                     vistos.add((a, b))
                     entrou[a] = minuto
                     saiu[b] = minuto
+        elif "retired" in tipo or "went off injured" in texto.lower():
+            m = re.match(r"\s*(.+?) went off injured", texto)
+            if m:
+                lesionados.add(_norm_nome(m.group(1)))
+                saiu.setdefault(_norm_nome(m.group(1)), minuto)
         elif "red card" in tipo or "second yellow" in texto.lower() or "red card" in texto.lower():
             m = re.match(r"\s*([^(]+?) \(", texto)
             if m:
                 saiu.setdefault(_norm_nome(m.group(1)), minuto)
+    minutos_em_campo.lesionados = lesionados
     return entrou, saiu
 
 
@@ -411,8 +420,11 @@ def chutes_e_acoes(resumo, lado_por_espn):
 
 
 def escalacao_oficial(resumo, lado_por_espn):
-    """Titulares, reservas e esquema tático de cada lado (a ESPN publica cerca de 1h antes do jogo)."""
+    """Titulares, reservas e esquema tático de cada lado (a ESPN publica cerca de 1h antes do jogo),
+    com quem entrou, quem saiu (e o minuto) e quem saiu machucado."""
     out = {}
+    entrou, saiu = minutos_em_campo(resumo)
+    lesionados = getattr(minutos_em_campo, "lesionados", set())
     for r in resumo.get("rosters") or []:
         lado = lado_por_espn.get(str((r.get("team") or {}).get("id")))
         if not lado:
@@ -423,6 +435,13 @@ def escalacao_oficial(resumo, lado_por_espn):
             pos = p.get("position") or {}
             item = dict(n=a.get("displayName") or a.get("shortName"), c=p.get("jersey"),
                         p=traduz_posicao(pos.get("displayName") or pos.get("abbreviation")))
+            nn = _norm_nome(item["n"])
+            if nn in saiu:
+                item["sai"] = saiu[nn]
+            if nn in entrou:
+                item["ent"] = entrou[nn]
+            if nn in lesionados:
+                item["les"] = True
             (tit if p.get("starter") else res).append(item)
         if len(tit) >= 11:
             out[lado] = dict(formacao=r.get("formation") or r.get("formationName"), titulares=tit, reservas=res)

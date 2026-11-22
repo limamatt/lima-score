@@ -443,3 +443,10 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .esc-p{grid-column:2;font-size:.72rem}
 .esc-res{margin-top:.6rem;line-height:1.35}
 @media (max-width:420px){.esc-col{padding:.7rem .6rem}.esc-lista li{font-size:.85rem}}
+.esc-m{display:inline-flex;flex-wrap:wrap;gap:.2rem;margin-left:.3rem;vertical-align:1px}
+.esc-t{font-size:.68rem;font-weight:700;padding:0 .28rem;border-radius:4px;line-height:1.35;background:var(--surface-2);color:var(--muted)}
+.esc-t.g{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.esc-t.gc{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.esc-t.a{background:color-mix(in srgb,var(--info) 16%,transparent);color:var(--info)}
+.esc-t.les{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.esc-sub{margin:.7rem 0 .3rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
