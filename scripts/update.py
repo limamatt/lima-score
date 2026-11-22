@@ -584,6 +584,8 @@ def main():
             if t not in proximo:
                 proximo[t] = (j, j[outro]["id"], casa)
 
+    arq_tec = ROOT / "data" / "tecnicos.json"
+    tecnicos = (json.loads(arq_tec.read_text(encoding="utf-8")) if arq_tec.exists() else {}).get("tecnicos", {})
     saida_times = []
     for t in ids:
         r = times[t]
@@ -596,6 +598,7 @@ def main():
             pos=r["position"], pts=r["points"], j=r["playedGames"], v=r["won"], e=r["draw"], d=r["lost"],
             gp=r["goalsFor"], gc=r["goalsAgainst"], sg=r["goalDifference"],
             forma="".join(forma[t][-5:]),
+            tecnico=tecnicos.get(str(t)),
             casa=dict(j=st["hj"], gp=st["hgp"], gc=st["hgc"]),
             fora=dict(j=st["aj"], gp=st["agp"], gc=st["agc"]),
             pts_projetados=round(float(pontos_esperados[i]), 1),

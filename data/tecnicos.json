@@ -1,0 +1,26 @@
+{
+  "_sobre": "Técnico atual de cada clube. Quando trocar, é só editar o nome aqui (interino = true para técnico interino).",
+  "atualizado": "2026-11-22",
+  "tecnicos": {
+    "1768": {"nome": "Odair Hellmann"},
+    "1766": {"nome": "Eduardo Domínguez"},
+    "1777": {"nome": "Rogério Ceni"},
+    "1770": {"nome": "Tite"},
+    "1772": {"nome": "Vinicius Bergantin"},
+    "1779": {"nome": "Clarence Seedorf"},
+    "4241": {"nome": "Guila Bossle", "interino": true},
+    "1771": {"nome": "Artur Jorge"},
+    "1783": {"nome": "Leonardo Jardim"},
+    "1765": {"nome": "Marcão", "interino": true},
+    "1767": {"nome": "Renato Gaúcho"},
+    "6684": {"nome": "Eduardo Baptista"},
+    "4364": {"nome": "Rafael Guanaes"},
+    "1769": {"nome": "Abel Ferreira"},
+    "4286": {"nome": "Vagner Mancini"},
+    "4287": {"nome": "Thiago Carpini"},
+    "6685": {"nome": "Cuca"},
+    "1776": {"nome": "Dorival Júnior"},
+    "1780": {"nome": "Pedro Emanuel"},
+    "1782": {"nome": "Rafael Lacerda"}
+  }
+}

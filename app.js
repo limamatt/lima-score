@@ -427,7 +427,8 @@
       return box;
     };
     const rot = (lado) => el('div', { class: 'cp-rot ' + lado }, escudo(j[lado]), el('b', { text: T[j[lado]] ? T[j[lado]].nome : '' }),
-      el('span', { class: 'small', text: '4-3-3' }));
+      el('span', { class: 'small', text: '4-3-3' }),
+      T[j[lado]] && T[j[lado]].tecnico ? el('span', { class: 'small cp-tec', text: `Téc.: ${T[j[lado]].tecnico.nome}${T[j[lado]].tecnico.interino ? ' (int.)' : ''}` }) : null);
     return el('div', { class: 'card cp-card' }, rot('fora'),
       el('div', { class: 'campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }), metade('fora'), metade('casa')), rot('casa'));
   }
@@ -947,7 +948,8 @@
     if (!t) { app.append(el('p', { class: 'erro', text: 'Clube não encontrado.' })); return; }
     app.append(el('a', { class: 'back', href: '#tabela', text: '← Tabela' }));
     app.append(el('header', { class: 'club-head' }, escudo(id, 'lg'),
-      el('div', null, el('div', { class: 'eyebrow', text: `${t.pos}º colocado` }), el('h1', { text: t.nome }))));
+      el('div', null, el('div', { class: 'eyebrow', text: `${t.pos}º colocado` }), el('h1', { text: t.nome }),
+        t.tecnico ? el('div', { class: 'small clube-tec', text: `Técnico: ${t.tecnico.nome}${t.tecnico.interino ? ' (interino)' : ''}` }) : null)));
 
     const kp = el('div', { class: 'kpis' });
     [['Pontos', t.pts], ['Projeção', n1(t.pts_projetados)], ['Posição média', n1(t.pos_media) + 'º'], ['Campanha', `${t.v}V ${t.e}E ${t.d}D`],
