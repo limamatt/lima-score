@@ -688,11 +688,11 @@
         bloco('Jogos', a.jogos), bloco('Com dados', n),
         bloco('Amarelos', n ? a.amarelos : '–'), bloco('Vermelhos', n ? a.vermelhos : '–'),
         bloco('Faltas por jogo', media(a.faltas, n)), bloco('Pênaltis', n ? a.penaltis : '–'),
-        bloco('Pênaltis por jogo', media(a.penaltis, n, 2)), bloco('Gols por jogo', media(a.gols_pro, a.jogos)), bloco('Decisões do VAR', n ? a.var : '–'),
+        bloco('Pênaltis por jogo', media(a.penaltis, n, 2)), bloco('Gols por jogo', media(a.gols_pro, a.jogos)), bloco('Chamadas do VAR', n ? (a.var_chamadas || 0) : '–'),
         bloco('Mandante vence', pctTxt(m[0], a.jogos)), bloco('Empates', pctTxt(m[1], a.jogos)), bloco('Visitante vence', pctTxt(m[2], a.jogos))));
       // clubes com esse árbitro
       const linhas = Object.entries(a.clubes).sort((x, y) => y[1].jogos - x[1].jogos || (T[x[0]] ? T[x[0]].nome : '').localeCompare(T[y[0]] ? T[y[0]].nome : ''));
-      det.append(tabelaClubes(linhas.map(([cid, c]) => [escudoLink(+cid), c]), 'Clube'));
+      det.append(tabelaClubes(linhas.map(([cid, c]) => [escudoLink(+cid), c]), 'Clube', false));
       const ult = (a.ultimos || []).map((id) => D.jogos.find((j) => j.id === id)).filter(Boolean).reverse();
       if (ult.length) {
         const ul = el('div', { class: 'arb-ult' }, el('span', { class: 'tv-k', text: 'Últimos jogos' }));
@@ -711,7 +711,7 @@
     return el('a', { href: '#clube-' + cid, 'aria-label': T[cid] ? T[cid].nome : '', title: T[cid] ? T[cid].nome : '' }, escudo(cid, 'tb'));
   }
   // tabela de desempenho: primeira coluna = clube ou árbitro
-  function tabelaClubes(linhas, rotulo) {
+  function tabelaClubes(linhas, rotulo, comVar = true) {
     const tb = el('tbody');
     linhas.forEach(([quem, c]) => {
       const n = c.com_dados;
@@ -722,7 +722,7 @@
         el('td', { class: 'num', text: `${c.gols_pro}:${c.gols_contra}` }),
         el('td', { class: 'num', text: n ? c.amarelos : '–' }), el('td', { class: 'num', text: n ? c.vermelhos : '–' }),
         el('td', { class: 'num', text: n ? `${c.pen_favor}/${c.pen_contra}` : '–' }),
-        el('td', { class: 'num', text: n ? `${c.var_favor}/${c.var_contra}` : '–' })));
+        comVar ? el('td', { class: 'num', text: n ? `${c.var_favor}/${c.var_contra}` : '–' }) : null));
     });
     return el('div', { class: 'tbl-wrap' }, el('table', { class: 'arb-tbl' },
       el('thead', null, el('tr', null, el('th', { class: 'l sticky-col', text: rotulo }), el('th', { text: 'J', title: 'Jogos' }),
@@ -730,7 +730,7 @@
         el('th', { text: 'Gols', title: 'Gols pró : contra' }),
         el('th', { title: 'Cartões amarelos recebidos' }, el('i', { class: 'cart am', 'aria-label': 'Amarelos' })),
         el('th', { title: 'Cartões vermelhos recebidos' }, el('i', { class: 'cart vm', 'aria-label': 'Vermelhos' })),
-        el('th', { text: 'Pên.', title: 'Pênaltis a favor / contra' }), el('th', { text: 'VAR', title: 'Decisões do VAR a favor / contra' }))),
+        el('th', { text: 'Pên.', title: 'Pênaltis a favor / contra' }), comVar ? el('th', { text: 'VAR', title: 'Decisões do VAR a favor / contra' }) : null)),
       tb));
   }
 
