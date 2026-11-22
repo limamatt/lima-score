@@ -230,6 +230,18 @@ def montar_jogadores(saida_jogos):
                 for k in ("penaltis_sofridos", "penaltis_cometidos"):
                     if acs.get(k):
                         jog[pid][k] = jog[pid].get(k, 0) + acs[k]
+    # calibra o xG estimado para que a soma bata com os gols da temporada (tira o viés da tabela de zonas)
+    tot_xg = sum(r.get("xg", 0) for r in jog.values())
+    tot_gols = sum(r.get("gols", 0) for r in jog.values() if r.get("fin"))
+    fator = (tot_gols / tot_xg) if tot_xg and tot_gols else 1.0
+    fator = min(max(fator, 0.7), 1.3)
+    for r in jog.values():
+        if "xg" in r:
+            r["xg"] = round(r["xg"] * fator, 2)
+        if "xa" in r:
+            r["xa"] = round(r["xa"] * fator, 2)
+        for m in r.get("mapa") or []:
+            m[3] = round(m[3] * fator, 3)
     saida = []
     for r in jog.values():
         r["pos"] = max(r["pos"], key=r["pos"].get) if r["pos"] else None

@@ -427,3 +427,6 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .pf-b{height:9px;border-radius:5px;background:var(--surface-2);overflow:hidden}
 .pf-b i{display:block;height:100%;border-radius:5px}
 .pf-v{text-align:right;font-family:var(--display);font-size:1.05rem}
+.mapa-chutes{width:100%;max-width:34rem;display:block;margin:0 auto}
+.mapa-leg{display:flex;flex-wrap:wrap;gap:.4rem .9rem;justify-content:center;margin-top:.6rem}
+.mapa-leg i{display:inline-block;width:.7rem;height:.7rem;border-radius:50%;margin-right:.3rem;vertical-align:-1px}

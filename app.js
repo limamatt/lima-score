@@ -667,6 +667,29 @@
       tile('Pênaltis sofridos', x.penaltis_sofridos || 0, null, null), tile('Pênaltis cometidos', x.penaltis_cometidos || 0, null, null),
       tile('Impedimentos', x.impedimentos || 0, null, null), tile('Cartões', `${x.amarelos || 0} 🟨 · ${x.vermelhos || 0} 🟥`, null, null),
       x.contra ? tile('Gols contra', x.contra, null, null) : null]));
+    // mapa de finalizações (posição de cada chute na narração da ESPN; o gol fica em cima)
+    if (!goleiro && x.mapa && x.mapa.length) {
+      const NS = 'http://www.w3.org/2000/svg';
+      const sv = (tag, at) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
+      const svg = sv('svg', { viewBox: '-2 -3 72 46', class: 'mapa-chutes', role: 'img', 'aria-label': `Mapa das ${x.mapa.length} finalizações` });
+      const linha = { fill: 'none', stroke: 'var(--line-strong, #9aa7a0)', 'stroke-width': '.35' };
+      svg.append(sv('rect', { x: 0, y: 0, width: 68, height: 42, rx: 1, fill: 'var(--pitch-soft, rgba(16,96,60,.08))' }));
+      svg.append(sv('rect', { x: 13.85, y: 0, width: 40.3, height: 16.5, ...linha }));
+      svg.append(sv('rect', { x: 24.85, y: 0, width: 18.3, height: 5.5, ...linha }));
+      svg.append(sv('path', { d: 'M26.7 16.5 A9.15 9.15 0 0 0 41.3 16.5', ...linha }));
+      svg.append(sv('circle', { cx: 34, cy: 11, r: .45, fill: 'var(--muted)' }));
+      svg.append(sv('rect', { x: 30.34, y: -1.6, width: 7.32, height: 1.6, fill: 'none', stroke: 'var(--fg)', 'stroke-width': '.4' }));
+      const cor = { g: 'var(--good)', d: 'var(--accent)', b: 'var(--muted)', f: 'var(--bad)', t: 'var(--info)' };
+      x.mapa.slice().sort((a, b) => (a[2] === 'g') - (b[2] === 'g')).forEach(([fx, fy, r, xg]) => {
+        const cy = Math.min(41, fx * 52.5), cx = Math.max(0.5, Math.min(67.5, fy * 68));
+        svg.append(sv('circle', { cx: cx.toFixed(2), cy: cy.toFixed(2), r: (0.7 + Math.sqrt(xg) * 2.2).toFixed(2), fill: cor[r] || 'var(--muted)',
+          'fill-opacity': r === 'g' ? '.95' : '.6', stroke: r === 'g' ? 'var(--fg)' : 'none', 'stroke-width': '.25' }));
+      });
+      const leg = el('div', { class: 'mapa-leg small' }, [['g', 'Gol'], ['d', 'Defendido'], ['f', 'Para fora'], ['b', 'Bloqueado'], ['t', 'Trave']].map(([k, t]) =>
+        el('span', null, el('i', { style: `background:${cor[k]}` }), t)), el('span', null, 'tamanho = xG'));
+      app.append(el('section', null, secHead('Mapa', 'Onde ele finaliza', null), el('div', { class: 'card pad' }, svg, leg)));
+    }
+
     // perfil: percentil contra jogadores da mesma função (com pelo menos 450 minutos)
     const grp = GRUPO_POS(x.pos);
     const pares = todos.filter((y) => GRUPO_POS(y.pos) === grp && (y.minutos || 0) >= 450);
