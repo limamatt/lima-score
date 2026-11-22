@@ -399,16 +399,25 @@
       return ps[ps.length - 1].length > 2 ? ps[ps.length - 1] : ps.slice(-2).join(' ');
     };
     const metade = (lado) => {
-      const tit = (fonte[lado] && fonte[lado].titulares) || [];
-      const linhas = [[], [], [], [], []];
-      tit.forEach((p) => linhas[linhaDe(p.p)].push(p));
-      // pontas sem lado definido: abre um em cada ponta
+      const tit = ((fonte[lado] && fonte[lado].titulares) || []).slice();
+      // sempre em 4-3-3: ordena do goleiro ao ataque e preenche 1 + 4 + 3 + 3
+      tit.forEach((p) => { p._l = linhaDe(p.p); p._o = ordemLado(p.p); });
+      const gk = tit.findIndex((p) => p._l === 0);
+      const goleiro = gk >= 0 ? tit.splice(gk, 1) : tit.splice(0, 1);
+      tit.sort((a, b) => a._l - b._l);
+      const linhas = [goleiro, tit.slice(0, 4), tit.slice(4, 7), tit.slice(7, 10)].concat(tit.length > 10 ? [tit.slice(10)] : []);
       linhas.forEach((ln) => {
         let alt = 0;
-        ln.forEach((p) => { p._o = ordemLado(p.p); if (p._o === 0.5) { p._o = alt++ % 2 === 0 ? 0 : 4; } });
+        ln.forEach((p) => { if (p._o === 0.5) p._o = alt++ % 2 === 0 ? 0 : 4; });
         // o visitante ataca para baixo: a esquerda dele fica à direita da tela
         ln.sort((a, b) => (lado === 'fora' ? b._o - a._o : a._o - b._o));
       });
+      // no ataque de três, o centroavante fica no meio
+      const atq = linhas[3];
+      if (atq && atq.length === 3) {
+        const ci = atq.findIndex((p) => /atacante/i.test(p.p || ''));
+        if (ci >= 0) { const [c] = atq.splice(ci, 1); atq.splice(1, 0, c); }
+      }
       const box = el('div', { class: 'cp-metade ' + lado });
       const usadas = linhas.filter((ln) => ln.length);
       (lado === 'casa' ? usadas.slice().reverse() : usadas).forEach((ln) => {
@@ -418,7 +427,7 @@
       return box;
     };
     const rot = (lado) => el('div', { class: 'cp-rot ' + lado }, escudo(j[lado]), el('b', { text: T[j[lado]] ? T[j[lado]].nome : '' }),
-      fonte[lado] && fonte[lado].formacao ? el('span', { class: 'small', text: fonte[lado].formacao }) : null);
+      el('span', { class: 'small', text: '4-3-3' }));
     return el('div', { class: 'card cp-card' }, rot('fora'),
       el('div', { class: 'campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }), metade('fora'), metade('casa')), rot('casa'));
   }
