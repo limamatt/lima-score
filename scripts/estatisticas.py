@@ -27,7 +27,7 @@ SITE = ROOT / "data" / "site.json"
 OUT = ROOT / "data" / "estatisticas.json"
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
-MAX_ENCERRADOS_SEM_JOGO = 40    # sem jogo, completa a temporada mais rápido
+MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
 VERSAO = 3                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
