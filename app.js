@@ -156,7 +156,8 @@
     if (!encerrado(j)) {
       const tv = el('div', { class: 'tv' }, el('span', { class: 'tv-k', text: 'Onde assistir' }));
       if (j.canais && j.canais.length) j.canais.forEach((c) => {
-        const yt = canalYouTube(c);
+        const vid = j.lives && j.lives[c];
+        const yt = vid ? 'https://www.youtube.com/watch?v=' + encodeURIComponent(vid) : canalYouTube(c);
         tv.append(yt && !encerrado(j)
           ? el('a', { class: 'chip chip-yt', href: yt, target: '_blank', rel: 'noopener', 'aria-label': `Assistir no YouTube (${c})` }, '▶ ' + c)
           : el('span', { class: 'chip', text: c }));
@@ -766,8 +767,8 @@
       Object.entries(v.jogos || {}).forEach(([id, x]) => {
         const j = D.jogos.find((y) => String(y.id) === id);
         if (!j || j.status === 'FINISHED') return;
-        ['status', 'gols_casa', 'gols_fora', 'periodo', 'ancora'].forEach((k) => {
-          if (x[k] !== undefined && j[k] !== x[k]) { j[k] = x[k]; mudou = true; }
+        ['status', 'gols_casa', 'gols_fora', 'periodo', 'ancora', 'lives'].forEach((k) => {
+          if (x[k] !== undefined && JSON.stringify(j[k]) !== JSON.stringify(x[k])) { j[k] = x[k]; mudou = true; }
         });
       });
       if (v.estat) {

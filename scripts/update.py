@@ -242,6 +242,8 @@ def main():
     # canais de transmissão (preenchidos em data/transmissoes.json)
     arq_canais = ROOT / "data" / "transmissoes.json"
     canais = json.loads(arq_canais.read_text(encoding="utf-8")) if arq_canais.exists() else {}
+    arq_lives = ROOT / "data" / "lives.json"
+    lives = (json.loads(arq_lives.read_text(encoding="utf-8")) if arq_lives.exists() else {}).get("jogos", {})
     arq_videos = ROOT / "data" / "videos.json"
     _v = json.loads(arq_videos.read_text(encoding="utf-8")) if arq_videos.exists() else {}
     videos, videos_gols = _v.get("jogos", {}), _v.get("gols", {})
@@ -271,6 +273,7 @@ def main():
             casa=h, fora=a, gols_casa=gc, gols_fora=gf, **extra,
             previsao=prev.get(j["id"]),
             canais=(canais.get(str(j["id"])) or {}).get("canais"),
+            lives=lives.get(str(j["id"])) or None,
             video=(videos.get(str(j["id"])) or {}).get("id"),
             gols_video=[{k: v for k, v in dict(id=g["id"], lado=g.get("lado"), minuto=g.get("minuto"), jogador=g.get("jogador")).items() if v}
                         for g in videos_gols.get(str(j["id"]), [])] or None,

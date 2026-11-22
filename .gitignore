@@ -1,2 +1,3 @@
 data/ao_vivo.json
 __pycache__/
+data/.lives_cache.json

@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 NOTICIAS = ROOT / "data" / "noticias.json"
-ARQUIVOS = ["data/site.json", "data/noticias.json", "data/videos.json", "data/estatisticas.json"]
+ARQUIVOS = ["data/site.json", "data/noticias.json", "data/videos.json", "data/estatisticas.json", "data/lives.json"]
 DURACAO_MAX = int(5.5 * 3600)  # fica ligado enquanto houver jogo (limite de segurança: 5h30)
 INTERVALO = 30              # segundos entre conferências durante os jogos
 ESPACO_ENTRE_PUBLICACOES = 6 * 60  # site completo: no máximo a cada 6 min durante os jogos
@@ -91,7 +91,7 @@ def publicar_ao_vivo(ultimo):
     for j in site.get("jogos", []):
         ini = datetime.fromisoformat(j["data"].replace("Z", "+00:00"))
         if j["status"] in ("IN_PLAY", "PAUSED") or (ini - timedelta(minutes=10) <= agora <= ini + timedelta(hours=3)):
-            jogos[str(j["id"])] = {k: j.get(k) for k in ("status", "gols_casa", "gols_fora", "periodo", "ancora")}
+            jogos[str(j["id"])] = {k: j.get(k) for k in ("status", "gols_casa", "gols_fora", "periodo", "ancora", "lives")}
             e = est.get(str(j["id"])) or {}
             extras[str(j["id"])] = {k: e[k] for k in ("lances", "destaque", "casa", "fora") if k in e}
     conteudo = json.dumps(dict(jogos=jogos, estat=extras), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
@@ -138,6 +138,8 @@ def main():
         rodar("estatisticas.py")        # posse, finalizações, cartões e lances (ESPN), a cada volta
         if volta % 3 == 0 and (volta == 0 or jogo_rolando()):
             rodar("videos.py")          # melhores momentos e gols (a cada ~3 min no modo ao vivo)
+        if volta % 2 == 0:
+            rodar("lives.py")           # link exato da transmissão no YouTube (CazéTV, ge tv)
         rodar("update.py")              # placar, tabela e previsões
         if (volta == 0 and noticias_velhas()) or time.time() - ultima_noticia > 3600:
             rodar("noticias.py")        # notícias: no máximo 1 vez por hora
