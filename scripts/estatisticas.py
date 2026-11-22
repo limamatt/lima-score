@@ -410,6 +410,25 @@ def chutes_e_acoes(resumo, lado_por_espn):
     return chutes, acoes
 
 
+def escalacao_oficial(resumo, lado_por_espn):
+    """Titulares, reservas e esquema tático de cada lado (a ESPN publica cerca de 1h antes do jogo)."""
+    out = {}
+    for r in resumo.get("rosters") or []:
+        lado = lado_por_espn.get(str((r.get("team") or {}).get("id")))
+        if not lado:
+            continue
+        tit, res = [], []
+        for p in r.get("roster") or []:
+            a = p.get("athlete") or {}
+            pos = p.get("position") or {}
+            item = dict(n=a.get("displayName") or a.get("shortName"), c=p.get("jersey"),
+                        p=traduz_posicao(pos.get("displayName") or pos.get("abbreviation")))
+            (tit if p.get("starter") else res).append(item)
+        if len(tit) >= 11:
+            out[lado] = dict(formacao=r.get("formation") or r.get("formationName"), titulares=tit, reservas=res)
+    return out if len(out) == 2 else None
+
+
 def jogadores_do_jogo(resumo, lado_por_espn):
     """Quem entrou em campo em cada lado e os números de cada um nesse jogo."""
     out = {"casa": [], "fora": []}
@@ -465,7 +484,8 @@ def main():
     ao_vivo, encerrados = [], []
     for j in site["jogos"]:
         guardado = jogos_dados.get(str(j["id"])) or {}
-        if j["status"] in ("IN_PLAY", "PAUSED") or (j["status"] not in ("FINISHED",) and inicio(j) <= agora <= inicio(j) + timedelta(hours=3)):
+        if j["status"] in ("IN_PLAY", "PAUSED") or (j["status"] not in ("FINISHED",) and inicio(j) - timedelta(minutes=75) <= agora <= inicio(j) + timedelta(hours=3)):
+            # desde 1h15 antes do início: pega a escalação oficial assim que for divulgada
             ao_vivo.append(j)
         elif j["status"] == "FINISHED" and (not guardado.get("final") or guardado.get("v") != VERSAO) and guardado.get("tentativas", 0) < MAX_TENTATIVAS:
             encerrados.append(j)
@@ -575,6 +595,12 @@ def main():
                     final=bool(j["status"] == "FINISHED" and estado == "post"))
         novo["estado"] = estado
         novo["v"] = VERSAO
+        try:
+            esc = escalacao_oficial(resumo, lado_por_espn)
+            if esc:
+                novo["escalacao"] = esc
+        except Exception:
+            pass
         try:
             jj = jogadores_do_jogo(resumo, lado_por_espn)
             try:

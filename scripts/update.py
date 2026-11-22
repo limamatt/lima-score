@@ -275,6 +275,65 @@ def montar_jogadores(saida_jogos):
         print(f"Jogadores: {len(saida)} jogadores em {conteudo['jogos_lidos']} jogos.")
 
 
+def provaveis_escalacoes(saida_jogos):
+    """Provável escalação de cada clube no próximo jogo: os titulares do último jogo, tirando quem
+    está suspenso (vermelho no último jogo ou 3º, 6º, 9º... amarelo) e pondo no lugar quem mais foi
+    titular na mesma posição. Lesões e escolhas do técnico não entram."""
+    arq = ROOT / "data" / "escalacoes.json"
+    if not arq.exists():
+        return {}
+    esc = json.loads(arq.read_text(encoding="utf-8"))
+    por_id = {str(j["id"]): j for j in saida_jogos}
+    encerrados = sorted((j for j in saida_jogos if j["status"] == "FINISHED" and str(j["id"]) in esc), key=lambda j: j["data"])
+    ultimo, amarelos, titularidades, info = {}, {}, {}, {}
+    for j in encerrados:
+        for lado in ("casa", "fora"):
+            cid = j[lado]
+            jogs = esc[str(j["id"])].get(lado) or []
+            if not any(p.get("titular") for p in jogs):
+                continue
+            ultimo[cid] = (j, jogs)
+            for p in jogs:
+                k = (cid, p["id"])
+                amarelos[k] = amarelos.get(k, 0) + int((p.get("stats") or {}).get("yellowCards") or 0)
+                if p.get("titular"):
+                    titularidades[k] = titularidades.get(k, 0) + 1
+                info[k] = (p.get("nome"), p.get("camisa"), p.get("pos"))
+    def grupo(pos):
+        pos = (pos or "").lower()
+        return 0 if "goleiro" in pos else 1 if any(x in pos for x in ("zagueiro", "lateral", "ala", "defensor")) else \
+            2 if any(x in pos for x in ("volante", "meia", "meio")) else 3
+    out = {}
+    for cid, (jg, jogs) in ultimo.items():
+        suspensos, xi = [], []
+        for p in jogs:
+            st = p.get("stats") or {}
+            k = (cid, p["id"])
+            motivo = None
+            if int(st.get("redCards") or 0):
+                motivo = "expulso no último jogo"
+            elif int(st.get("yellowCards") or 0) and amarelos.get(k, 0) % 3 == 0:
+                motivo = f"{amarelos[k]}º cartão amarelo"
+            if motivo:
+                suspensos.append(dict(n=p.get("nome"), motivo=motivo))
+            if p.get("titular") and not motivo:
+                xi.append(dict(n=p.get("nome"), c=p.get("camisa"), p=p.get("pos"), id=p["id"]))
+        fora = {x["n"] for x in suspensos}
+        for p in jogs:
+            if p.get("titular") and p.get("nome") in fora:
+                # substituto: quem mais foi titular no mesmo setor, sem estar suspenso nem já escalado
+                ja = {x["id"] for x in xi}
+                cands = [(n, pid) for (c, pid), n in titularidades.items() if c == cid and pid not in ja and pid != p["id"]
+                         and info[(c, pid)][0] not in fora and grupo(info[(c, pid)][2]) == grupo(p.get("pos"))]
+                if cands:
+                    _, pid = max(cands)
+                    nome, camisa, pos = info[(cid, pid)]
+                    xi.append(dict(n=nome, c=camisa, p=pos, id=pid, novo=True))
+        xi.sort(key=lambda x: (grupo(x["p"]), x["n"] or ""))
+        out[cid] = dict(titulares=[{k: v for k, v in x.items() if k != "id"} for x in xi], desfalques=suspensos, base=jg["id"])
+    return out
+
+
 def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts):
     """Para cada clube que ainda briga pelo G4 ou contra o Z4: o que muda com o resultado do
     próximo jogo, para quem torcer (quem secar) e quantos pontos deixam a vaga praticamente certa.
@@ -614,6 +673,20 @@ def main():
         saida_jogadores.append(item)
 
     est_clubes = estatisticas_dos_clubes(saida_jogos, espn)
+    try:
+        prov = provaveis_escalacoes(saida_jogos)
+        proximo_de = {}
+        for jg in sorted((x for x in saida_jogos if x["status"] != "FINISHED"), key=lambda x: x["data"]):
+            for lado in ("casa", "fora"):
+                proximo_de.setdefault(jg[lado], jg["id"])
+        for jg in saida_jogos:
+            if jg["status"] == "FINISHED":
+                continue
+            p = {lado: prov[jg[lado]] for lado in ("casa", "fora") if proximo_de.get(jg[lado]) == jg["id"] and jg[lado] in prov}
+            if p:
+                jg["provavel"] = p
+    except Exception as ex:
+        print(f"Prováveis escalações: erro ({ex.__class__.__name__}: {ex})")
     try:
         montar_jogadores(saida_jogos)
     except Exception as ex:  # a aba Jogadores nunca derruba o resto

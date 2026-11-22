@@ -431,3 +431,15 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .mapa-chutes{width:100%;max-width:34rem;display:block;margin:0 auto}
 .mapa-leg{display:flex;flex-wrap:wrap;gap:.4rem .9rem;justify-content:center;margin-top:.6rem}
 .mapa-leg i{display:inline-block;width:.7rem;height:.7rem;border-radius:50%;margin-right:.3rem;vertical-align:-1px}
+/* escalações */
+.esc{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.esc-col{padding:.8rem .9rem;min-width:0}
+.esc-col + .esc-col{border-left:1px solid var(--line)}
+.esc-time{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-bottom:.5rem}
+.esc-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.28rem}
+.esc-lista li{display:grid;grid-template-columns:1.6rem 1fr;column-gap:.35rem;font-size:.9rem;line-height:1.2}
+.esc-lista li.novo .esc-n::after{content:" •";color:var(--accent)}
+.esc-num{color:var(--muted);text-align:right;font-size:.82rem;padding-top:.05rem}
+.esc-p{grid-column:2;font-size:.72rem}
+.esc-res{margin-top:.6rem;line-height:1.35}
+@media (max-width:420px){.esc-col{padding:.7rem .6rem}.esc-lista li{font-size:.85rem}}

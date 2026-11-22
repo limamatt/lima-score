@@ -91,10 +91,10 @@ def publicar_ao_vivo(ultimo):
     jogos, extras = {}, {}
     for j in site.get("jogos", []):
         ini = datetime.fromisoformat(j["data"].replace("Z", "+00:00"))
-        if j["status"] in ("IN_PLAY", "PAUSED") or (ini - timedelta(minutes=10) <= agora <= ini + timedelta(hours=3)):
+        if j["status"] in ("IN_PLAY", "PAUSED") or (ini - timedelta(minutes=75) <= agora <= ini + timedelta(hours=3)):
             jogos[str(j["id"])] = {k: j.get(k) for k in ("status", "gols_casa", "gols_fora", "periodo", "ancora", "lives")}
             e = est.get(str(j["id"])) or {}
-            extras[str(j["id"])] = {k: e[k] for k in ("lances", "destaque", "casa", "fora") if k in e}
+            extras[str(j["id"])] = {k: e[k] for k in ("lances", "destaque", "casa", "fora", "escalacao") if k in e}
     conteudo = json.dumps(dict(jogos=jogos, estat=extras), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     if conteudo == ultimo:
         return ultimo

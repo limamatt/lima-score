@@ -155,6 +155,7 @@
       card.append(bar, pr);
     }
     if (encerrado(j) || aoVivo(j)) card.append(el('a', { class: 'ver-jogo', href: '#jogo-' + j.id }, 'Estatísticas e lances ›'));
+    else if (j.provavel) card.append(el('a', { class: 'ver-jogo', href: '#jogo-' + j.id }, 'Escalações ›'));
     if (!encerrado(j)) {
       const tv = el('div', { class: 'tv' }, el('span', { class: 'tv-k', text: 'Onde assistir' }));
       if (j.canais && j.canais.length) j.canais.forEach((c) => {
@@ -218,6 +219,8 @@
     if (!encerrado(j) && !aoVivo(j)) {
       const card = cartaoJogo(j); card.classList.remove('clicavel'); card.removeAttribute('role'); card.removeAttribute('tabindex');
       app.append(el('section', null, secHead('Antes do jogo', 'Palpite e onde assistir', null), legendaJogo(), card));
+      const esc = secaoEscalacoes(j, e);
+      if (esc) app.append(esc);
       return;
     }
 
@@ -262,6 +265,8 @@
         el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(id), target: '_blank', rel: 'noopener', 'aria-label': `Assistir ao gol de ${quem} no YouTube` }, '▶ Assistir')));
     });
     app.append(el('section', null, secHead('Lances', 'Gols e cartões', null), lista));
+    const escJ = secaoEscalacoes(j, e);
+    if (escJ) app.append(escJ);
 
     // destaque do jogo
     if (e && e.destaque) {
@@ -295,6 +300,40 @@
     }
     app.append(el('section', null, secHead('Estatísticas', 'Números da partida', null), box,
     ));
+  }
+
+  // escalações: prováveis até 1h antes do jogo; depois, as oficiais (quando divulgadas)
+  function secaoEscalacoes(j, e) {
+    const falta = (new Date(j.data).getTime() - Date.now()) / 60000;
+    const oficial = e && e.escalacao && e.escalacao.casa && e.escalacao.fora ? e.escalacao : null;
+    const usarOficial = oficial && falta <= 60;
+    const prov = j.provavel;
+    if (!usarOficial && (!prov || encerrado(j))) return null;
+    const coluna = (lado) => {
+      const tid = j[lado];
+      const d = usarOficial ? oficial[lado] : (prov && prov[lado]);
+      const box = el('div', { class: 'esc-col' }, el('div', { class: 'esc-time' }, escudo(tid), el('b', { text: T[tid] ? T[tid].nome : '' }),
+        usarOficial && d && d.formacao ? el('span', { class: 'small', text: d.formacao }) : null));
+      if (!d) { box.append(el('p', { class: 'small', text: 'Sem informação.' })); return box; }
+      const ul = el('ul', { class: 'esc-lista' });
+      (d.titulares || []).forEach((p) => ul.append(el('li', { class: p.novo ? 'novo' : '' },
+        el('span', { class: 'esc-num num', text: p.c || '' }), el('span', { class: 'esc-n', text: p.n }), el('span', { class: 'small esc-p', text: p.p || '' }))));
+      box.append(ul);
+      if (usarOficial && d.reservas && d.reservas.length) {
+        box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'Reservas: ' }), d.reservas.map((p) => p.n).join(', ')));
+      }
+      if (!usarOficial && d.desfalques && d.desfalques.length) {
+        box.append(el('div', { class: 'small esc-res' }, el('b', { text: 'Suspensos: ' }), d.desfalques.map((p) => `${p.n} (${p.motivo})`).join(', ')));
+      }
+      return box;
+    };
+    const titulo = usarOficial ? 'Escalações oficiais' : 'Prováveis escalações';
+    const nota = usarOficial ? null
+      : (falta <= 60 && !encerrado(j) ? 'A escalação oficial aparece aqui assim que for divulgada. ' : '') +
+        'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor, marcado com •). Lesões e decisões do técnico não entram.';
+    return el('section', null, secHead('Escalações', titulo, null),
+      el('div', { class: 'card esc' }, coluna('casa'), coluna('fora')),
+      nota ? el('p', { class: 'small', text: nota }) : null);
   }
 
   const legendaJogo = () => el('div', { class: 'legend' },
