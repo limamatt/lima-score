@@ -358,9 +358,7 @@
     });
     const lista = el('div', { class: 'cen-lista' });
     C.filter((c) => c.zona === z).forEach((c) => lista.append(cartaoCenario(c)));
-    return el('section', null, secHead('Cenários', 'O que cada um precisa',
-      z === 'g4' ? 'Quem ainda pode entrar ou sair do G4: o peso do próximo jogo, quem secar e quantos pontos bastam.'
-        : 'Quem ainda pode cair: o peso do próximo jogo, quem secar e quantos pontos livram do Z4.'), seg, lista);
+    return el('section', null, secHead('Cenários', 'O que cada um precisa', null), seg, lista);
   }
   const nomeT = (id) => (T[id] ? T[id].nome : '?');
   function frasesTorcida(x) {
