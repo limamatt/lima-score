@@ -264,8 +264,8 @@ def main():
                 status = "PAUSED" if e.get("intervalo") else "IN_PLAY"
                 if e.get("ancora") and not e.get("intervalo"):
                     extra["periodo"], extra["ancora"] = e.get("periodo"), e["ancora"]
-            elif status not in ("IN_PLAY", "PAUSED"):
-                status = "IN_PLAY"  # acabou na ESPN, a fonte grátis ainda vai confirmar
+            else:
+                status = "FINISHED"  # acabou na ESPN: some o "ao vivo" na hora (a fonte grátis confirma depois)
         saida_jogos.append(dict(
             id=j["id"], rodada=j["matchday"], data=j["utcDate"], status=status,
             casa=h, fora=a, gols_casa=gc, gols_fora=gf, **extra,

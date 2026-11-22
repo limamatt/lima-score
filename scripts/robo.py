@@ -45,10 +45,10 @@ def ha_jogo_agora():
     for j in site.get("jogos", []):
         if j["status"] in ("IN_PLAY", "PAUSED"):
             return True
-        if j["status"] != "FINISHED":
-            ini = datetime.fromisoformat(j["data"].replace("Z", "+00:00"))
-            if ini - timedelta(minutes=70) <= agora <= ini + timedelta(minutes=150):
-                return True
+        # mesmo encerrado, segue ligado até 150 min após o início para a tabela oficial confirmar
+        ini = datetime.fromisoformat(j["data"].replace("Z", "+00:00"))
+        if ini - timedelta(minutes=70) <= agora <= ini + timedelta(minutes=150):
+            return True
     return False
 
 
