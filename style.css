@@ -308,7 +308,7 @@ a.chip-yt:hover{border-color:var(--bad)}
 .lc-ic.amarelo,.lc-ic.vermelho{width:.75rem;height:1rem;border-radius:2px;justify-self:center}
 .lc-ic.amarelo{background:#f2c200}
 .lc-ic.vermelho{background:var(--bad)}
-.lc-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc-txt{min-width:0;overflow-wrap:anywhere}
 .estat{padding:.4rem 1rem .8rem}
 .es-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0}
 .es-l{padding:.45rem 0}

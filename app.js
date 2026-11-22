@@ -232,7 +232,7 @@
         let v = null;
         if (l.tipo === 'gol') {
           v = vids.find((g) => !usados.has(g.id) && g.lado === l.lado && g.minuto === l.minuto) || vids.find((g) => !usados.has(g.id) && g.lado === l.lado && !g.minuto);
-          if (v) { usados.add(v.id); videosGol.push([v, l]); }
+          if (v) usados.add(v.id);
         }
         const ic = { gol: '⚽', amarelo: '', vermelho: '' }[l.tipo];
         const extra = l.contra ? ' (contra)' : l.penalti ? ' (pênalti)' : '';
@@ -241,33 +241,27 @@
           el('span', { class: 'lc-ic ' + l.tipo, 'aria-label': { gol: 'Gol', amarelo: 'Cartão amarelo', vermelho: 'Cartão vermelho' }[l.tipo] }, ic),
           el('span', { class: 'lc-txt' }, el('b', { text: (l.jogador || (l.tipo === 'gol' ? 'Gol' : 'Cartão')) + extra }),
             el('span', { class: 'small', text: ' ' + (T[j[l.lado]] ? T[j[l.lado]].nome : '') }),
-            l.assistencia ? el('span', { class: 'lc-ast', text: 'Assistência: ' + l.assistencia }) : null)));
+            l.assistencia ? el('span', { class: 'lc-ast', text: 'Assistência: ' + l.assistencia }) : null),
+          v ? el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(v.id), target: '_blank', rel: 'noopener', 'aria-label': `Assistir ao gol de ${l.jogador || ''} no YouTube` }, '▶ Assistir') : null));
       });
       vids.forEach((g) => { if (!usados.has(g.id)) videosGol.push([g, null]); });
     } else if (j.gols_video && j.gols_video.length) {
       (j.gols_video || []).forEach((g) => videosGol.push([g, null]));
-      lista.append(el('p', { class: 'pad small', style: 'margin:0', text: 'Os lances aparecem aqui assim que a ESPN publicar.' }));
     } else {
       lista.append(el('p', { class: 'pad small', style: 'margin:0', text: E ? 'Ainda sem lances para mostrar.' : 'Carregando…' }));
     }
+    // vídeos de gol que não casaram com nenhum lance entram no fim da mesma lista
+    videosGol.forEach(([g], i) => {
+      const id = typeof g === 'string' ? g : g.id;
+      const lado = typeof g === 'object' ? g.lado : null;
+      const quem = (typeof g === 'object' && g.jogador) || `Gol ${i + 1}`;
+      lista.append(el('div', { class: 'lance ' + (lado || '') },
+        el('span', { class: 'lc-min num', text: (typeof g === 'object' && g.minuto) || '' }),
+        el('span', { class: 'lc-ic gol', 'aria-label': 'Gol' }, '⚽'),
+        el('span', { class: 'lc-txt' }, el('b', { text: quem }), lado && T[j[lado]] ? el('span', { class: 'small', text: ' ' + T[j[lado]].nome }) : null),
+        el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(id), target: '_blank', rel: 'noopener', 'aria-label': `Assistir ao gol de ${quem} no YouTube` }, '▶ Assistir')));
+    });
     app.append(el('section', null, secHead('Lances', 'Gols e cartões', null), lista));
-
-    // vídeos dos gols
-    if (videosGol.length) {
-      const lv = el('div', { class: 'card lances' });
-      videosGol.forEach(([g, l], i) => {
-        const id = typeof g === 'string' ? g : g.id;
-        const lado = l ? l.lado : (typeof g === 'object' ? g.lado : null);
-        const quem = (l && l.jogador) || (typeof g === 'object' && g.jogador) || `Gol ${i + 1}`;
-        const min = (l && l.minuto) || (typeof g === 'object' && g.minuto) || '';
-        lv.append(el('a', { class: 'lance vg', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(id), target: '_blank', rel: 'noopener', 'aria-label': `Assistir ao gol de ${quem} no YouTube` },
-          el('span', { class: 'lc-min num', text: min }),
-          el('span', { class: 'vg-play', 'aria-hidden': 'true', text: '▶' }),
-          el('span', { class: 'lc-txt' }, el('b', { text: quem }), lado && T[j[lado]] ? el('span', { class: 'small', text: ' ' + T[j[lado]].nome }) : null),
-          el('span', { class: 'small vg-yt', 'aria-hidden': 'true', text: '›' })));
-      });
-      app.append(el('section', null, secHead('Vídeos', 'Assista aos gols', null), lv));
-    }
 
     // destaque do jogo
     if (e && e.destaque) {
