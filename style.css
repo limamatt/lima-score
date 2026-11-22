@@ -322,3 +322,11 @@ a.chip-gol:hover{border-color:var(--bad)}
 .es-bar span{display:block;height:100%;border-radius:4px}
 .es-bar .c{background:var(--pitch)}
 .es-bar .f{background:var(--accent)}
+.lc-ast{display:block;font-size:.82rem;color:var(--muted);margin-top:.1rem}
+.destaque{display:flex;align-items:center;gap:1rem;padding:1rem}
+.dq-av{position:relative;width:64px;height:64px;border-radius:50%;background:var(--pitch);color:var(--chalk);display:grid;place-items:center;flex:none}
+.dq-av span{font-family:var(--display);font-weight:800;font-size:1.5rem;letter-spacing:.03em}
+.dq-av .crest,.dq-av .crest-fb{position:absolute;right:-6px;bottom:-4px;width:28px;height:28px;background:var(--surface);border-radius:50%;padding:2px}
+.dq-txt{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.dq-txt b{font-size:1.15rem}
+.dq-mot{font-family:var(--display);font-weight:700;color:var(--good);text-transform:uppercase;letter-spacing:.04em;font-size:.9rem}

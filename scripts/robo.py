@@ -20,8 +20,11 @@ SITE = ROOT / "data" / "site.json"
 NOTICIAS = ROOT / "data" / "noticias.json"
 ARQUIVOS = ["data/site.json", "data/noticias.json", "data/videos.json", "data/estatisticas.json"]
 DURACAO_MAX = int(5.5 * 3600)  # fica ligado enquanto houver jogo (limite de segurança: 5h30)
-INTERVALO = 60              # segundos entre conferências durante os jogos
-ESPACO_ENTRE_PUBLICACOES = 120  # evita publicar mais de uma vez a cada 2 min
+INTERVALO = 30              # segundos entre conferências durante os jogos
+ESPACO_ENTRE_PUBLICACOES = 6 * 60  # site completo: no máximo a cada 6 min durante os jogos
+# (o GitHub Pages aceita cerca de 10 publicações por hora; o placar ao vivo vai por outro caminho)
+AO_VIVO = ROOT / "data" / "ao_vivo.json"
+ESTAT = ROOT / "data" / "estatisticas.json"
 
 
 def rodar(script):
@@ -74,6 +77,37 @@ def noticias_velhas():
         return True
 
 
+def publicar_ao_vivo(ultimo):
+    """Placar ao vivo por um caminho rápido: um arquivo pequeno num ramo separado (ao-vivo),
+    que o site lê direto do GitHub a cada 20 s. Esse ramo não republica o site, então pode
+    ser atualizado a cada volta sem esbarrar no limite do GitHub Pages."""
+    try:
+        site = json.loads(SITE.read_text(encoding="utf-8"))
+        est = json.loads(ESTAT.read_text(encoding="utf-8")).get("jogos", {}) if ESTAT.exists() else {}
+    except Exception:
+        return ultimo
+    agora = datetime.now(timezone.utc)
+    jogos, extras = {}, {}
+    for j in site.get("jogos", []):
+        ini = datetime.fromisoformat(j["data"].replace("Z", "+00:00"))
+        if j["status"] in ("IN_PLAY", "PAUSED") or (ini - timedelta(minutes=10) <= agora <= ini + timedelta(hours=3)):
+            jogos[str(j["id"])] = {k: j.get(k) for k in ("status", "gols_casa", "gols_fora", "periodo", "ancora")}
+            e = est.get(str(j["id"])) or {}
+            extras[str(j["id"])] = {k: e[k] for k in ("lances", "destaque", "casa", "fora") if k in e}
+    conteudo = json.dumps(dict(jogos=jogos, estat=extras), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    if conteudo == ultimo:
+        return ultimo
+    AO_VIVO.write_text(conteudo, encoding="utf-8")
+    blob = git("hash-object", "-w", str(AO_VIVO)).stdout.strip()
+    arvore = subprocess.run(["git", "mktree"], cwd=ROOT, input=f"100644 blob {blob}\tao_vivo.json\n",
+                            capture_output=True, text=True, check=True).stdout.strip()
+    commit = git("commit-tree", arvore, "-m", "ao vivo " + agora.strftime("%H:%M:%S")).stdout.strip()
+    if git("push", "-f", "origin", f"{commit}:refs/heads/ao-vivo", check=False).returncode == 0:
+        print("Placar ao vivo publicado.")
+        return conteudo
+    return ultimo
+
+
 def publicar():
     for f in ARQUIVOS:
         if (ROOT / f).exists():
@@ -97,6 +131,7 @@ def main():
     inicio = time.time()
     ultima_pub = 0.0
     ultima_noticia = time.time()
+    ultimo_ao_vivo = None
     volta = 0
     while True:
         t0 = time.time()
@@ -108,6 +143,8 @@ def main():
             rodar("noticias.py")        # notícias: no máximo 1 vez por hora
             ultima_noticia = time.time()
         ao_vivo = ha_jogo_agora()
+        if ao_vivo:
+            ultimo_ao_vivo = publicar_ao_vivo(ultimo_ao_vivo)
         if not ao_vivo or time.time() - ultima_pub >= ESPACO_ENTRE_PUBLICACOES:
             if publicar():
                 ultima_pub = time.time()

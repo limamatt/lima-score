@@ -245,6 +245,8 @@ def main():
     arq_videos = ROOT / "data" / "videos.json"
     _v = json.loads(arq_videos.read_text(encoding="utf-8")) if arq_videos.exists() else {}
     videos, videos_gols = _v.get("jogos", {}), _v.get("gols", {})
+    arq_est = ROOT / "data" / "estatisticas.json"
+    espn = json.loads(arq_est.read_text(encoding="utf-8")).get("jogos", {}) if arq_est.exists() else {}
 
     saida_jogos = []
     for j in sorted(jogos, key=lambda x: (x["matchday"] or 0, x["utcDate"])):
@@ -252,9 +254,21 @@ def main():
         if h not in times or a not in times:
             continue
         ft = j["score"]["fullTime"]
+        status, gc, gf = j["status"], ft["home"], ft["away"]
+        e = espn.get(str(j["id"])) or {}
+        extra = {}
+        # a ESPN costuma estar à frente da fonte grátis durante o jogo: usa o placar e o relógio dela
+        if status != "FINISHED" and e.get("estado") in ("in", "post") and e.get("placar"):
+            gc, gf = e["placar"]["casa"], e["placar"]["fora"]
+            if e.get("estado") == "in":
+                status = "PAUSED" if e.get("intervalo") else "IN_PLAY"
+                if e.get("ancora") and not e.get("intervalo"):
+                    extra["periodo"], extra["ancora"] = e.get("periodo"), e["ancora"]
+            elif status not in ("IN_PLAY", "PAUSED"):
+                status = "IN_PLAY"  # acabou na ESPN, a fonte grátis ainda vai confirmar
         saida_jogos.append(dict(
-            id=j["id"], rodada=j["matchday"], data=j["utcDate"], status=j["status"],
-            casa=h, fora=a, gols_casa=ft["home"], gols_fora=ft["away"],
+            id=j["id"], rodada=j["matchday"], data=j["utcDate"], status=status,
+            casa=h, fora=a, gols_casa=gc, gols_fora=gf, **extra,
             previsao=prev.get(j["id"]),
             canais=(canais.get(str(j["id"])) or {}).get("canais"),
             video=(videos.get(str(j["id"])) or {}).get("id"),

@@ -79,13 +79,18 @@
       texto && el('p', { text: texto }));
   }
   const encerrado = (j) => j.status === 'FINISHED';
-  // minuto aproximado, calculado pelo horário de início (a fonte grátis não informa o minuto)
+  // minuto do jogo: usa a hora em que o tempo atual começou (vinda da ESPN); sem ela, estima pelo horário do jogo
   function minuto(j) {
-    if (j.status === 'PAUSED') return 'Intervalo';
+    if (j.status === 'PAUSED' || j.intervalo) return 'Intervalo';
+    if (j.ancora && (j.periodo === 1 || j.periodo === 2)) {
+      const dec = Math.floor((Date.now() - new Date(j.ancora).getTime()) / 60000) + 1;
+      if (j.periodo === 1) return dec <= 45 ? dec + "'" : "45+" + Math.min(dec - 45, 15) + "'";
+      return 45 + dec <= 90 ? (45 + dec) + "'" : "90+" + Math.min(45 + dec - 90, 15) + "'";
+    }
     const m = (Date.now() - new Date(j.data).getTime()) / 60000;
     if (m < 1) return "1'";
     if (m <= 45) return Math.ceil(m) + "'";
-    if (m <= 62) return "45+'";
+    if (m <= 62) return 'Intervalo';
     const s2 = Math.ceil(m - 17);
     return s2 <= 90 ? s2 + "'" : "90+'";
   }
@@ -114,7 +119,7 @@
     const p = j.previsao;
     const top = el('div', { class: 'game-top' },
       el('span', { text: dataHora(j.data) }),
-      aoVivo(j) ? el('span', { class: 'live-wrap' }, el('span', { class: 'minuto num', text: minuto(j) }), el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo'))
+      aoVivo(j) ? el('span', { class: 'live-wrap' }, el('span', { class: 'minuto num', 'data-min': j.id, text: minuto(j) }), el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo'))
         : encerrado(j) ? el('span', { text: 'Encerrado' })
           : opts.destaque ? el('span', { class: 'tag y', text: opts.destaque }) : null);
     let placar;
@@ -179,7 +184,7 @@
     if (estado.rodada == null) estado.rodada = j.rodada;
 
     // placar
-    const st = aoVivo(j) ? el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo · ' + (e && e.relogio ? e.relogio : minuto(j)))
+    const st = aoVivo(j) ? el('span', { class: 'live-wrap' }, el('span', { class: 'minuto num', 'data-min': j.id, text: minuto(j) }), el('span', { class: 'tag live-tag' }, el('i', { class: 'dot' }), 'Ao vivo'))
       : encerrado(j) ? el('span', { class: 'small', text: 'Encerrado' }) : el('span', { class: 'small', text: 'Não começou' });
     const sc = encerrado(j) || (aoVivo(j) && j.gols_casa != null)
       ? el('div', { class: 'sc num ' + (aoVivo(j) ? 'live' : 'final'), text: `${j.gols_casa} × ${j.gols_fora}` })
@@ -218,7 +223,8 @@
           el('span', { class: 'lc-min num', text: l.minuto || '' }),
           el('span', { class: 'lc-ic ' + l.tipo, 'aria-label': { gol: 'Gol', amarelo: 'Cartão amarelo', vermelho: 'Cartão vermelho' }[l.tipo] }, ic),
           el('span', { class: 'lc-txt' }, el('b', { text: (l.jogador || (l.tipo === 'gol' ? 'Gol' : 'Cartão')) + extra }),
-            el('span', { class: 'small', text: ' ' + (T[j[l.lado]] ? T[j[l.lado]].nome : '') })),
+            el('span', { class: 'small', text: ' ' + (T[j[l.lado]] ? T[j[l.lado]].nome : '') }),
+            l.assistencia ? el('span', { class: 'lc-ast', text: 'Assistência: ' + l.assistencia }) : null),
           v ? el('a', { class: 'chip chip-gol', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(v.id), target: '_blank', rel: 'noopener', 'aria-label': 'Ver o gol no YouTube' }, '▶ Ver') : null));
       });
     } else if (j.gols_video && j.gols_video.length) {
@@ -229,6 +235,19 @@
       lista.append(el('p', { class: 'pad small', style: 'margin:0', text: E ? 'Ainda sem lances para mostrar.' : 'Carregando…' }));
     }
     app.append(el('section', null, secHead('Lances', 'Gols e cartões', null), lista));
+
+    // destaque do jogo
+    if (e && e.destaque) {
+      const d = e.destaque;
+      const ini = d.nome.split(/\s+/).filter(Boolean).map((x) => x[0]).slice(0, 2).join('').toUpperCase();
+      app.append(el('section', null, secHead('Destaque', 'Melhor do jogo', 'Escolhido pelos números da partida: gols, assistências, finalizações e defesas.'),
+        el('div', { class: 'card destaque' },
+          el('div', { class: 'dq-av', 'aria-hidden': 'true' }, el('span', { text: ini }), escudo(j[d.lado], 'md')),
+          el('div', { class: 'dq-txt' },
+            el('b', { text: d.nome }),
+            el('span', { class: 'small', text: [T[j[d.lado]] ? T[j[d.lado]].nome : '', d.posicao].filter(Boolean).join(' · ') }),
+            d.motivo ? el('span', { class: 'dq-mot', text: d.motivo }) : null))));
+    }
 
     // estatísticas
     const box = el('div', { class: 'card estat' });
@@ -715,6 +734,53 @@
     } catch (e) { if (!E) { E = { jogos: {} }; if (D && rota().tela === 'jogo') render(); } }
     estatCarregando = false;
   }
+
+  // ---------- placar ao vivo rápido: lê um arquivo pequeno direto do GitHub a cada 20 s
+  const REPO = (() => {
+    const dono = location.hostname.endsWith('.github.io') ? location.hostname.split('.')[0] : 'limamatt';
+    const nome = location.pathname.split('/').filter(Boolean)[0] || 'termometro-brasileirao';
+    return `${dono}/${nome}`;
+  })();
+  let etagAoVivo = null;
+  async function pollAoVivo() {
+    if (window.__SITE_DATA__ || !D) return;
+    try {
+      const h = { Accept: 'application/vnd.github.raw+json' };
+      if (etagAoVivo) h['If-None-Match'] = etagAoVivo;
+      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/ao_vivo.json?ref=ao-vivo`, { headers: h, cache: 'no-cache' });
+      if (r.status === 304 || !r.ok) return;
+      etagAoVivo = r.headers.get('ETag');
+      const v = await r.json();
+      let mudou = false;
+      Object.entries(v.jogos || {}).forEach(([id, x]) => {
+        const j = D.jogos.find((y) => String(y.id) === id);
+        if (!j || j.status === 'FINISHED') return;
+        ['status', 'gols_casa', 'gols_fora', 'periodo', 'ancora'].forEach((k) => {
+          if (x[k] !== undefined && j[k] !== x[k]) { j[k] = x[k]; mudou = true; }
+        });
+      });
+      if (v.estat) {
+        if (!E) E = { jogos: {} };
+        Object.entries(v.estat).forEach(([id, x]) => {
+          const antes = JSON.stringify(E.jogos[id] || {});
+          E.jogos[id] = Object.assign({}, E.jogos[id] || {}, x);
+          if (JSON.stringify(E.jogos[id]) !== antes) mudou = true;
+        });
+      }
+      if (mudou) render();
+    } catch (e) { /* sem placar rápido agora; o site segue com a atualização normal */ }
+  }
+  (function cicloAoVivo() {
+    setTimeout(async () => { if (temJogoAgora() && !document.hidden) await pollAoVivo(); cicloAoVivo(); }, 20 * 1000);
+  })();
+  // o minuto avança sozinho na tela
+  setInterval(() => {
+    if (!D) return;
+    document.querySelectorAll('[data-min]').forEach((n) => {
+      const j = D.jogos.find((x) => String(x.id) === n.dataset.min);
+      if (j) n.textContent = minuto(j);
+    });
+  }, 15 * 1000);
 
   window.addEventListener('hashchange', render);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) carregar(true); });

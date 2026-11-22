@@ -102,6 +102,10 @@ def ler_lances(comp, resumo, lado_por_espn):
         atletas = ev.get("athletesInvolved") or [p.get("athlete") or {} for p in (ev.get("participants") or [])]
         jogador = (atletas[0].get("displayName") if atletas else None) or None
         item = dict(tipo=tipo, lado=lado, minuto=((ev.get("clock") or {}).get("displayValue") or "").strip() or None, jogador=jogador)
+        if tipo == "gol" and len(atletas) > 1 and not (ev.get("ownGoal") or "own goal" in tipo_txt):
+            assist = atletas[1].get("displayName")
+            if assist and assist != jogador:
+                item["assistencia"] = assist
         if tipo == "gol":
             if ev.get("penaltyKick") or "penalty" in tipo_txt:
                 item["penalti"] = True
@@ -110,6 +114,36 @@ def ler_lances(comp, resumo, lado_por_espn):
         lances.append(item)
     lances.sort(key=lambda x: minuto_num(x["minuto"]))
     return lances
+
+
+def destaque_do_jogo(resumo, lado_por_espn):
+    """Destaque pelos números da ESPN: gols, assistências, finalizações, defesas.
+    Não é o "melhor em campo" oficial; é quem mais pesou nas estatísticas."""
+    pesos = {"totalGoals": 10, "goalAssists": 6, "shotsOnTarget": 1.5, "totalShots": 0.5,
+             "saves": 1.5, "foulsSuffered": 0.3, "ownGoals": -6, "redCards": -6, "yellowCards": -1}
+    melhor = None
+    for r in resumo.get("rosters") or []:
+        lado = lado_por_espn.get(str((r.get("team") or {}).get("id")))
+        if not lado:
+            continue
+        for p in r.get("roster") or []:
+            stats = {s.get("name"): numero(s.get("value", s.get("displayValue"))) or 0 for s in (p.get("stats") or [])}
+            nota = sum(stats.get(k, 0) * w for k, w in pesos.items())
+            if nota <= 0:
+                continue
+            nome = (p.get("athlete") or {}).get("displayName")
+            if not nome:
+                continue
+            motivo = []
+            for k, rot in (("totalGoals", "gol"), ("goalAssists", "assistência"), ("saves", "defesa"), ("shotsOnTarget", "chute no gol")):
+                v = int(stats.get(k, 0))
+                if v:
+                    plural = {"gol": "gols", "assistência": "assistências", "defesa": "defesas", "chute no gol": "chutes no gol"}[rot]
+                    motivo.append(f"{v} {rot if v == 1 else plural}")
+            if melhor is None or nota > melhor["nota"]:
+                melhor = dict(nome=nome, lado=lado, nota=round(nota, 1), motivo=", ".join(motivo[:3]),
+                              posicao=((p.get("position") or {}).get("displayName") or (p.get("position") or {}).get("abbreviation")))
+    return melhor
 
 
 def minuto_num(txt):
@@ -203,8 +237,43 @@ def main():
         estado = (status.get("type") or {}).get("state")
         novo = dict(espn=ev["id"], casa=est["casa"], fora=est["fora"], lances=lances,
                     final=bool(j["status"] == "FINISHED" and estado == "post"))
+        novo["estado"] = estado
+        if estado in ("in", "post"):
+            placar_espn = {}
+            for c in comp.get("competitors", []):
+                ld = lado_por_espn.get(str((c.get("team") or {}).get("id") or c.get("id")))
+                if ld and c.get("score") not in (None, ""):
+                    try:
+                        placar_espn[ld] = int(float(c.get("score")))
+                    except (TypeError, ValueError):
+                        pass
+            if len(placar_espn) == 2:
+                novo["placar"] = placar_espn
         if estado == "in":
-            novo["relogio"] = status.get("displayClock") or (status.get("type") or {}).get("shortDetail")
+            nome_status = ((status.get("type") or {}).get("name") or "").upper()
+            detalhe = ((status.get("type") or {}).get("shortDetail") or "").upper()
+            novo["intervalo"] = "HALFTIME" in nome_status or detalhe in ("HT", "INTERVALO", "HALFTIME")
+            # em vez de gravar o relógio (que muda todo minuto), grava a hora em que o tempo
+            # atual começou; o site calcula o minuto sozinho a partir dela
+            periodo = int(status.get("period") or 0)
+            nums = [int(x) for x in re.findall(r"\d+", status.get("displayClock") or "")]
+            if periodo in (1, 2) and nums and not novo["intervalo"]:
+                base = 0 if periodo == 1 else 45
+                decorrido = min(max(nums[0] - base, 0), 45)  # acréscimos não mexem na âncora
+                estimada = agora - timedelta(minutes=decorrido)
+                ant = guardado.get("ancora")
+                if guardado.get("periodo") == periodo and ant and abs(datetime.fromisoformat(ant) - estimada) < timedelta(minutes=3):
+                    novo["ancora"] = ant
+                else:
+                    novo["ancora"] = estimada.isoformat(timespec="seconds")
+                novo["periodo"] = periodo
+        if estado in ("in", "post"):
+            try:
+                d = destaque_do_jogo(resumo, lado_por_espn)
+                if d:
+                    novo["destaque"] = d
+            except Exception:
+                pass
         if not est["casa"] and not est["fora"] and not lances:
             novo["final"] = False
             novo["tentativas"] = guardado.get("tentativas", 0) + (1 if j["status"] == "FINISHED" else 0)
