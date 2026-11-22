@@ -179,9 +179,19 @@ def main():
         return
 
     # acha o jogo correspondente na ESPN (pelo par de clubes e pela data)
-    ini = min(inicio(j) for j in alvo) - timedelta(days=1)
-    fim = max(inicio(j) for j in alvo) + timedelta(days=1)
-    placar = baixar(f"/scoreboard?dates={ini:%Y%m%d}-{fim:%Y%m%d}&limit=1000")
+    # a ESPN recusa intervalos longos de datas: busca em janelas curtas (dia do jogo ± 1)
+    janelas = sorted({((inicio(j) - timedelta(days=1)).strftime("%Y%m%d"), (inicio(j) + timedelta(days=1)).strftime("%Y%m%d"))
+                      for j in alvo})
+    todos, vistos, erros = [], set(), []
+    for a, b in janelas:
+        try:
+            for ev in baixar(f"/scoreboard?dates={a}-{b}&limit=100").get("events", []):
+                if ev.get("id") not in vistos:
+                    vistos.add(ev.get("id"))
+                    todos.append(ev)
+        except Exception as e:
+            erros.append(f"{a}-{b}: {e.__class__.__name__} {e}"[:120])
+    placar = {"events": todos}
     eventos = []
     for ev in placar.get("events", []):
         comp = (ev.get("competitions") or [{}])[0]
@@ -195,7 +205,7 @@ def main():
                                 casa=ids["home"], fora=ids["away"]))
 
     diag = dict(hora=agora.isoformat(timespec="seconds"), eventos_espn=len(placar.get("events", [])),
-                reconhecidos=len(eventos), alvo=len(alvo), sem_par=[])
+                reconhecidos=len(eventos), alvo=len(alvo), janelas=len(janelas), erros=erros[:5], sem_par=[])
     lidos = 0
     for j in alvo:
         chave = str(j["id"])
@@ -283,7 +293,7 @@ def main():
         jogos_dados[chave] = novo
         lidos += 1
 
-    if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists():
+    if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists() or "erro" in dados or not jogos_dados:
         OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Estatísticas: {lidos} jogos lidos ({len(ao_vivo)} ao vivo).")
     else:
