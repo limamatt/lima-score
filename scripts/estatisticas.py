@@ -25,10 +25,11 @@ from videos import NOMES, norm  # noqa: E402  (mesma lista de nomes dos clubes)
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 OUT = ROOT / "data" / "estatisticas.json"
+ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada jogador, por jogo
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 4                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 5                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -270,6 +271,33 @@ def destaque_do_jogo(resumo, lado_por_espn):
     return melhor
 
 
+def jogadores_do_jogo(resumo, lado_por_espn):
+    """Quem entrou em campo em cada lado e os números de cada um nesse jogo."""
+    out = {"casa": [], "fora": []}
+    for r in resumo.get("rosters") or []:
+        lado = lado_por_espn.get(str((r.get("team") or {}).get("id")))
+        if not lado:
+            continue
+        for p in r.get("roster") or []:
+            a = p.get("athlete") or {}
+            if not a.get("id"):
+                continue
+            stats = {}
+            for st in p.get("stats") or []:
+                v = numero(st.get("value", st.get("displayValue")))
+                if v:
+                    stats[st.get("name")] = v
+            titular = bool(p.get("starter"))
+            entrou = bool(p.get("subbedIn")) and not titular
+            if not (titular or entrou or stats.get("appearances")):
+                continue  # ficou no banco
+            pos = (p.get("position") or {})
+            out[lado].append(dict(id=str(a["id"]), nome=a.get("displayName") or a.get("shortName"),
+                                  pos=traduz_posicao(pos.get("displayName") or pos.get("abbreviation")),
+                                  camisa=p.get("jersey"), titular=titular, entrou=entrou, saiu=bool(p.get("subbedOut")), stats=stats))
+    return out
+
+
 def minuto_num(txt):
     """'45'+2'' -> 47.0 (só para ordenar)."""
     nums = [int(x) for x in re.findall(r"\d+", txt or "")]
@@ -351,6 +379,8 @@ def main():
 
     diag = dict(hora=agora.isoformat(timespec="seconds"), eventos_espn=len(placar.get("events", [])),
                 reconhecidos=len(eventos), alvo=len(alvo), janelas=len(janelas), erros=erros[:6], ok=ok[:6], sem_par=[])
+    escalacoes = json.loads(ESC.read_text(encoding="utf-8")) if ESC.exists() else {}
+    esc_antes = json.dumps(escalacoes, sort_keys=True)
     tipos_vistos = set(dados.get("tipos_espn") or [])
     amostras_var = list(dados.get("amostras_var") or [])
     lidos = 0
@@ -399,6 +429,12 @@ def main():
                     final=bool(j["status"] == "FINISHED" and estado == "post"))
         novo["estado"] = estado
         novo["v"] = VERSAO
+        try:
+            jj = jogadores_do_jogo(resumo, lado_por_espn)
+            if jj["casa"] or jj["fora"]:
+                escalacoes[chave] = jj
+        except Exception:
+            pass
         arb = arbitro(resumo)
         if arb:
             novo["arbitro"] = arb
@@ -450,6 +486,8 @@ def main():
         jogos_dados[chave] = novo
         lidos += 1
 
+    if json.dumps(escalacoes, sort_keys=True) != esc_antes or (escalacoes and not ESC.exists()):
+        ESC.write_text(json.dumps(escalacoes, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists() or "erro" in dados or not jogos_dados:
         OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, tipos_espn=sorted(tipos_vistos)[:300], amostras_var=amostras_var[:40], jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Estatísticas: {lidos} jogos lidos ({len(ao_vivo)} ao vivo).")

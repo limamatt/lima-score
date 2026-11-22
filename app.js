@@ -8,7 +8,8 @@
   let N = null;           // notícias
   let T = {};             // times por id
   let E = null;           // estatísticas e lances dos jogos
-  let estado = { rodada: null, artilharia: 'gols', tabela: 'classificacao', clubeNoticias: 'todos', arb: 'arbitros', arbClube: null, arbAberto: null, cen: null, pano: 'titulo' };
+  let P = null;           // jogadores (números da temporada, ESPN)
+  let estado = { rodada: null, artilharia: 'clube', tabela: 'classificacao', clubeNoticias: 'todos', arb: 'arbitros', arbClube: null, arbAberto: null, cen: null, pano: 'titulo' };
 
   // ---------- utilidades
   const $ = (s, r = document) => r.querySelector(s);
@@ -522,7 +523,7 @@
   function linhaJogador(p, rank, modo) {
     const t = T[p.time];
     const quem = el('div', { class: 'who' },
-      el('b', { text: p.nome }),
+      p.pid ? el('a', { class: 'pl-nome', href: '#jogador-' + p.pid }, el('b', { text: p.nome })) : el('b', { text: p.nome }),
       el('span', { class: 'small' }, escudo(p.time), el('a', { href: '#clube-' + p.time, text: t ? t.nome : '' }), ` · ${p.jogos} jogos`));
     const valor = modo === 'gols' ? p.gols : p.assistencias;
     const stat = el('div', { class: 'stat' },
@@ -530,17 +531,24 @@
     return el('div', { class: 'pl' }, el('span', { class: 'rk num', text: rank }), quem, stat);
   }
 
-  function telaArtilharia(app) {
-    app.append(secHead('Artilharia', 'Artilheiros e garçons', null, 'h1'));
-    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Ranking' });
-    [['gols', 'Gols'], ['assistencias', 'Assistências']].forEach(([k, txt]) => {
+  // ---------- jogadores
+  const GRUPO_POS = (pos) => /goleiro/i.test(pos || '') ? 0 : /zagueiro|lateral|ala|defensor/i.test(pos || '') ? 1 : /meia|volante|meio/i.test(pos || '') ? 2 : /atacante|ponta/i.test(pos || '') ? 3 : 4;
+  const NOME_GRUPO = ['Goleiros', 'Defensores', 'Meio-campistas', 'Atacantes', 'Outros'];
+  function telaJogadores(app) {
+    app.append(secHead('Jogadores', 'Jogadores do Brasileirão', null, 'h1'));
+    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Visão' });
+    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.artilharia === k), text: txt, onclick: () => { estado.artilharia = k; render(); } }));
     });
     app.append(seg);
+    if (estado.artilharia === 'clube') return jogadoresPorClube(app);
     const modo = estado.artilharia;
-    const lista = D.jogadores.filter((p) => (modo === 'gols' ? p.gols : p.assistencias) > 0)
-      .sort((a, b) => modo === 'gols' ? (b.gols - a.gols || b.assistencias - a.assistencias) : (b.assistencias - a.assistencias || b.gols - a.gols))
-      .slice(0, 40);
+    const fonte = P && P.jogadores && P.jogadores.length
+      ? P.jogadores.map((x) => ({ pid: x.id, nome: x.nome, time: x.clube, jogos: x.jogos, gols: x.gols, assistencias: x.assist }))
+      : D.jogadores;
+    const lista = fonte.filter((p) => (modo === 'gols' ? p.gols : p.assistencias) > 0)
+      .sort((a, b) => modo === 'gols' ? (b.gols - a.gols || b.assistencias - a.assistencias || a.jogos - b.jogos) : (b.assistencias - a.assistencias || b.gols - a.gols || a.jogos - b.jogos))
+      .slice(0, 50);
     const card = el('div', { class: 'card players' });
     let rank = 0, ultimo = null;
     lista.forEach((p, i) => {
@@ -549,7 +557,110 @@
       card.append(linhaJogador(p, rank, modo === 'gols' ? 'gols' : 'assist'));
     });
     app.append(card);
-    if (modo !== 'gols') app.append(el('p', { class: 'small', text: 'O ranking de assistências considera os 100 maiores artilheiros, que é o que a fonte de dados informa. Um jogador que dá muitas assistências mas marca pouco pode não aparecer.' }));
+  }
+
+  function jogadoresPorClube(app) {
+    const times = D.times.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    if (!estado.jogClube) estado.jogClube = String(times[0].id);
+    const filtro = el('div', { class: 'clubes-filtro', role: 'group', 'aria-label': 'Escolha o clube' });
+    times.forEach((t) => filtro.append(el('button', { type: 'button', 'aria-pressed': String(estado.jogClube === String(t.id)), 'aria-label': t.nome, title: t.nome,
+      onclick: () => { estado.jogClube = String(t.id); render(); } }, escudo(t.id, 'tb'))));
+    app.append(filtro);
+    if (!P) { app.append(el('p', { class: 'small', text: 'Carregando jogadores…' })); carregarJogadores(); return; }
+    const cid = +estado.jogClube;
+    const elenco = (P.jogadores || []).filter((x) => x.clube === cid)
+      .sort((a, b) => GRUPO_POS(a.pos) - GRUPO_POS(b.pos) || b.jogos - a.jogos || a.nome.localeCompare(b.nome));
+    if (!elenco.length) { app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0', text: 'Os jogadores deste clube aparecem aqui na próxima atualização do robô.' }))); return; }
+    const t = T[cid];
+    app.append(el('div', { class: 'arb-clube', style: 'margin-bottom:.8rem' }, escudo(cid, 'md'), el('div', null, el('b', { text: t ? t.nome : '' }),
+      el('div', { class: 'small', text: `${elenco.length} jogadores usados na temporada` }))));
+    let grupoAtual = -1, tb = null;
+    const blocos = el('div', { class: 'jg-blocos' });
+    elenco.forEach((x) => {
+      const g = GRUPO_POS(x.pos);
+      if (g !== grupoAtual) {
+        grupoAtual = g;
+        tb = el('tbody');
+        const goleiro = g === 0;
+        blocos.append(el('div', { class: 'card' }, el('div', { class: 'eyebrow pad', style: 'padding-bottom:0', text: NOME_GRUPO[g] }),
+          el('div', { class: 'tbl-wrap' }, el('table', { class: 'jg-tbl' },
+            el('thead', null, el('tr', null, el('th', { class: 'l sticky-col', text: 'Jogador' }), el('th', { text: 'J', title: 'Jogos' }), el('th', { text: 'Tit', title: 'Titular' }),
+              goleiro ? el('th', { text: 'Def', title: 'Defesas' }) : el('th', { text: 'G', title: 'Gols' }),
+              goleiro ? el('th', { text: 'GS', title: 'Gols sofridos' }) : el('th', { text: 'A', title: 'Assistências' }),
+              goleiro ? el('th', { text: 'SG', title: 'Jogos sem sofrer gol' }) : el('th', { text: 'Chutes', title: 'Finalizações' }),
+              goleiro ? null : el('th', { text: 'No gol', title: 'Chutes no gol' }),
+              el('th', { title: 'Amarelos' }, el('i', { class: 'cart am', 'aria-label': 'Amarelos' })), el('th', { title: 'Vermelhos' }, el('i', { class: 'cart vm', 'aria-label': 'Vermelhos' })))),
+            tb))));
+      }
+      const goleiro = g === 0;
+      tb.append(el('tr', { class: 'clicavel', onclick: () => { location.hash = '#jogador-' + x.id; } },
+        el('td', { class: 'l sticky-col' }, el('a', { class: 'jg-nome', href: '#jogador-' + x.id, text: x.nome })),
+        el('td', { class: 'num', text: x.jogos }), el('td', { class: 'num', text: x.titular || 0 }),
+        el('td', { class: 'num', text: goleiro ? (x.defesas || 0) : x.gols }), el('td', { class: 'num', text: goleiro ? (x.gols_sofridos || 0) : x.assist }),
+        el('td', { class: 'num', text: goleiro ? (x.sem_sofrer || 0) : (x.chutes || 0) }),
+        goleiro ? null : el('td', { class: 'num', text: x.no_alvo || 0 }),
+        el('td', { class: 'num', text: x.amarelos || 0 }), el('td', { class: 'num', text: x.vermelhos || 0 })));
+    });
+    app.append(blocos);
+    app.append(el('p', { class: 'small', text: 'Toque no jogador para ver a ficha completa. Fonte: ESPN.' }));
+  }
+
+  function telaJogador(app, pid) {
+    app.append(el('a', { class: 'back', href: '#jogadores', text: '← Jogadores', onclick: () => { estado.artilharia = 'clube'; } }));
+    if (!P) { app.append(el('p', { class: 'small', text: 'Carregando…' })); carregarJogadores(); return; }
+    const x = (P.jogadores || []).find((y) => y.id === pid);
+    if (!x) { app.append(el('p', { class: 'erro', text: 'Jogador não encontrado.' })); return; }
+    estado.jogClube = String(x.clube);
+    const t = T[x.clube];
+    const goleiro = GRUPO_POS(x.pos) === 0;
+    const iniciais = (x.nome || '?').split(/\s+/).filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+    app.append(el('header', { class: 'card jg-ficha' },
+      el('div', { class: 'dq-av' }, el('span', { text: iniciais }), escudo(x.clube, 'md')),
+      el('div', null, el('h1', { class: 'jg-h1', text: x.nome }),
+        el('div', { class: 'small' }, el('a', { href: '#clube-' + x.clube, text: t ? t.nome : '' }), x.pos ? ` · ${x.pos}` : '', x.camisa ? ` · camisa ${x.camisa}` : ''))));
+    // ranking entre todos os jogadores do campeonato
+    const todos = P.jogadores || [];
+    const pos = (campo) => { const v = x[campo] || 0; if (!v) return null; return 1 + todos.filter((y) => (y[campo] || 0) > v).length; };
+    const por = (v) => x.jogos ? ((v || 0) / x.jogos).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '–';
+    const tile = (rot, val, sub, campo) => {
+      const r = campo ? pos(campo) : null;
+      return el('div', { class: 'es-t' }, el('small', { text: rot }),
+        el('div', { class: 'es-v' }, el('b', { class: 'num', text: String(val) }), r && r <= 50 ? el('span', { class: 'es-r ' + (r <= 10 ? 'top' : ''), title: `${r}º no campeonato`, text: `${r}º` }) : null),
+        sub ? el('small', { text: sub }) : null);
+    };
+    const grupo = (titulo, tiles) => el('div', { class: 'card es-g' }, el('div', { class: 'eyebrow', text: titulo }), el('div', { class: 'es-grid' }, tiles.filter(Boolean)));
+    const pctTxt2 = (a, b) => b ? Math.round(100 * a / b) + '%' : '–';
+    const grupos = [grupo('Participação', [tile('Jogos', x.jogos, `${x.titular || 0} como titular · ${x.entrou || 0} saindo do banco`, 'jogos'),
+      tile('Participações em gol', (x.gols || 0) + (x.assist || 0), 'gols + assistências', null)])];
+    if (goleiro) {
+      grupos.push(grupo('Goleiro', [tile('Defesas', x.defesas || 0, `${por(x.defesas)} por jogo`, 'defesas'),
+        tile('Gols sofridos', x.gols_sofridos || 0, `${por(x.gols_sofridos)} por jogo`, null),
+        tile('Jogos sem sofrer gol', x.sem_sofrer || 0, null, 'sem_sofrer'),
+        tile('Defesas a cada 100 chutes no gol', (x.defesas || 0) + (x.gols_sofridos || 0) ? Math.round(100 * (x.defesas || 0) / ((x.defesas || 0) + (x.gols_sofridos || 0))) : '–', null, null)]));
+    }
+    grupos.push(grupo('Ataque', [tile('Gols', x.gols || 0, `${por(x.gols)} por jogo`, 'gols'), tile('Assistências', x.assist || 0, `${por(x.assist)} por jogo`, 'assist'),
+      tile('Finalizações', x.chutes || 0, `${por(x.chutes)} por jogo`, 'chutes'), tile('Chutes no gol', x.no_alvo || 0, `${pctTxt2(x.no_alvo || 0, x.chutes || 0)} das finalizações`, 'no_alvo'),
+      tile('Gols por finalização', pctTxt2(x.gols || 0, x.chutes || 0), null, null), tile('Impedimentos', x.impedimentos || 0, null, null)]));
+    grupos.push(grupo('Disciplina', [tile('Faltas cometidas', x.faltas || 0, `${por(x.faltas)} por jogo`, null), tile('Faltas sofridas', x.sofridas || 0, `${por(x.sofridas)} por jogo`, 'sofridas'),
+      tile('Cartões amarelos', x.amarelos || 0, null, null), tile('Cartões vermelhos', x.vermelhos || 0, null, null),
+      x.contra ? tile('Gols contra', x.contra, null, null) : null]));
+    app.append(el('section', null, secHead('Temporada', 'Números do jogador', null), el('div', { class: 'es-wrap' }, grupos)));
+    // últimos jogos
+    if (x.ultimos && x.ultimos.length) {
+      const card = el('div', { class: 'card list-games' });
+      x.ultimos.slice().reverse().forEach(([jid, g, a, tit]) => {
+        const j = D.jogos.find((y) => y.id === jid);
+        if (!j) return;
+        const emCasa = j.casa === x.clube, adv = emCasa ? j.fora : j.casa;
+        const feito = [g ? `${g} gol${g > 1 ? 's' : ''}` : '', a ? `${a} assist.` : ''].filter(Boolean).join(' · ') || (tit ? 'Titular' : 'Entrou');
+        card.append(el('a', { class: 'lg', href: '#jogo-' + j.id, style: 'text-decoration:none;color:inherit' },
+          el('span', { class: 'small num', text: `R${j.rodada}` }),
+          el('span', { class: 'team' }, el('span', { class: 'small', text: emCasa ? 'vs' : '@' }), escudo(adv), el('span', { text: T[adv] ? T[adv].nome : '' }), el('span', { class: 'small num', text: ` ${j.gols_casa}–${j.gols_fora}` })),
+          el('span', { class: 'small', text: feito })));
+      });
+      app.append(el('section', null, secHead('Jogos', 'Últimos jogos', null), card));
+    }
+    app.append(el('p', { class: 'small', text: 'Números somados jogo a jogo da temporada. O número ao lado é a posição do jogador entre todos do campeonato. Fonte: ESPN.' }));
   }
 
   function telaClube(app, id) {
@@ -925,7 +1036,9 @@
     const h = (location.hash || '#inicio').slice(1);
     if (h.startsWith('clube-')) return { tela: 'clube', id: +h.slice(6) };
     if (h.startsWith('jogo-')) return { tela: 'jogo', id: +h.slice(5) };
-    if (['inicio', 'tabela', 'rodadas', 'artilharia', 'noticias', 'arbitragem'].includes(h)) return { tela: h };
+    if (h.startsWith('jogador-')) return { tela: 'jogador', id: h.slice(8) };
+    if (h === 'artilharia') return { tela: 'jogadores' };
+    if (['inicio', 'tabela', 'rodadas', 'jogadores', 'noticias', 'arbitragem'].includes(h)) return { tela: h };
     return { tela: 'inicio' };
   }
   window.addEventListener('error', () => {
@@ -941,12 +1054,13 @@
     if (r.tela === 'inicio') telaInicio(app);
     else if (r.tela === 'tabela') telaTabela(app);
     else if (r.tela === 'rodadas') telaRodadas(app);
-    else if (r.tela === 'artilharia') telaArtilharia(app);
+    else if (r.tela === 'jogadores') { telaJogadores(app); if (!P) carregarJogadores(); }
+    else if (r.tela === 'jogador') telaJogador(app, r.id);
     else if (r.tela === 'noticias') telaNoticias(app);
     else if (r.tela === 'arbitragem') telaArbitragem(app);
     else if (r.tela === 'jogo') { telaJogo(app, r.id); if (!E) carregarEstat(); }
     else telaClube(app, r.id);
-    const navKey = r.tela === 'clube' ? 'tabela' : r.tela === 'jogo' ? 'rodadas' : r.tela;
+    const navKey = r.tela === 'clube' ? 'tabela' : r.tela === 'jogo' ? 'rodadas' : r.tela === 'jogador' ? 'jogadores' : r.tela;
     document.querySelectorAll('[data-nav]').forEach((a) => {
       if (a.dataset.nav === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
@@ -996,6 +1110,18 @@
   }
   carregarNoticias();
   setInterval(carregarNoticias, 10 * 60 * 1000);
+
+  let jogCarregando = false;
+  async function carregarJogadores() {
+    if (window.__SITE_DATA__ || jogCarregando) return;
+    jogCarregando = true;
+    try {
+      const r = await fetch('data/jogadores.json?t=' + Date.now(), { cache: 'no-store' });
+      P = r.ok ? await r.json() : { jogadores: [] };
+    } catch (e) { P = { jogadores: [] }; }
+    jogCarregando = false;
+    if (D && ['jogadores', 'jogador'].includes(rota().tela)) render();
+  }
 
   let estatCarregando = false;
   async function carregarEstat() {

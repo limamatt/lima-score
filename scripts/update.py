@@ -149,6 +149,60 @@ def estatisticas_dos_clubes(saida_jogos, espn):
     return out
 
 
+def montar_jogadores(saida_jogos):
+    """Números de cada jogador na temporada, somando jogo a jogo as escalações da ESPN
+    (data/escalacoes.json). Grava data/jogadores.json, lido pela aba Jogadores."""
+    arq = ROOT / "data" / "escalacoes.json"
+    if not arq.exists():
+        return
+    esc = json.loads(arq.read_text(encoding="utf-8"))
+    por_id = {str(j["id"]): j for j in saida_jogos}
+    CAMPOS = {"totalGoals": "gols", "goalAssists": "assist", "totalShots": "chutes", "shotsOnTarget": "no_alvo",
+              "foulsCommitted": "faltas", "foulsSuffered": "sofridas", "offsides": "impedimentos",
+              "yellowCards": "amarelos", "redCards": "vermelhos", "ownGoals": "contra", "saves": "defesas",
+              "goalsConceded": "gols_sofridos", "shotsFaced": "chutes_sofridos"}
+    jog = {}
+    for jid, lados in sorted(esc.items(), key=lambda x: (por_id.get(x[0]) or {}).get("data", "")):
+        jg = por_id.get(jid)
+        if not jg or jg["status"] != "FINISHED":
+            continue
+        for lado in ("casa", "fora"):
+            cid = jg[lado]
+            sofreu = jg["gols_fora"] if lado == "casa" else jg["gols_casa"]
+            for p in lados.get(lado) or []:
+                r = jog.setdefault(p["id"], dict(id=p["id"], nome=p["nome"], pos={}, camisa=None, clube=cid,
+                                                  jogos=0, titular=0, entrou=0, sem_sofrer=0, ultimos=[],
+                                                  **{v: 0 for v in CAMPOS.values()}))
+                r["nome"] = p["nome"] or r["nome"]
+                r["clube"] = cid  # clube do jogo mais recente (acompanha transferências)
+                r["camisa"] = p.get("camisa") or r["camisa"]
+                if p.get("pos"):
+                    r["pos"][p["pos"]] = r["pos"].get(p["pos"], 0) + 1
+                r["jogos"] += 1
+                r["titular"] += bool(p.get("titular"))
+                r["entrou"] += bool(p.get("entrou"))
+                st = p.get("stats") or {}
+                for k, v in CAMPOS.items():
+                    r[v] += int(st.get(k) or 0)
+                if p.get("pos") == "Goleiro" and p.get("titular") and not p.get("saiu") and sofreu == 0:
+                    r["sem_sofrer"] += 1
+                r["ultimos"].append([int(jid), int(st.get("totalGoals") or 0), int(st.get("goalAssists") or 0),
+                                     1 if p.get("titular") else 0])
+    saida = []
+    for r in jog.values():
+        r["pos"] = max(r["pos"], key=r["pos"].get) if r["pos"] else None
+        r["ultimos"] = r["ultimos"][-5:]
+        saida.append({k: v for k, v in r.items() if v not in (0, None) or k in ("jogos", "gols", "assist", "titular")})
+    saida.sort(key=lambda r: (r["clube"], -r["jogos"], r["nome"] or ""))
+    conteudo = dict(jogos_lidos=len([1 for jid in esc if (por_id.get(jid) or {}).get("status") == "FINISHED"]),
+                    jogadores=saida)
+    out = ROOT / "data" / "jogadores.json"
+    novo = json.dumps(conteudo, ensure_ascii=False, separators=(",", ":"))
+    if not out.exists() or out.read_text(encoding="utf-8") != novo:
+        out.write_text(novo, encoding="utf-8")
+        print(f"Jogadores: {len(saida)} jogadores em {conteudo['jogos_lidos']} jogos.")
+
+
 def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts):
     """Para cada clube que ainda briga pelo G4 ou contra o Z4: o que muda com o resultado do
     próximo jogo, para quem torcer (quem secar) e quantos pontos deixam a vaga praticamente certa.
@@ -488,6 +542,10 @@ def main():
         saida_jogadores.append(item)
 
     est_clubes = estatisticas_dos_clubes(saida_jogos, espn)
+    try:
+        montar_jogadores(saida_jogos)
+    except Exception as ex:  # a aba Jogadores nunca derruba o resto
+        print(f"Jogadores: erro ({ex.__class__.__name__}: {ex})")
     for tt in saida_times:
         tt["estat"] = est_clubes.get(tt["id"])
 

@@ -413,3 +413,12 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .es-r.bot{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
 .es-ext{display:flex;flex-direction:column;gap:.2rem;margin-top:.8rem}
 .es-ext a{color:inherit;font-weight:600}
+/* jogadores */
+.jg-blocos{display:flex;flex-direction:column;gap:.7rem}
+.jg-tbl td.l,.jg-tbl th.l{min-width:9rem;max-width:12rem}
+.jg-nome{color:inherit;font-weight:600;text-decoration:none;display:inline-block;max-width:12rem;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.jg-tbl tr.clicavel{cursor:pointer}
+.jg-ficha{display:flex;align-items:center;gap:1rem;padding:1rem;margin-bottom:1rem}
+.jg-h1{font-size:1.6rem;margin:0 0 .2rem}
+.jg-ficha .small a{color:inherit;font-weight:600}
+.pl-nome{color:inherit;text-decoration:none}
