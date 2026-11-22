@@ -194,6 +194,8 @@ def main():
             eventos.append(dict(id=ev["id"], data=datetime.fromisoformat(ev["date"].replace("Z", "+00:00")),
                                 casa=ids["home"], fora=ids["away"]))
 
+    diag = dict(hora=agora.isoformat(timespec="seconds"), eventos_espn=len(placar.get("events", [])),
+                reconhecidos=len(eventos), alvo=len(alvo), sem_par=[])
     lidos = 0
     for j in alvo:
         chave = str(j["id"])
@@ -201,6 +203,7 @@ def main():
         cands = [e for e in eventos if {e["casa"][0], e["fora"][0]} == {j["casa"], j["fora"]}
                  and abs(e["data"] - inicio(j)) <= timedelta(hours=36)]
         if not cands:
+            diag["sem_par"].append(chave)
             if j["status"] == "FINISHED":
                 guardado["tentativas"] = guardado.get("tentativas", 0) + 1
                 jogos_dados[chave] = guardado
@@ -280,8 +283,8 @@ def main():
         jogos_dados[chave] = novo
         lidos += 1
 
-    if json.dumps(jogos_dados, sort_keys=True) != antes:
-        OUT.write_text(json.dumps(dict(fonte="ESPN", jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists():
+        OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Estatísticas: {lidos} jogos lidos ({len(ao_vivo)} ao vivo).")
     else:
         print("Estatísticas: nada mudou.")
@@ -292,3 +295,8 @@ if __name__ == "__main__":
         main()
     except Exception as e:  # nunca derruba o robô principal
         print(f"Erro nas estatísticas: {e.__class__.__name__}: {e}")
+        try:
+            if not OUT.exists():
+                OUT.write_text(json.dumps(dict(fonte="ESPN", erro=f"{e.__class__.__name__}: {e}"[:300], jogos={})), encoding="utf-8")
+        except Exception:
+            pass
