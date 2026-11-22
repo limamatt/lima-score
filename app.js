@@ -926,7 +926,7 @@
   // ---------- placar ao vivo rápido: lê um arquivo pequeno direto do GitHub a cada 20 s
   const REPO = (() => {
     const dono = location.hostname.endsWith('.github.io') ? location.hostname.split('.')[0] : 'limamatt';
-    const nome = location.pathname.split('/').filter(Boolean)[0] || 'termometro-brasileirao';
+    const nome = location.pathname.split('/').filter(Boolean)[0] || 'limascore';
     return `${dono}/${nome}`;
   })();
   let etagAoVivo = null;

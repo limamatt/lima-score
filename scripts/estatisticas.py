@@ -41,7 +41,7 @@ ESTAT = {
 
 
 def baixar(caminho):
-    req = urllib.request.Request(API + caminho, headers={"User-Agent": "Mozilla/5.0 termometro-brasileirao"})
+    req = urllib.request.Request(API + caminho, headers={"User-Agent": "Mozilla/5.0 limascore"})
     with urllib.request.urlopen(req, timeout=25) as r:
         return json.load(r)
 
