@@ -215,6 +215,12 @@ def montar_jogadores(saida_jogos):
                 z[c["zona"]] = z.get(c["zona"], 0) + 1
                 if c.get("cab"):
                     r["cabeceios"] = r.get("cabeceios", 0) + 1
+                    if c["res"] == "gol":
+                        r["gols_cabeca"] = r.get("gols_cabeca", 0) + 1
+                if c["zona"] == "fora":
+                    r["chutes_fora"] = r.get("chutes_fora", 0) + 1
+                    if c["res"] == "gol":
+                        r["gols_fora"] = r.get("gols_fora", 0) + 1
                 if c["xg"] >= 0.3 and c["zona"] != "penalti":
                     r["grandes_chances"] = r.get("grandes_chances", 0) + 1
                 if c.get("x") is not None and len(r.setdefault("mapa", [])) < 150:
@@ -224,6 +230,18 @@ def montar_jogadores(saida_jogos):
                 r = jog[aid]
                 r["chances"] = r.get("chances", 0) + 1
                 r["xa"] = round(r.get("xa", 0) + c["xg"], 3)
+                if c.get("tp") in ("cruzamento", "escanteio"):
+                    r["ch_cruz"] = r.get("ch_cruz", 0) + 1
+                if c.get("tp") == "enfiada":
+                    r["ch_enfiada"] = r.get("ch_enfiada", 0) + 1
+                if c.get("tp") in ("escanteio", "bola_parada"):
+                    r["ch_parada"] = r.get("ch_parada", 0) + 1
+            gid = quem(c.get("gk"))
+            if gid in jog and c["res"] == "defendido":
+                r = jog[gid]
+                r["def_" + ("pen" if c["zona"] == "penalti" else "fora" if c["zona"] == "fora" else "area")] = \
+                    r.get("def_" + ("pen" if c["zona"] == "penalti" else "fora" if c["zona"] == "fora" else "area"), 0) + 1
+                r["xg_defendido"] = round(r.get("xg_defendido", 0) + c["xg"], 3)
         for nome, acs in (lados.get("acoes") or {}).items():
             pid = quem(nome)
             if pid in jog:

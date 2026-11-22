@@ -29,7 +29,7 @@ ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada joga
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 8                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 9                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -380,7 +380,17 @@ def chutes_e_acoes(resumo, lado_por_espn):
             xg, zona = xg_estimado(texto)
             m = re.search(r"assisted by ([^.]+?)(?: with| following|\.|$)", texto, re.I)
             rel = play.get("clock") or ev.get("time") or {}
-            chutes.append(dict(j=parts[0], a=(parts[1] if len(parts) > 1 and m else None), lado=lado, res=res, xg=xg, zona=zona,
+            tp = None
+            if m:
+                tl = texto[m.start():].lower()
+                tp = ("escanteio" if "corner" in tl else "bola_parada" if "set piece" in tl or "free kick" in tl
+                      else "cruzamento" if "cross" in tl else "enfiada" if "through ball" in tl
+                      else "cabeceio" if "headed pass" in tl else "contra_ataque" if "fast break" in tl else "passe")
+            gk = None
+            mg = re.search(r"saved .*? by ([^(]+?) \(", texto)
+            if mg:
+                gk = mg.group(1).strip()
+            chutes.append(dict(tp=tp, gk=gk, j=parts[0], a=(parts[1] if len(parts) > 1 and m else None), lado=lado, res=res, xg=xg, zona=zona,
                                cab="header" in t, x=play.get("fieldPositionX"), y=play.get("fieldPositionY"),
                                min=(rel.get("displayValue") or "").strip() or None))
             continue
