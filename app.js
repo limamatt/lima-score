@@ -27,7 +27,7 @@
   }
   const pct = (v) => {
     if (v == null) return '—';
-    if (v > 99) return '100%';
+    if (v > 99.9) return '>99,9%';
     if (v > 0 && v < 0.05) return '<0,1%';
     return (+v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
   };
