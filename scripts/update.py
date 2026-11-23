@@ -148,6 +148,23 @@ def estatisticas_dos_clubes(saida_jogos, espn):
     return out
 
 
+def _posicao_chute(x, y):
+    """Posição do chute no meio-campo de ataque: (distância até a linha do gol / 52,5 m, largura de 0 a 1).
+    A narração usa duas escalas: 0–1 (já a partir do gol) e 0–100 (campo inteiro, atacando para o 100).
+    Sem posição (0, 0) ou fora do campo: descarta."""
+    if x is None or y is None:
+        return None
+    if x > 1.5 or y > 1.5:  # escala 0–100
+        if x >= 99 or x < 50:
+            return None
+        x, y = (100 - x) * 1.05 / 52.5, y / 100
+    if x <= 0.005 and y <= 0.005:
+        return None
+    if not (0 < x <= 1 and 0 <= y <= 1):
+        return None
+    return [round(x, 3), round(y, 3)]
+
+
 def _sem_acento(n):
     import unicodedata
     return unicodedata.normalize("NFKD", n or "").encode("ascii", "ignore").decode().lower().strip()
@@ -222,8 +239,9 @@ def montar_jogadores(saida_jogos):
                         r["gols_fora"] = r.get("gols_fora", 0) + 1
                 if c["xg"] >= 0.3 and c["zona"] != "penalti":
                     r["grandes_chances"] = r.get("grandes_chances", 0) + 1
-                if c.get("x") is not None and len(r.setdefault("mapa", [])) < 150:
-                    r["mapa"].append([round(c["x"], 3), round(c.get("y") or 0, 3), c["res"][0], c["xg"]])
+                pos = _posicao_chute(c.get("x"), c.get("y"))
+                if pos and len(r.setdefault("mapa", [])) < 150:
+                    r["mapa"].append([pos[0], pos[1], c["res"][0], c["xg"]])
             aid = quem(c.get("a"))
             if aid in jog:
                 r = jog[aid]
