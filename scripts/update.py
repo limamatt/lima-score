@@ -41,14 +41,13 @@ ESCUDOS = {
     1768: "https://r2.thesportsdb.com/images/media/team/badge/irzu1u1554237406.png/medium",  # Athletico-PR (escudo atual)
 }
 
-# Faixas da tabela (2026). As vagas extras dependem dos campeões das copas.
+# Faixas fixas da tabela. Libertadores, Pré e Sul-Americana mudam conforme as copas: ver regras_vagas()
+# e data/vagas.json.
 FAIXAS = [
     ("titulo", 1, 1),
-    ("libertadores", 1, 4),
-    ("pre_libertadores", 5, 6),
-    ("sulamericana", 7, 12),
     ("rebaixamento", 17, 20),
 ]
+ARQ_VAGAS = ROOT / "data" / "vagas.json"
 
 
 def baixar(caminho, token):
@@ -334,7 +333,95 @@ def provaveis_escalacoes(saida_jogos):
     return out
 
 
-def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts):
+def campeao_libertadores(token, lib):
+    """Descobre no football-data (competição CLI) se o clube de data/vagas.json ganhou a final.
+    Devolve True/False quando a final já acabou, ou None se ainda não deu para saber."""
+    try:
+        if datetime.now(timezone.utc).date().isoformat() < lib.get("data_final", "0000"):
+            return None
+        finais = baixar("/competitions/CLI/matches?stage=FINAL", token).get("matches", [])
+        for j in finais:
+            if j.get("status") != "FINISHED":
+                continue
+            w = j["score"].get("winner")
+            venc = j["homeTeam"] if w == "HOME_TEAM" else j["awayTeam"] if w == "AWAY_TEAM" else None
+            if venc is None:
+                continue
+            alvo = _sem_acento(lib["time"]).lower()
+            return alvo in _sem_acento(venc.get("name") or "").lower() or alvo in _sem_acento(venc.get("shortName") or "").lower()
+    except Exception as e:  # sem a final, segue com a probabilidade do arquivo
+        print("Libertadores: não consegui ver a final:", e)
+    return None
+
+
+def regras_vagas(ids, idx, times, posicoes, token):
+    """Quem vai para a Libertadores (fase de grupos / Pré) e para a Sul-Americana em cada simulação.
+
+    Base 2026: 1º a 4º na fase de grupos, 5º e 6º na Pré, os 6 seguintes na Sul-Americana (G-6, porque o
+    Palmeiras, já classificado pela tabela, é finalista da Copa do Brasil). Vagas extras de fase de grupos:
+      - Palmeiras campeão da Libertadores (a vaga de campeão desce para a tabela);
+      - Grêmio rebaixado (perde a vaga da Copa do Brasil, que desce para a tabela).
+    Cada extra empurra a linha uma posição para baixo (G-7, G-8). Se o Grêmio não cair, ele já está na
+    Libertadores e é pulado na contagem da Pré e da Sul-Americana."""
+    cfg = json.loads(ARQ_VAGAS.read_text(encoding="utf-8")) if ARQ_VAGAS.exists() else {}
+    base = {"grupos": 4, "pre": 2, "sul": 6, **cfg.get("base", {})}
+    n_sim, n = posicoes.shape
+    por_nome = {nome(times[t]["team"]): t for t in ids}
+    extra = np.zeros(n_sim, int)
+
+    lib = cfg.get("libertadores") or {}
+    lib_res = lib.get("resultado")
+    if lib and lib_res is None and token:
+        lib_res = campeao_libertadores(token, lib)
+        if lib_res is not None:  # grava para não perguntar de novo a cada rodada do robô
+            cfg["libertadores"]["resultado"] = lib_res
+            ARQ_VAGAS.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if lib:
+        if lib_res is None:
+            ganhou = np.random.default_rng(SEED + 1).random(n_sim) < float(lib.get("prob", 50)) / 100
+        else:
+            ganhou = np.full(n_sim, bool(lib_res))
+        extra += ganhou
+
+    cb = cfg.get("copa_do_brasil") or {}
+    e = por_nome.get(cb.get("time"))
+    if e is not None:
+        ie = idx[e]
+        caiu = posicoes[:, ie] >= 17
+        extra += caiu
+        na_lib = ~caiu
+        adj = posicoes - ((posicoes > posicoes[:, [ie]]) & na_lib[:, None])
+    else:
+        ie, caiu, na_lib, adj = None, np.zeros(n_sim, bool), np.zeros(n_sim, bool), posicoes
+
+    g = (base["grupos"] + extra)[:, None]
+    grupos = adj <= g
+    pre = (adj > g) & (adj <= g + base["pre"])
+    sul = (adj > g + base["pre"]) & (adj <= g + base["pre"] + base["sul"])
+    if ie is not None:
+        grupos[:, ie] |= na_lib
+        pre[:, ie] &= ~na_lib
+        sul[:, ie] &= ~na_lib
+
+    # linha da tabela de hoje (a final da Libertadores só conta depois de jogada)
+    caiu_hoje = e is not None and times[e]["position"] >= 17
+    g_hoje = base["grupos"] + (1 if lib_res else 0) + (1 if caiu_hoje else 0)
+    total = base["grupos"] + base["pre"] + extra
+    info = dict(
+        grupos=g_hoje, pre=base["pre"], sul=base["sul"],
+        g=g_hoje + base["pre"],
+        excluido=None if (e is None or caiu_hoje) else e,
+        copa=dict(time=e, descricao=cb.get("descricao"), rebaixado_hoje=bool(caiu_hoje),
+                  chance_cair=round(float(caiu.mean()) * 100, 1)),
+        libertadores=dict(time=por_nome.get(lib.get("time")), descricao=lib.get("descricao"),
+                          data=lib.get("data_final"), resultado=lib_res,
+                          prob=None if lib_res is not None else lib.get("prob", 50)) if lib else None,
+        dist={f"G{k}": round(float(np.mean(total == k)) * 100, 1) for k in sorted(set(total.tolist()))},
+    )
+    return grupos, pre, sul, info
+
+
+def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts, direta=None, g_hoje=4, pular=None):
     """Para cada clube que ainda briga pelo G4 ou contra o Z4: o que muda com o resultado do
     próximo jogo, para quem torcer (quem secar) e quantos pontos deixam a vaga praticamente certa.
     Tudo sai das mesmas simulações do fim do campeonato."""
@@ -348,7 +435,12 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
     for zona, lo, hi in (("g4", 1, 4), ("z4", 17, 20)):
         for t in ids:
             i = idx[t]
-            dentro = (posicoes[:, i] >= lo) & (posicoes[:, i] <= hi)
+            if zona == "g4" and t == pular:
+                continue  # o clube da Copa do Brasil não disputa a vaga pela tabela
+            if zona == "g4" and direta is not None:
+                dentro = direta[:, i]
+            else:
+                dentro = (posicoes[:, i] >= lo) & (posicoes[:, i] <= hi)
             chance = float(dentro.mean()) * 100
             if not (1 <= chance <= 99) or t not in proximo:
                 continue
@@ -410,7 +502,7 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
             # distância para a linha (4º/5º ou 16º/17º)
             pos = times[t]["position"]
             if zona == "g4":
-                ref = tabela[4] if pos <= 4 else tabela[3]
+                ref = tabela[g_hoje] if pos <= g_hoje else tabela[g_hoje - 1]
             else:
                 ref = tabela[16] if pos <= 16 else tabela[15]
             saida.append(dict(time=t, zona=zona, chance=round(chance, 1), pos=pos, pts=pts_de[t], jogos=faltam[t],
@@ -566,6 +658,8 @@ def main():
     linhas_sim = np.arange(N_SIM)[:, None]
     posicoes[linhas_sim, ordem] = np.arange(1, n + 1)[None, :]
 
+    v_grupos, v_pre, v_sul, vagas = regras_vagas(ids, idx, times, posicoes, token)
+
     # forma (últimos 5 resultados) de cada time
     forma = {t: [] for t in ids}
     for j in sorted(encerrados, key=lambda x: x["utcDate"]):
@@ -593,6 +687,9 @@ def main():
         col = posicoes[:, i]
         st = s[t]
         faixas = {k: round(float(np.mean((col >= lo) & (col <= hi))) * 100, 1) for k, lo, hi in FAIXAS}
+        faixas.update(libertadores=round(float(v_grupos[:, i].mean()) * 100, 1),
+                      pre_libertadores=round(float(v_pre[:, i].mean()) * 100, 1),
+                      sulamericana=round(float(v_sul[:, i].mean()) * 100, 1))
         saida_times.append(dict(
             id=t, nome=nome(r["team"]), sigla=sigla(r["team"]), escudo=ESCUDOS.get(t, r["team"]["crest"]),
             pos=r["position"], pts=r["points"], j=r["playedGames"], v=r["won"], e=r["draw"], d=r["lost"],
@@ -607,7 +704,8 @@ def main():
             **faixas,
         ))
     saida_times.sort(key=lambda x: x["pos"])
-    cenarios = montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts)
+    cenarios = montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts,
+                               direta=v_grupos, g_hoje=vagas["grupos"], pular=vagas["copa"]["time"])
 
     # canais de transmissão (preenchidos em data/transmissoes.json)
     arq_canais = ROOT / "data" / "transmissoes.json"
@@ -797,7 +895,7 @@ def main():
         temporada=dict(inicio=temporada["startDate"], fim=temporada["endDate"],
                        rodada_atual=temporada.get("currentMatchday")),
         simulacoes=N_SIM, times=saida_times, jogos=saida_jogos, jogadores=saida_jogadores,
-        arbitragem=arbitragem, cenarios=cenarios,
+        arbitragem=arbitragem, cenarios=cenarios, vagas=vagas,
     )
 
     # só grava (e muda a data) se algum número mudou

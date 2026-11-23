@@ -1,0 +1,17 @@
+{
+  "_leia": "Regras das vagas da Libertadores 2027 e da Sul-Americana 2027 pelo Brasileirão 2026. O robô usa este arquivo para colorir a tabela e calcular as chances. 'resultado': null = ainda não aconteceu (o robô tenta descobrir sozinho no football-data); true/false = já definido (preencha à mão se quiser forçar).",
+  "base": { "grupos": 4, "pre": 2, "sul": 6 },
+  "libertadores": {
+    "time": "Palmeiras",
+    "descricao": "Palmeiras campeão da Libertadores 2026 (final em 28/11, contra o Estudiantes)",
+    "data_final": "2026-11-28",
+    "prob": 50,
+    "resultado": null,
+    "vaga": "grupos"
+  },
+  "copa_do_brasil": {
+    "time": "Grêmio",
+    "descricao": "Grêmio já tem vaga na fase de grupos pela Copa do Brasil, mas perde se for rebaixado; aí a vaga desce para a tabela",
+    "vaga": "grupos"
+  }
+}
