@@ -1,0 +1,116 @@
+{
+ "jogos": {
+  "555093": {
+   "casa": {
+    "titulares": [
+     [
+      "Gabriel Batista"
+     ],
+     [
+      "Vitinho",
+      "Ferraresi",
+      "Arthur Chaves",
+      "Alex Telles"
+     ],
+     [
+      "Domingos Andrade",
+      "Danilo"
+     ],
+     [
+      "Ziyech",
+      "Montoro",
+      "Matheus Martins"
+     ],
+     [
+      "Tiquinho Soares"
+     ]
+    ],
+    "url": "https://ge.globo.com/rj/futebol/brasileirao-serie-a/noticia/2026/11/23/botafogo-x-sao-paulo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "desfalques": [
+     "Jordan Barrera",
+     "Pendurados: Danilo",
+     "Edenílson",
+     "Ferraresi",
+     "Júnior Santos",
+     "Lucas Monzón",
+     "Matheus Martins",
+     "Medina",
+     "Marçal",
+     "Villlalba"
+    ]
+   },
+   "fora": {
+    "titulares": [
+     [
+      "Rafael"
+     ],
+     [
+      "Newton",
+      "Arboleda",
+      "Osório"
+     ],
+     [
+      "Pedro Lima",
+      "Bobadilla",
+      "Pablo Maia",
+      "Lucas",
+      "Iago"
+     ],
+     [
+      "Luciano",
+      "Calleri"
+     ]
+    ],
+    "url": "https://ge.globo.com/rj/futebol/brasileirao-serie-a/noticia/2026/11/23/botafogo-x-sao-paulo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "desfalques": [
+     "Nicolas",
+     "Buta",
+     "Domingos Duarte",
+     "Marcos Antonio",
+     "Rafael Tolói",
+     "Artur",
+     "Sabino .Pendurados: Lucas Ramon",
+     "Wendell",
+     "Djhordney",
+     "Marcos Antônio",
+     "Danielzinho",
+     "Gustavo Santana",
+     "André Silva",
+     "Artur"
+    ]
+   }
+  }
+ },
+ "diag": {
+  "hora": "2026-11-23T15:01:10+00:00",
+  "materias": [
+   [
+    "Botafogo x São Paulo: onde assistir ao vivo, horário e escalações",
+    {
+     "1770": 5,
+     "1776": 4
+    }
+   ],
+   [
+    "Escalação do São Paulo: contrato veta, e Artur é desfalque contra o Botafogo",
+    {}
+   ],
+   [
+    "Escalação do Botafogo: Tite deve ter retorno de Danilo em jogo decisivo contra o",
+    {
+     "1770": 5
+    }
+   ]
+  ],
+  "amostra": [
+   [
+    "Escalação do São Paulo: contrato veta, e Artur é desfalque contra o Botafogo",
+    [
+     "Artur pertence ao Botafogo e está emprestado ao São Paulo até o fim deste ano. Para que o atacante atuasse, seu atual clube precisaria pagar uma multa, mas isso",
+     "O São Paulo, portanto, deve entrar em campo na 36ª rodada do Campeonato Brasileiro com: Rafael, Newton, Arboleda e Osório; Pedro Lima, Bobadilla, Pablo Maia, Lu",
+     "Dorival Júnior também ganhou outro desfalque para o jogo contra o Botafogo. O zagueiro Rafael Tolói lesionou o adutor direito na partida diante do Fluminense e "
+    ]
+   ]
+  ]
+ }
+}
