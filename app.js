@@ -142,8 +142,13 @@
     return el('span', { class: 'mini-live ' + res, title: `Ao vivo contra ${adv ? adv.nome : ''}`, text: `${meu}-${dele}` });
   }
   const aoVivo = (j) => j.status === 'IN_PLAY' || j.status === 'PAUSED';
+  // rodada vigente: a menor rodada que ainda tem jogo por acontecer.
+  // Jogo adiado para mais de 7 dias depois da data típica da rodada não segura a rodada.
   function rodadaAtual() {
-    const pend = D.jogos.filter((j) => !encerrado(j));
+    const tipica = {};
+    D.jogos.forEach((j) => { (tipica[j.rodada] = tipica[j.rodada] || []).push(new Date(j.data).getTime()); });
+    Object.keys(tipica).forEach((r) => { const v = tipica[r].sort((a, b) => a - b); tipica[r] = v[Math.floor(v.length / 2)]; });
+    const pend = D.jogos.filter((j) => !encerrado(j) && new Date(j.data).getTime() <= tipica[j.rodada] + 7 * 864e5);
     if (!pend.length) return 38;
     return Math.min(...pend.map((j) => j.rodada));
   }
