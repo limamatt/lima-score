@@ -72,7 +72,8 @@ def estatisticas_dos_clubes(saida_jogos, espn):
             cid = jg[ld]
             r = reg.setdefault(cid, dict(jogos=0, com_dados=0, soma={}, sofrido={}, gols=0, sofridos=0, sem_sofrer=0, sem_marcar=0,
                                          g1t=0, g2t=0, s1t=0, s2t=0, g_final=0, s_final=0, g_pen=0, s_pen=0,
-                                         virada_pts=0, cedeu_pts=0, saiu_atras=0, saiu_frente=0, maior_v=None, maior_d=None))
+                                         virada_pts=0, cedeu_pts=0, saiu_atras=0, saiu_frente=0, maior_v=None, maior_d=None,
+                                         pub_casa=[], pub_fora=[]))
             gp, gc = (jg["gols_casa"], jg["gols_fora"]) if ld == "casa" else (jg["gols_fora"], jg["gols_casa"])
             r["jogos"] += 1
             r["gols"] += gp; r["sofridos"] += gc
@@ -81,6 +82,8 @@ def estatisticas_dos_clubes(saida_jogos, espn):
                 r["maior_v"] = (gp - gc, jg["id"])
             if gp < gc and (r["maior_d"] is None or gc - gp > r["maior_d"][0]):
                 r["maior_d"] = (gc - gp, jg["id"])
+            if e.get("publico"):
+                r["pub_" + ld].append(e["publico"])
             st, so = e.get(ld) or {}, e.get(outro) or {}
             if st:
                 r["com_dados"] += 1
@@ -134,13 +137,18 @@ def estatisticas_dos_clubes(saida_jogos, espn):
             g_pen=r["g_pen"], s_pen=r["s_pen"],
             saiu_atras=r["saiu_atras"], virada_pts=r["virada_pts"], saiu_frente=r["saiu_frente"], cedeu_pts=r["cedeu_pts"],
             maior_v=r["maior_v"][1] if r["maior_v"] else None, maior_d=r["maior_d"][1] if r["maior_d"] else None,
+            publico_casa=round(sum(r["pub_casa"]) / len(r["pub_casa"])) if r["pub_casa"] else None,
+            publico_fora=round(sum(r["pub_fora"]) / len(r["pub_fora"])) if r["pub_fora"] else None,
+            publico_casa_jogos=len(r["pub_casa"]), publico_fora_jogos=len(r["pub_fora"]),
+            publico_casa_max=max(r["pub_casa"]) if r["pub_casa"] else None,
         )
     # posição de cada clube em cada número (1º = melhor; para números "ruins", menor é melhor)
     menor_melhor = {"sofridos_jogo", "finalizacoes_sofridas", "no_alvo_sofridos", "faltas", "amarelos", "vermelhos", "sem_marcar",
                     "impedimentos", "s1t", "s2t", "s_final", "s_pen", "cedeu_pts"}
     for k in ("gols_jogo", "sofridos_jogo", "sem_sofrer", "posse", "finalizacoes", "no_alvo", "finalizacoes_sofridas",
               "no_alvo_sofridos", "escanteios", "faltas", "faltas_sofridas", "impedimentos", "defesas", "passes",
-              "precisao_passes", "amarelos", "vermelhos", "aproveitamento_chutes", "virada_pts", "cedeu_pts", "g_final", "s_final"):
+              "precisao_passes", "amarelos", "vermelhos", "aproveitamento_chutes", "virada_pts", "cedeu_pts", "g_final", "s_final",
+              "publico_casa", "publico_fora"):
         vals = sorted(((v[k], c) for c, v in out.items() if v.get(k) is not None), reverse=k not in menor_melhor)
         for pos, (val, c) in enumerate(vals, 1):
             empate = next(i for i, (x, _) in enumerate(vals, 1) if x == val)

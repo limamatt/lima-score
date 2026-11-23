@@ -29,7 +29,7 @@ ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada joga
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 11                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 12                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -655,6 +655,16 @@ def main():
                     final=bool(j["status"] == "FINISHED" and estado == "post"))
         novo["estado"] = estado
         novo["v"] = VERSAO
+        try:
+            gi = resumo.get("gameInfo") or {}
+            pub = int(numero(gi.get("attendance")) or numero(comp.get("attendance")) or 0)
+            if pub > 0:
+                novo["publico"] = pub
+            est_nome = ((gi.get("venue") or {}).get("fullName"))
+            if est_nome:
+                novo["estadio"] = est_nome
+        except Exception:
+            pass
         try:
             esc = escalacao_oficial(resumo, lado_por_espn)
             if esc:

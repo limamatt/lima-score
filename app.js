@@ -1239,7 +1239,11 @@
         tile('Cartões amarelos', String(x.amarelos), 'amarelos'), tile('Cartões vermelhos', String(x.vermelhos), 'vermelhos')]),
       grupo('Momentos do jogo', [tile('Gols no 1º tempo (pró × contra)', `${x.g1t} × ${x.s1t}`, null), tile('Gols no 2º tempo (pró × contra)', `${x.g2t} × ${x.s2t}`, null),
         tile('Gols marcados após os 75′', String(x.g_final), 'g_final'), tile('Gols sofridos após os 75′', String(x.s_final), 's_final'),
-        tile(`Pontos buscados saindo atrás (${x.saiu_atras} jogos)`, String(x.virada_pts), 'virada_pts'), tile(`Pontos cedidos estando na frente (${x.saiu_frente} jogos)`, String(x.cedeu_pts), 'cedeu_pts')]));
+        tile(`Pontos buscados saindo atrás (${x.saiu_atras} jogos)`, String(x.virada_pts), 'virada_pts'), tile(`Pontos cedidos estando na frente (${x.saiu_frente} jogos)`, String(x.cedeu_pts), 'cedeu_pts')]),
+      (x.publico_casa || x.publico_fora) ? grupo('Público', [
+        tile(`Média em casa${x.publico_casa_jogos ? ` (${x.publico_casa_jogos} jogos)` : ''}`, x.publico_casa ? x.publico_casa.toLocaleString('pt-BR') : '–', 'publico_casa'),
+        tile(`Média fora de casa${x.publico_fora_jogos ? ` (${x.publico_fora_jogos} jogos)` : ''}`, x.publico_fora ? x.publico_fora.toLocaleString('pt-BR') : '–', 'publico_fora'),
+        x.publico_casa_max ? tile('Maior público em casa', x.publico_casa_max.toLocaleString('pt-BR'), null) : null]) : null);
     const extremos = el('div', { class: 'es-ext small' },
       x.maior_v ? el('span', null, 'Maior vitória: ', jogoTxt(x.maior_v)) : null,
       x.maior_d ? el('span', null, 'Maior derrota: ', jogoTxt(x.maior_d)) : null);
