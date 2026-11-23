@@ -659,11 +659,18 @@
 
   function telaTabela(app) {
     app.append(secHead('Classificação', 'Tabela do Brasileirão', null, 'h1'));
-    const seg = el('div', { class: 'seg quatro', role: 'group', 'aria-label': 'Visão da tabela' });
-    [['classificacao', 'Classificação'], ['mandante', 'Mandante'], ['visitante', 'Visitante'], ['chances', 'Chances']].forEach(([k, txt]) => {
+    const seg = el('div', { class: 'seg seg-scroll', role: 'group', 'aria-label': 'Visão da tabela' });
+    [['classificacao', 'Geral'], ['turnos', 'Turnos'], ['mandante', 'Mandante'], ['visitante', 'Visitante'], ['chances', 'Chances']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.tabela === k), text: txt, onclick: () => { estado.tabela = k; render(); } }));
     });
     app.append(seg);
+    if (estado.tabela === 'turnos') {
+      if (!estado.turno) estado.turno = rodadaAtual() > 19 ? 2 : 1;
+      const st2 = el('div', { class: 'seg', role: 'group', 'aria-label': 'Turno', style: 'max-width:22rem' });
+      [[1, '1º turno'], [2, '2º turno']].forEach(([k, txt]) => st2.append(el('button', { type: 'button', 'aria-pressed': String(estado.turno === k), text: txt,
+        onclick: () => { estado.turno = k; render(); } })));
+      app.append(st2);
+    }
 
     const card = el('div', { class: 'card' });
     const wrap = el('div', { class: 'tbl-wrap' });
@@ -678,17 +685,22 @@
         el('td', { class: 'pts', text: t.pts }), el('td', { text: t.j }), el('td', { text: t.v }), el('td', { text: t.e }), el('td', { text: t.d }),
         el('td', { text: t.gp }), el('td', { text: t.gc }), el('td', { text: sgTxt(t.sg) }),
         el('td', null, forma(t.forma)))));
-    } else if (estado.tabela === 'mandante' || estado.tabela === 'visitante') {
-      const casa = estado.tabela === 'mandante';
+    } else if (estado.tabela === 'mandante' || estado.tabela === 'visitante' || estado.tabela === 'turnos') {
+      const turno = estado.tabela === 'turnos' ? estado.turno : null;
       head = ['#', 'Clube', 'Pts', 'J', 'V', 'E', 'D', 'GP', 'GC', 'SG', 'Aprov.'];
       const st = {};
       D.times.forEach((t) => { st[t.id] = { id: t.id, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 }; });
-      D.jogos.filter(encerrado).forEach((j) => {
-        const id = casa ? j.casa : j.fora;
+      const soma = (id, gp, gc) => {
         const x = st[id]; if (!x) return;
-        const gp = casa ? j.gols_casa : j.gols_fora, gc = casa ? j.gols_fora : j.gols_casa;
         x.j++; x.gp += gp; x.gc += gc;
         if (gp > gc) { x.v++; x.pts += 3; } else if (gp === gc) { x.e++; x.pts += 1; } else x.d++;
+      };
+      D.jogos.filter(encerrado).forEach((j) => {
+        if (turno) {
+          if (turno === 1 ? j.rodada > 19 : j.rodada <= 19) return;
+          soma(j.casa, j.gols_casa, j.gols_fora); soma(j.fora, j.gols_fora, j.gols_casa);
+        } else if (estado.tabela === 'mandante') soma(j.casa, j.gols_casa, j.gols_fora);
+        else soma(j.fora, j.gols_fora, j.gols_casa);
       });
       Object.values(st).sort((a, b) => b.pts - a.pts || b.v - a.v || (b.gp - b.gc) - (a.gp - a.gc) || b.gp - a.gp)
         .forEach((x, i) => tb.append(el('tr', null,
@@ -710,10 +722,12 @@
         el('td', null, heat(t.rebaixamento, 'var(--bad)')))));
     }
     wrap.append(el('table', null, el('thead', null, el('tr', null, head.map((h, i) => el('th', { class: (i === 1 ? 'sticky-col2' : ''), text: h })))), tb));
-    const porMando = estado.tabela === 'mandante' || estado.tabela === 'visitante';
-    if (porMando) card.append(wrap, el('div', { class: 'zones' }, el('span', { text: estado.tabela === 'mandante'
-      ? 'Só os jogos em casa. Aprov. = aproveitamento dos pontos disputados.'
-      : 'Só os jogos fora de casa. Aprov. = aproveitamento dos pontos disputados.' })));
+    const porMando = estado.tabela === 'mandante' || estado.tabela === 'visitante' || estado.tabela === 'turnos';
+    if (porMando) card.append(wrap, el('div', { class: 'zones' }, el('span', { text: estado.tabela === 'turnos'
+      ? `Só os jogos do ${estado.turno}º turno (rodadas ${estado.turno === 1 ? '1 a 19' : '20 a 38'}). Aprov. = aproveitamento dos pontos disputados.`
+      : estado.tabela === 'mandante'
+        ? 'Só os jogos em casa. Aprov. = aproveitamento dos pontos disputados.'
+        : 'Só os jogos fora de casa. Aprov. = aproveitamento dos pontos disputados.' })));
     else card.append(wrap, el('div', { class: 'zones' },
       el('span', null, el('i', { style: 'background:var(--info)' }), 'Libertadores'),
       el('span', null, el('i', { style: 'background:var(--teal)' }), 'Pré-Libertadores'),
