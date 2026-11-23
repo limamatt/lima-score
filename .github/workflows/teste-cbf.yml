@@ -6,9 +6,9 @@ jobs:
     steps:
       - run: |
           pip install pypdf -q
-          curl -sL -A "Mozilla/5.0" -o b.pdf https://conteudo.cbf.com.br/sumulas/2026/142233b.pdf
-          curl -sL -A "Mozilla/5.0" -o b81.pdf https://conteudo.cbf.com.br/sumulas/2026/14281b.pdf
-          curl -sL -A "Mozilla/5.0" -o d.html "https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/x/832122?view=documentos"
+          curl -sL -m 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36" -o b.pdf -w "b.pdf %{http_code}\n" https://conteudo.cbf.com.br/sumulas/2026/142233b.pdf || echo "falhou b.pdf $?"
+          curl -sL -m 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36" -o b81.pdf -w "b81.pdf %{http_code}\n" https://conteudo.cbf.com.br/sumulas/2026/14281b.pdf || echo "falhou b81.pdf $?"
+          curl -sL -m 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36" -o d.html -w "d.html %{http_code}\n" "https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/x/832122?view=documentos" || echo "falhou d.html $?"
           ls -la; file b.pdf b81.pdf
           python3 -c "
           import pypdf,re
