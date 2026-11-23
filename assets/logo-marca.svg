@@ -6,4 +6,4 @@
 <path d="M240 242 L432 242 Q446 242 446 256 Q446 270 432 270 L240 270 Z" fill="#dfe8e3"/><path d="M222 166 Q218 132 232 108" stroke="#7a4a1e" stroke-width="12" fill="none" stroke-linecap="round"/>
 <path d="M232 112 C262 76 318 74 340 96 C312 128 264 132 232 112 Z" fill="#3fae5a"/>
 <path d="M240 110 C270 100 300 96 326 98" stroke="#2c8a45" stroke-width="5" fill="none" stroke-linecap="round"/><rect x="336" y="340" width="70" height="30" rx="15" fill="#ffffff"/><circle cx="412" cy="364" r="26" fill="#ffffff"/><circle cx="412" cy="364" r="10" fill="#0b3f27"/>
-<g stroke="#ffffff" stroke-width="9" stroke-linecap="round"><path d="M456 330 L474 316"/><path d="M462 366 L484 366"/></g></svg>
+<g stroke="#ffffff" stroke-width="9" stroke-linecap="round"><path d="M456 330 L474 316"/><path d="M462 366 L484 366"/><path d="M456 402 L474 416"/></g></svg>
