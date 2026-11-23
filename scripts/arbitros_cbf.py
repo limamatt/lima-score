@@ -74,7 +74,7 @@ def ler_jogo(pid):
 
 def main():
     antigo = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
-    jogos = antigo.get("jogos", {})
+    jogos = json.loads(json.dumps(antigo.get("jogos", {})))  # cópia: para comparar no fim
     agora = datetime.now(timezone(timedelta(hours=-3))).replace(tzinfo=None)
     # os números de página não seguem a ordem dos jogos: varre a faixa da temporada e guarda o id de cada jogo
     conhecidos = {j["id"]: k for k, j in jogos.items() if j.get("id")}
