@@ -517,3 +517,22 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .es-hl{display:flex;align-items:center;gap:.4rem;min-width:0}
 .es-hl b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .es-nota{color:var(--muted);font-size:.7rem}
+/* avisos de gol */
+.sino{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;color:var(--pitch-ink);opacity:.9;flex:none}
+.sino:hover,.sino[aria-current="page"]{background:rgba(255,255,255,.14);opacity:1}
+.av-passo{display:flex;gap:.9rem;padding:1rem;margin-bottom:.7rem}
+.av-n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:1.1rem}
+.av-c{flex:1;min-width:0}
+.av-c h3{margin:.15rem 0 .35rem;font-family:var(--display);font-size:1.2rem;text-transform:uppercase;letter-spacing:.02em}
+.av-c p{margin:0 0 .6rem;color:var(--muted);font-size:.92rem;line-height:1.4}
+.av-lojas{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.av-btn{display:block;text-align:center;padding:.65rem .5rem;border-radius:10px;background:var(--pitch);color:var(--pitch-ink);text-decoration:none;font-weight:600;font-size:.9rem}
+.av-lista{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.av-linha{display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border-top:1px solid var(--line)}
+.av-linha:first-child{border-top:0;background:var(--surface-2)}
+.av-seguir{flex:1;min-width:0;display:flex;align-items:center;gap:.6rem;text-decoration:none;color:inherit}
+.av-nome{display:flex;flex-direction:column;min-width:0}
+.av-nome b{font-weight:600}
+.av-nome small{color:var(--muted);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-bola{width:24px;text-align:center;font-size:1.1rem}
+.av-copiar{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:.35rem .7rem;font:inherit;font-size:.8rem;cursor:pointer}

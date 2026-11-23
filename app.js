@@ -1501,13 +1501,47 @@
   }
 
   // ---------- roteamento
+  // ---------- avisos de gol no celular (app grátis ntfy: cada tópico é um clube)
+  function slugClube(nome) {
+    return nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+  function telaAvisos(app) {
+    app.append(secHead('Notificações', 'Avisos de gol no celular'));
+    const passo = (n, titulo, ...corpo) => el('section', { class: 'card av-passo' },
+      el('div', { class: 'av-n', text: String(n) }), el('div', { class: 'av-c' }, el('h3', { text: titulo }), ...corpo));
+    app.append(passo(1, 'Instale o app ntfy (grátis)',
+      el('p', { text: 'É ele que mostra o aviso no seu celular, mesmo com o site fechado. Não precisa criar conta.' }),
+      el('div', { class: 'av-lojas' },
+        el('a', { class: 'av-btn', href: 'https://play.google.com/store/apps/details?id=io.heckel.ntfy', target: '_blank', rel: 'noopener', text: 'Android' }),
+        el('a', { class: 'av-btn', href: 'https://apps.apple.com/app/ntfy/id1625396347', target: '_blank', rel: 'noopener', text: 'iPhone' }))));
+    const linha = (rotulo, topico, escudo) => {
+      const copiar = el('button', { class: 'av-copiar', type: 'button', text: 'Copiar' });
+      copiar.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        try { await navigator.clipboard.writeText(topico); copiar.textContent = 'Copiado!'; setTimeout(() => { copiar.textContent = 'Copiar'; }, 1500); } catch (e) { /* sem área de transferência */ }
+      });
+      return el('div', { class: 'av-linha' },
+        el('a', { class: 'av-seguir', href: `ntfy://ntfy.sh/${topico}?display=${encodeURIComponent(rotulo)}` }, escudo || el('span', { class: 'av-bola', text: '⚽' }),
+          el('span', { class: 'av-nome' }, el('b', { text: rotulo }), el('small', { text: topico }))),
+        copiar);
+    };
+    const clubes = [...D.times].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    app.append(passo(2, 'Escolha o que seguir',
+      el('p', { text: 'No Android, toque no nome e o app já assina. No iPhone, toque em Copiar, abra o ntfy, toque em + e cole o nome.' }),
+      el('div', { class: 'av-lista' },
+        linha('Todos os gols do Brasileirão', 'limascore-gols'),
+        ...clubes.map((t) => linha(t.nome, `limascore-${slugClube(t.nome)}`, escudo(t.id, 'sm'))))));
+    app.append(passo(3, 'Pronto',
+      el('p', { text: 'A cada gol chega um aviso com o placar, o minuto e quem marcou. Gol anulado pelo VAR também avisa. Toque no aviso para abrir o jogo no Lima Score.' })));
+  }
+
   function rota() {
     const h = (location.hash || '#inicio').slice(1);
     if (h.startsWith('clube-')) return { tela: 'clube', id: +h.slice(6) };
     if (h.startsWith('jogo-')) return { tela: 'jogo', id: +h.slice(5) };
     if (h.startsWith('jogador-')) return { tela: 'jogador', id: h.slice(8) };
     if (h === 'artilharia') return { tela: 'jogadores' };
-    if (['inicio', 'tabela', 'rodadas', 'jogadores', 'noticias', 'arbitragem'].includes(h)) return { tela: h };
+    if (['inicio', 'tabela', 'rodadas', 'jogadores', 'noticias', 'arbitragem', 'avisos'].includes(h)) return { tela: h };
     return { tela: 'inicio' };
   }
   window.addEventListener('error', () => {
@@ -1527,6 +1561,7 @@
     else if (r.tela === 'jogador') telaJogador(app, r.id);
     else if (r.tela === 'noticias') telaNoticias(app);
     else if (r.tela === 'arbitragem') telaArbitragem(app);
+    else if (r.tela === 'avisos') telaAvisos(app);
     else if (r.tela === 'jogo') { telaJogo(app, r.id); if (!E) carregarEstat(); }
     else telaClube(app, r.id);
     const navKey = r.tela === 'clube' ? 'tabela' : r.tela === 'jogo' ? 'rodadas' : r.tela === 'jogador' ? 'jogadores' : r.tela;
