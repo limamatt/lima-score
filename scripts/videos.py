@@ -95,12 +95,22 @@ def lado_do_gol(t, jogo):
     citados = [c for c in times_no_titulo(t) if c in lados]
     if not citados:
         return None
-    # placar no título: 'O GOL DE VASCO 0 X 1 BAHIA'
+    # 'GOL DO VITORIA - RENE (INTERNACIONAL 0X1 VITORIA)': quem vem logo depois de "GOL DO" marcou
+    if "GOL CONTRA" not in parte:
+        for c in citados:
+            if any(re.search(r"GOL(ACO)?\s+D[OAE]S?\s+" + re.escape(n) + r"(?![A-Z])(?!\s*\d+\s*X)", parte) for n in NOMES[c]):
+                return lados[c]
+
+    def posicoes(c):
+        return [m.start() for n in NOMES[c] for m in re.finditer(r"(?<![A-Z])" + re.escape(n) + r"(?![A-Z])", parte)]
+    # placar no título: 'O GOL DE VASCO 0 X 1 BAHIA' (vale o time escrito antes e o escrito depois do placar)
     m = re.search(r"(\d+)\s*X\s*(\d+)", parte)
     if m and len(citados) == 2:
         a, b = int(m.group(1)), int(m.group(2))
-        if (a > 0) != (b > 0):
-            return lados[citados[0] if a > 0 else citados[1]]
+        antes = max(citados, key=lambda c: max([p for p in posicoes(c) if p < m.start()] or [-1]))
+        depois = citados[0] if antes == citados[1] else citados[1]
+        if (a > 0) != (b > 0) and any(p < m.start() for p in posicoes(antes)):
+            return lados[antes if a > 0 else depois]
     lado = None
     for c in citados:
         for n in NOMES[c]:
