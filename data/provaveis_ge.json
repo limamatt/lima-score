@@ -27,8 +27,10 @@
     ],
     "url": "https://ge.globo.com/rj/futebol/brasileirao-serie-a/noticia/2026/11/23/botafogo-x-sao-paulo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
     "desfalques": [
-     "Jordan Barrera",
-     "Pendurados: Danilo",
+     "Jordan Barrera"
+    ],
+    "pendurados": [
+     "Danilo",
      "Edenílson",
      "Ferraresi",
      "Júnior Santos",
@@ -69,7 +71,10 @@
      "Marcos Antonio",
      "Rafael Tolói",
      "Artur",
-     "Sabino .Pendurados: Lucas Ramon",
+     "Sabino"
+    ],
+    "pendurados": [
+     "Lucas Ramon",
      "Wendell",
      "Djhordney",
      "Marcos Antônio",
@@ -82,7 +87,7 @@
   }
  },
  "diag": {
-  "hora": "2026-11-23T15:01:10+00:00",
+  "hora": "2026-11-23T15:03:24+00:00",
   "materias": [
    [
     "Botafogo x São Paulo: onde assistir ao vivo, horário e escalações",
