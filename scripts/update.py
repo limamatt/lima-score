@@ -177,7 +177,25 @@ def _tokens_arbitro(nome):
     return t
 
 
+def _arbitros_cbf(saida_jogos):
+    """Escala oficial da CBF (scripts/arbitros_cbf.py): quando existe, vale mais que as outras fontes."""
+    arq = ROOT / "data" / "arbitros_cbf.json"
+    cbf = (json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}).get("jogos", {})
+    por_par = {(x.get("casa_id"), x.get("fora_id")): x for x in cbf.values() if x.get("casa_id") and x.get("fora_id")}
+    for jg in saida_jogos:
+        x = por_par.get((jg["casa"], jg["fora"]))
+        if not x:
+            continue
+        eq = x.get("equipe") or {}
+        if (eq.get("arbitro") or {}).get("nome"):
+            jg["arbitro"] = eq["arbitro"]["nome"]
+            jg["arbitro_uf"] = eq["arbitro"].get("uf") or None
+        if (eq.get("var") or {}).get("nome"):
+            jg["arbitro_var"] = eq["var"]["nome"]
+
+
 def unificar_arbitros(saida_jogos):
+    _arbitros_cbf(saida_jogos)
     _arbitros_manuais(saida_jogos)
     _unificar(saida_jogos)
 

@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 NOTICIAS = ROOT / "data" / "noticias.json"
 ARQUIVOS = ["data/site.json", "data/noticias.json", "data/videos.json", "data/estatisticas.json", "data/lives.json",
-            "data/escalacoes.json", "data/jogadores.json", "data/vagas.json", "data/provaveis_ge.json"]
+            "data/escalacoes.json", "data/jogadores.json", "data/vagas.json", "data/provaveis_ge.json", "data/arbitros_cbf.json"]
 DURACAO_MAX = int(5.5 * 3600)  # fica ligado enquanto houver jogo (limite de segurança: 5h30)
 INTERVALO = 30              # segundos entre conferências durante os jogos
 ESPACO_ENTRE_PUBLICACOES = 6 * 60  # site completo: no máximo a cada 6 min durante os jogos
@@ -133,7 +133,7 @@ def main():
     ultima_pub = 0.0
     ultima_noticia = time.time()
     ultima_provavel = 0.0
-    ultima_provavel = 0.0
+    ultima_cbf = 0.0
     ultimo_ao_vivo = None
     volta = 0
     while True:
@@ -143,6 +143,9 @@ def main():
             rodar("videos.py")          # melhores momentos e gols (a cada ~3 min no modo ao vivo)
         if volta % 2 == 0:
             rodar("lives.py")           # link exato da transmissão no YouTube (CazéTV, ge tv)
+        if volta == 0 or time.time() - ultima_cbf > 6 * 3600:
+            rodar("arbitros_cbf.py")    # escala oficial de arbitragem da CBF (a cada 6 h)
+            ultima_cbf = time.time()
         if volta == 0 or time.time() - ultima_provavel > 1800:
             rodar("provaveis_ge.py")    # prováveis escalações publicadas pelo ge (a cada 30 min)
             ultima_provavel = time.time()

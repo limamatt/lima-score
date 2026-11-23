@@ -247,7 +247,9 @@
       el('div', { class: 'small', text: `${j.rodada}ª rodada · ${dataHora(j.data)}` }),
       el('div', { class: 'jg-placar' }, lado(j.casa), el('div', { class: 'jg-meio' }, sc, st), lado(j.fora)),
       el('div', { class: 'small jg-arb' }, 'Árbitro: ', arbitroDoJogo(j) ? el('a', { href: '#arbitragem', text: arbitroDoJogo(j),
-        onclick: () => { estado.arb = 'arbitros'; estado.arbAberto = arbitroDoJogo(j); } }) : el('span', { text: 'a definir' }))));
+        onclick: () => { estado.arb = 'arbitros'; estado.arbAberto = arbitroDoJogo(j); } }) : el('span', { text: 'a definir' }),
+        j.arbitro_uf ? el('span', { text: ` (${j.arbitro_uf})` }) : null,
+        j.arbitro_var ? el('span', { text: ` · VAR: ${j.arbitro_var}` }) : null)));
 
     if (encerrado(j) && j.video) {
       app.append(el('a', { class: 'btn-video', href: 'https://www.youtube.com/watch?v=' + encodeURIComponent(j.video), target: '_blank', rel: 'noopener' },
