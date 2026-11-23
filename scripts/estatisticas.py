@@ -29,7 +29,7 @@ ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada joga
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 10                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 11                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -665,6 +665,16 @@ def main():
             jj = jogadores_do_jogo(resumo, lado_por_espn)
             try:
                 jj["chutes"], jj["acoes"] = chutes_e_acoes(resumo, lado_por_espn)
+                # a narração nem sempre traz o time do lance: descobre o lado pelo elenco do jogo
+                lado_nome = {}
+                for ld in ("casa", "fora"):
+                    for pj in jj.get(ld) or []:
+                        nm = pj.get("n") or pj.get("nome")
+                        if nm:
+                            lado_nome[_norm_nome(nm)] = ld
+                for c in jj["chutes"]:
+                    if not c.get("lado"):
+                        c["lado"] = lado_nome.get(_norm_nome(c["j"]))
                 novo["fin"] = resumo_finalizacoes(jj["chutes"], est)
             except Exception:
                 pass
