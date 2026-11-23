@@ -99,6 +99,8 @@ def publicar_ao_vivo(ultimo):
     if conteudo == ultimo:
         return ultimo
     AO_VIVO.write_text(conteudo, encoding="utf-8")
+    if rapido_ligado():
+        return conteudo  # quem publica é o placar rápido (junta este arquivo com o placar de segundos atrás)
     blob = git("hash-object", "-w", str(AO_VIVO)).stdout.strip()
     arvore = subprocess.run(["git", "mktree"], cwd=ROOT, input=f"100644 blob {blob}\tao_vivo.json\n",
                             capture_output=True, text=True, check=True).stdout.strip()
@@ -107,6 +109,20 @@ def publicar_ao_vivo(ultimo):
         print("Placar ao vivo publicado.")
         return conteudo
     return ultimo
+
+
+RAPIDO = None
+
+
+def rapido_ligado():
+    return RAPIDO is not None and RAPIDO.poll() is None
+
+
+def ligar_rapido():
+    """Placar rápido em paralelo: confere o placar a cada ~8 s e publica gol, cartão e início na hora."""
+    global RAPIDO
+    if not rapido_ligado():
+        RAPIDO = subprocess.Popen([sys.executable, str(ROOT / "scripts" / "placar_rapido.py")], cwd=ROOT)
 
 
 def publicar():
@@ -155,6 +171,7 @@ def main():
             ultima_noticia = time.time()
         ao_vivo = ha_jogo_agora()
         if ao_vivo:
+            ligar_rapido()
             ultimo_ao_vivo = publicar_ao_vivo(ultimo_ao_vivo)
         if not ao_vivo or time.time() - ultima_pub >= ESPACO_ENTRE_PUBLICACOES:
             if publicar():
@@ -168,6 +185,8 @@ def main():
         rolando = jogo_rolando()
         time.sleep(max(5, (INTERVALO if rolando else 120) - (time.time() - t0)))
     publicar()
+    if rapido_ligado():
+        RAPIDO.terminate()
 
 
 if __name__ == "__main__":

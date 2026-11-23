@@ -1606,7 +1606,7 @@
     estatCarregando = false;
   }
 
-  // ---------- placar ao vivo rápido: lê um arquivo pequeno direto do GitHub a cada 20 s
+  // ---------- placar ao vivo rápido: lê um arquivo pequeno direto do GitHub a cada 10 s
   const REPO = (() => {
     const dono = location.hostname.endsWith('.github.io') ? location.hostname.split('.')[0] : 'limamatt';
     const nome = location.pathname.split('/').filter(Boolean)[0] || 'limascore';
@@ -1642,7 +1642,7 @@
     } catch (e) { /* sem placar rápido agora; o site segue com a atualização normal */ }
   }
   (function cicloAoVivo() {
-    setTimeout(async () => { if (temJogoAgora() && !document.hidden) await pollAoVivo(); cicloAoVivo(); }, 20 * 1000);
+    setTimeout(async () => { if (temJogoAgora() && !document.hidden) await pollAoVivo(); cicloAoVivo(); }, 10 * 1000);
   })();
   // o minuto avança sozinho na tela
   setInterval(() => {
