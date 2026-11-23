@@ -11,10 +11,12 @@ jobs:
           t en.txt "https://en.wikipedia.org/w/index.php?title=2026_Campeonato_Brasileiro_S%C3%A9rie_A&action=raw"
           python3 - <<'PY'
           import re
-          for f in ["pt.txt","en.txt"]:
-              h=open(f,encoding="utf-8",errors="ignore").read()
-              print("=====",f,len(h))
-              for m in re.finditer(r"(?im)^=+\s*[^=\n]*(p[úu]blico|attendance)[^=\n]*=+", h):
-                  print(h[m.start():m.start()+2500]); print("-----")
-              print([h[i.start()-100:i.start()+200] for i in re.finditer(r"(?i)público|attendance", h)][:4])
+          h=open("pt.txt",encoding="utf-8").read()
+          i=h.find("=== Público ===")
+          sec=h[i:i+40000]
+          j=sec.find("\n==",20)
+          sec=sec[:j] if j>0 else sec
+          k=sec.find("Maiores públicos"); 
+          resto=sec[sec.find("|}",k)+2:]
+          print(len(sec)); print(resto[:6000])
           PY
