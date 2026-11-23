@@ -61,7 +61,7 @@
     return el('a', { class: 'team sigla', href: '#clube-' + id, 'aria-label': t ? t.nome : '', title: t ? t.nome : '' },
       escudo(id, 'tb'), D ? placarAoVivo(id) : null);
   }
-  // vagas de hoje (mudam com a final da Libertadores e com o rebaixamento do Grêmio): vêm de data/vagas.json pelo robô
+  // vagas de hoje (mudam com a final da Liberta e com o rebaixamento do Grêmio): vêm de data/vagas.json pelo robô
   const VG = () => (D && D.vagas) || { grupos: 4, pre: 2, sul: 6, excluido: null };
   const ord = (n) => n + 'º';
   function zona(pos) {
@@ -82,7 +82,7 @@
   }
   function textoVagas() {
     const v = VG(), g = v.grupos, p = v.pre, s = v.sul;
-    const partes = [`Hoje: ${ord(1)} ao ${ord(g)} na fase de grupos da Libertadores, ${ord(g + 1)}${p > 1 ? ' e ' + ord(g + p) : ''} na Pré-Libertadores e ${ord(g + p + 1)} ao ${ord(g + p + s)} na Sul-Americana (G-${g + p}).`];
+    const partes = [`Hoje: ${ord(1)} ao ${ord(g)} na fase de grupos da Liberta, ${ord(g + 1)}${p > 1 ? ' e ' + ord(g + p) : ''} na Pré-Liberta e ${ord(g + p + 1)} ao ${ord(g + p + s)} na Sula (G-${g + p}).`];
     const ex = v.excluido && T[v.excluido];
     if (v.copa && v.copa.time && T[v.copa.time]) {
       const n = T[v.copa.time].nome;
@@ -93,8 +93,8 @@
     const L = v.libertadores;
     if (L && L.time && T[L.time]) {
       const n = T[L.time].nome;
-      if (L.resultado === true) partes.push(`O ${n} foi campeão da Libertadores: a vaga de campeão desceu para a tabela (já contado acima).`);
-      else if (L.resultado == null) partes.push(`Se o ${n} for campeão da Libertadores (${L.data ? L.data.split('-').reverse().slice(0, 2).join('/') : 'final'}), abre mais uma vaga na fase de grupos e a linha desce uma posição.`);
+      if (L.resultado === true) partes.push(`O ${n} foi campeão da Liberta: a vaga de campeão desceu para a tabela (já contado acima).`);
+      else if (L.resultado == null) partes.push(`Se o ${n} for campeão da Liberta (${L.data ? L.data.split('-').reverse().slice(0, 2).join('/') : 'final'}), abre mais uma vaga na fase de grupos e a linha desce uma posição.`);
     }
     if (v.dist) {
       const d = Object.entries(v.dist).filter(([, x]) => x >= 0.5).map(([k, x]) => `${k.replace('G', 'G-')} ${pct(x)}`);
@@ -632,9 +632,9 @@
     const topo = (campo, min, max) => D.times.filter((t) => t[campo] >= min).sort((a, b) => b[campo] - a[campo]).slice(0, max);
     const faixas = [
       ['titulo', 'Título', 'Chance de ser campeão.', () => topo('titulo', 0.1, 6).map((t) => linhaProb(t, t.titulo, 'var(--accent)'))],
-      ['g4', 'Libertadores', 'Vaga na fase de grupos da Libertadores (inclui as vagas extras que podem abrir).', () => topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))],
-      ['pre', 'Pré-Libertadores', `Fase preliminar da Libertadores (hoje: ${ord(VG().grupos + 1)} e ${ord(VG().grupos + VG().pre)}).`, () => topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))],
-      ['sul', 'Sul-Americana', `Os seis seguintes fora da Libertadores (hoje: ${ord(VG().grupos + VG().pre + 1)} ao ${ord(VG().grupos + VG().pre + VG().sul)}).`, () => topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))],
+      ['g4', 'Liberta', 'Vaga na fase de grupos da Liberta (inclui as vagas extras que podem abrir).', () => topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))],
+      ['pre', 'Pré-Liberta', `Fase preliminar da Liberta (hoje: ${ord(VG().grupos + 1)} e ${ord(VG().grupos + VG().pre)}).`, () => topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))],
+      ['sul', 'Sula', `Os seis seguintes fora da Liberta (hoje: ${ord(VG().grupos + VG().pre + 1)} ao ${ord(VG().grupos + VG().pre + VG().sul)}).`, () => topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))],
       ['z4', 'Z4', 'Terminar entre os quatro últimos e cair para a Série B.', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))],
       ['copa', 'Copa BR', 'Quem cair perde a vaga da Copa do Brasil 2027 pela Série A (ainda pode entrar pelo estadual ou pelo ranking da CBF).', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)', rebaixadoMatematicamente(t) ? '100%' : null))],
     ];
@@ -658,7 +658,7 @@
     if (!tem[estado.cen]) estado.cen = tem.z4 ? 'z4' : tem.g4 ? 'g4' : 'pre';
     const z = estado.cen;
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Briga' });
-    [['g4', 'Libertadores'], ['pre', 'Pré-Libertadores'], ['z4', 'Z4']].forEach(([k, txt]) => {
+    [['g4', 'Liberta'], ['pre', 'Pré-Liberta'], ['z4', 'Z4']].forEach(([k, txt]) => {
       if (tem[k]) seg.append(el('button', { type: 'button', 'aria-pressed': String(z === k), text: txt, onclick: () => { estado.cen = k; render(); } }));
     });
     const lista = el('div', { class: 'cen-lista' });
@@ -677,7 +677,7 @@
   function cartaoCenario(c) {
     const g4 = c.zona !== 'z4', pre = c.zona === 'pre';
     const t = T[c.time];
-    const rot = pre ? 'de pré-Libertadores ou melhor' : g4 ? 'de Libertadores' : 'de cair';
+    const rot = pre ? 'de pré-Liberta ou melhor' : g4 ? 'de Liberta' : 'de cair';
     const cor = pre ? 'var(--good)' : g4 ? 'var(--info)' : 'var(--bad)';
     const dif = c.linha.dif;
     const linhaTxt = dif === 0 ? `Empatado em pontos com o ${nomeT(c.linha.time)} (${c.linha.pos}º)`
@@ -707,7 +707,7 @@
         const torc = c.decide.torcer === 'empate' ? `${nomeT(j.casa)} e ${nomeT(j.fora)} empatarem`
           : `o ${nomeT(c.decide.torcer === 'casa' ? j.casa : j.fora)} vencer o ${nomeT(c.decide.torcer === 'casa' ? j.fora : j.casa)}`;
         card.append(el('p', { class: 'cen-decide ' + (g4 ? 'bom' : 'ruim'),
-          text: g4 ? `Praticamente garante ${pre ? 'ao menos a pré-Libertadores' : 'a vaga na Libertadores'} já nesta rodada se vencer e ${torc}.`
+          text: g4 ? `Praticamente garante ${pre ? 'ao menos a pré-Liberta' : 'a vaga na Liberta'} já nesta rodada se vencer e ${torc}.`
             : `Fica praticamente rebaixado nesta rodada se perder e ${c.decide.torcer === 'empate' ? 'não houver empate entre ' + nomeT(j.casa) + ' e ' + nomeT(j.fora) : 'o ' + nomeT(c.decide.torcer === 'casa' ? j.casa : j.fora) + ' não vencer'}.` }));
       }
     }
@@ -723,7 +723,7 @@
     // meta de pontos
     const m = c.meta;
     card.append(el('p', { class: 'cen-meta' }, m
-      ? (g4 ? `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), ${pre ? 'ao menos a pré-Libertadores' : 'a Libertadores'} fica praticamente garantida.`
+      ? (g4 ? `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), ${pre ? 'ao menos a pré-Liberta' : 'a Liberta'} fica praticamente garantida.`
         : `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), fica praticamente livre do Z4.`)
       : (g4 ? 'Nem vencendo tudo a vaga está garantida: depende também de tropeços dos rivais.'
         : 'Nem vencendo tudo está garantido: depende também dos resultados dos rivais.')));
@@ -783,7 +783,7 @@
           el('td', { text: x.gp }), el('td', { text: x.gc }), el('td', { text: sgTxt(x.gp - x.gc) }),
           el('td', { text: x.j ? Math.round(x.pts / (x.j * 3) * 100) + '%' : '—' }))));
     } else {
-      head = ['#', 'Clube', 'Pts', 'Projeção', 'Título', 'Libertadores', 'Pré-Libertadores', 'Sul-Americana', 'Rebaix.'];
+      head = ['#', 'Clube', 'Pts', 'Projeção', 'Título', 'Liberta', 'Pré-Liberta', 'Sula', 'Rebaix.'];
       const proj = D.times.slice().sort((a, b) => b.pts_projetados - a.pts_projetados);
       const zp = zonasDaLista(proj.map((t) => t.id));
       proj.forEach((t, i) => tb.append(el('tr', { class: 'z-' + zp[t.id] },
@@ -802,9 +802,9 @@
         ? 'Só os jogos em casa. Aprov. = aproveitamento dos pontos disputados.'
         : 'Só os jogos fora de casa. Aprov. = aproveitamento dos pontos disputados.' })));
     else card.append(wrap, el('div', { class: 'zones' },
-      el('span', null, el('i', { style: 'background:var(--info)' }), 'Libertadores'),
-      el('span', null, el('i', { style: 'background:var(--teal)' }), 'Pré-Libertadores'),
-      el('span', null, el('i', { style: 'background:var(--good)' }), 'Sul-Americana'),
+      el('span', null, el('i', { style: 'background:var(--info)' }), 'Liberta'),
+      el('span', null, el('i', { style: 'background:var(--teal)' }), 'Pré-Liberta'),
+      el('span', null, el('i', { style: 'background:var(--good)' }), 'Sula'),
       el('span', null, el('i', { style: 'background:var(--bad)' }), 'Rebaixamento'),
       estado.tabela === 'chances' ? el('span', { text: 'Ordenada pela projeção de pontos' }) : null));
     if (porMando) { app.append(card); return; }
@@ -1145,8 +1145,8 @@
 
     // chances por faixa
     const faixas = el('div', { class: 'card pad' });
-    [['Título', t.titulo, 'var(--accent)'], ['Libertadores (fase de grupos)', t.libertadores, 'var(--info)'], ['Pré-Libertadores', t.pre_libertadores, 'var(--teal)'],
-      ['Sul-Americana', t.sulamericana, 'var(--good)'], ['Rebaixamento', t.rebaixamento, 'var(--bad)']].forEach(([k, v, c]) => {
+    [['Título', t.titulo, 'var(--accent)'], ['Liberta (fase de grupos)', t.libertadores, 'var(--info)'], ['Pré-Liberta', t.pre_libertadores, 'var(--teal)'],
+      ['Sula', t.sulamericana, 'var(--good)'], ['Rebaixamento', t.rebaixamento, 'var(--bad)']].forEach(([k, v, c]) => {
       faixas.append(el('div', { style: 'display:grid;grid-template-columns:minmax(110px,150px) 1fr 4.5rem;gap:.7rem;align-items:center;margin-bottom:.55rem' },
         el('span', { style: 'font-weight:600', text: k }),
         el('div', { class: 'meter', style: 'height:10px' }, el('span', { style: `width:${Math.max(v > 0 ? 1.5 : 0, v)}%;background:${c}` })),
