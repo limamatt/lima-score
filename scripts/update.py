@@ -165,6 +165,69 @@ def _posicao_chute(x, y):
     return [round(x, 3), round(y, 3)]
 
 
+def _tokens_arbitro(nome):
+    """'Daronco, Anderson' -> ['anderson', 'daronco']; tira acentos, 'de/da/do/dos' e 'Filho/Júnior'."""
+    n = _sem_acento(nome)
+    if "," in n:
+        a, b = [x.strip() for x in n.split(",", 1)]
+        n = f"{b} {a}"
+    t = [x for x in re.split(r"[^a-z]+", n) if x and x not in ("de", "da", "do", "dos", "das", "e")]
+    while len(t) > 2 and t[-1] in ("filho", "fillho", "junior", "neto", "sobrinho"):
+        t.pop()
+    return t
+
+
+def unificar_arbitros(saida_jogos):
+    _arbitros_manuais(saida_jogos)
+    _unificar(saida_jogos)
+
+
+def _arbitros_manuais(saida_jogos):
+    arq = ROOT / "data" / "arbitros_manual.json"
+    man = (json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}).get("jogos", {})
+    for jg in saida_jogos:
+        if not jg.get("arbitro") and man.get(str(jg["id"])):
+            jg["arbitro"] = man[str(jg["id"])]
+
+
+def _unificar(saida_jogos):
+    """O mesmo árbitro vem com nomes diferentes (football-data x outra fonte: 'Wilton Sampaio' e
+    'Wilton Pereira Sampaio', 'Daronco, Anderson', maiúsculas). Junta numa grafia só: mesmo primeiro
+    nome e todas as palavras do nome curto contidas no nome longo."""
+    cont = {}
+    for jg in saida_jogos:
+        if jg.get("arbitro"):
+            cont[jg["arbitro"]] = cont.get(jg["arbitro"], 0) + 1
+    nomes = sorted(cont, key=lambda n: (-len(_tokens_arbitro(n)), -cont[n]))
+    grupos = []  # [tokens do nome mais completo, [grafias]]
+    for n in nomes:
+        tk = _tokens_arbitro(n)
+        if not tk:
+            continue
+        for g in grupos:
+            gt = g[0]
+            mesmo_inicio_fim = tk[0] == gt[0] and tk[-1] == gt[-1] and len(set(tk) & set(gt)) >= 3
+            if (tk[0] == gt[0] and set(tk) <= set(gt) and (len(tk) >= 2 and tk[-1] in gt)) or mesmo_inicio_fim:
+                g[1].append(n)
+                break
+        else:
+            grupos.append([tk, [n]])
+    canon = {}
+    for tk, grafias in grupos:
+        # grafia exibida: a mais usada entre as que não estão no formato "Sobrenome, Nome"; 'De/Da' em minúsculo
+        boas = [g for g in grafias if "," not in g] or grafias
+        escolhido = max(boas, key=lambda g: (sum(cont[x] for x in grafias if _tokens_arbitro(x) == _tokens_arbitro(g)), len(g)))
+        if "," in escolhido:
+            a, b = [x.strip() for x in escolhido.split(",", 1)]
+            escolhido = f"{b} {a}"
+        escolhido = re.sub(r"\b(De|Da|Do|Dos|Das)\b", lambda m: m.group(1).lower(), escolhido)
+        for g in grafias:
+            canon[g] = escolhido
+    for jg in saida_jogos:
+        if jg.get("arbitro"):
+            jg["arbitro"] = canon.get(jg["arbitro"], jg["arbitro"])
+
+
 def _sem_acento(n):
     import unicodedata
     return unicodedata.normalize("NFKD", n or "").encode("ascii", "ignore").decode().lower().strip()
@@ -823,6 +886,7 @@ def main():
                                 assistencia=round((1 - math.exp(-lam_a)) * 100, 1))
         saida_jogadores.append(item)
 
+    unificar_arbitros(saida_jogos)
     est_clubes = estatisticas_dos_clubes(saida_jogos, espn)
     try:
         prov = provaveis_escalacoes(saida_jogos)

@@ -1,0 +1,19 @@
+{
+  "_sobre": "Árbitros que as fontes automáticas não trazem. Chave = id do jogo (football-data). Só entra quando o jogo não tem árbitro de outra fonte.",
+  "jogos": {
+    "555022": "Raphael Claus",
+    "555025": "Felipe Fernandes de Lima",
+    "555027": "Davi de Oliveira Lacerda",
+    "555029": "Edina Alves Batista",
+    "555023": "Wilton Pereira Sampaio",
+    "555020": "Ramon Abatti Abel",
+    "555024": "Rodrigo José Pereira de Lima",
+    "555026": "Bráulio da Silva Machado",
+    "555037": "Anderson Daronco",
+    "555032": "Savio Pereira Sampaio",
+    "555038": "Bráulio da Silva Machado",
+    "555039": "Paulo Cesar Zanovelli da Silva",
+    "555030": "Alex Gomes Stefano",
+    "555034": "Matheus Delgado Candançan"
+  }
+}
