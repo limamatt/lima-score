@@ -5,18 +5,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          UA="LimaScore/1.0 (https://limamatt.github.io/lima-score/)"
-          t() { curl -sL -m 40 -A "$UA" -o "$1" -w "$1 %{http_code} %{size_download}\n" "$2" || echo "falhou $1"; }
-          t pt.txt "https://pt.wikipedia.org/w/index.php?title=Campeonato_Brasileiro_de_Futebol_de_2026_-_S%C3%A9rie_A&action=raw"
-          t en.txt "https://en.wikipedia.org/w/index.php?title=2026_Campeonato_Brasileiro_S%C3%A9rie_A&action=raw"
-          python3 - <<'PY'
-          import re
-          h=open("pt.txt",encoding="utf-8").read()
-          i=h.find("=== Público ===")
-          sec=h[i:i+40000]
-          j=sec.find("\n==",20)
-          sec=sec[:j] if j>0 else sec
-          k=sec.find("Maiores públicos"); 
-          resto=sec[sec.find("|}",k)+2:]
-          print(len(sec)); print(resto[:6000])
-          PY
+          curl -sL -m 90 -o j.txt -w "jina %{http_code} %{size_download}\n" "https://r.jina.ai/https://conteudo.cbf.com.br/sumulas/2026/142233b.pdf" || echo falhou
+          head -c 4000 j.txt; echo; grep -n -i "p[uú]blico\|pagante\|presente" j.txt | head -20
