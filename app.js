@@ -995,11 +995,11 @@
       barras.append(el('div', { class: 'pf-l' + (pc == null ? ' sem' : '') }, el('span', { class: 'pf-r', text: rot }),
         el('b', { class: 'num pf-x', text: fmt(v) }),
         pc == null ? el('span', { class: 'pf-b' }) : el('span', { class: 'pf-b' }, el('i', { style: `width:${Math.max(3, pc)}%;background:${pc >= 75 ? 'var(--good)' : pc >= 40 ? 'var(--accent)' : 'var(--bad)'}` })),
-        el('b', { class: 'num pf-v', text: pc == null ? '' : pc })));
+        el('b', { class: 'num pf-v', title: pc == null ? '' : `Melhor que ${pc}% dos ${rotPares}`, text: pc == null ? '' : pc + '%' })));
     });
     app.append(el('section', null, secHead('Scout', RES_FUNCAO[fn], null),
       el('div', { class: 'card pad' }, barras, el('p', { class: 'small', style: 'margin:.6rem 0 0',
-        text: temMin ? `Barra = percentil entre ${pares.length} ${rotPares} com pelo menos 450 minutos (90 = melhor que 90% deles). Nas métricas em que menos é melhor, a barra já considera isso.`
+        text: temMin ? `A porcentagem diz de quantos dos ${pares.length} ${rotPares} com pelo menos 450 minutos ele é melhor naquele item (90% = melhor que 90% deles). Nas métricas em que menos é melhor, a conta já considera isso.`
           : 'Com menos de 450 minutos jogados, ainda não há comparação justa com os outros jogadores da função.' }))));
 
     app.append(el('section', null, secHead('Temporada', 'Números do jogador', null), el('div', { class: 'es-wrap' }, grupos)));
