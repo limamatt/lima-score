@@ -5,15 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          pip install pypdf -q
-          curl -sL -m 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36" -o b.pdf -w "b.pdf %{http_code}\n" https://conteudo.cbf.com.br/sumulas/2026/142233b.pdf || echo "falhou b.pdf $?"
-          curl -sL -m 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36" -o b81.pdf -w "b81.pdf %{http_code}\n" https://conteudo.cbf.com.br/sumulas/2026/14281b.pdf || echo "falhou b81.pdf $?"
-          curl -sL -m 60 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36" -o d.html -w "d.html %{http_code}\n" "https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/x/832122?view=documentos" || echo "falhou d.html $?"
-          ls -la; file b.pdf b81.pdf
-          python3 -c "
-          import pypdf,re
-          for f in ('b.pdf','b81.pdf'):
-              try: print('=====',f); print(pypdf.PdfReader(f).pages[0].extract_text()[:3000])
-              except Exception as e: print(e)
-          h=open('d.html',encoding='utf-8',errors='ignore').read(); print(sorted(set(re.findall(r'https://conteudo.cbf.com.br/sumulas/[^\"\s]+', h))))
-          "
+          curl -4 -sIL -m 40 -o /dev/null -w "ipv4 %{http_code}\n" https://conteudo.cbf.com.br/sumulas/2026/142233b.pdf || echo "falhou ipv4 $?"
+          curl -sIL -m 40 -o /dev/null -w "http %{http_code}\n" http://conteudo.cbf.com.br/sumulas/2026/142233b.pdf || echo "falhou http $?"
+          curl -sIL -m 40 -o /dev/null -w "escudo %{http_code}\n" https://conteudo.cbf.com.br/clubes/20385/escudo.jpg || echo "falhou escudo $?"
+          getent hosts conteudo.cbf.com.br
