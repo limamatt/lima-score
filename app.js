@@ -632,8 +632,8 @@
     const topo = (campo, min, max) => D.times.filter((t) => t[campo] >= min).sort((a, b) => b[campo] - a[campo]).slice(0, max);
     const faixas = [
       ['titulo', 'Título', 'Chance de ser campeão.', () => topo('titulo', 0.1, 6).map((t) => linhaProb(t, t.titulo, 'var(--accent)'))],
-      ['g4', 'Liberta', 'Vaga na fase de grupos da Libertadores (inclui as vagas extras que podem abrir).', () => topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))],
-      ['pre', 'Pré-Liberta', `Fase preliminar da Libertadores (hoje: ${ord(VG().grupos + 1)} e ${ord(VG().grupos + VG().pre)}).`, () => topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))],
+      ['g4', 'Libertadores', 'Vaga na fase de grupos da Libertadores (inclui as vagas extras que podem abrir).', () => topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))],
+      ['pre', 'Pré-Libertadores', `Fase preliminar da Libertadores (hoje: ${ord(VG().grupos + 1)} e ${ord(VG().grupos + VG().pre)}).`, () => topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))],
       ['sul', 'Sul-Americana', `Os seis seguintes fora da Libertadores (hoje: ${ord(VG().grupos + VG().pre + 1)} ao ${ord(VG().grupos + VG().pre + VG().sul)}).`, () => topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))],
       ['z4', 'Z4', 'Terminar entre os quatro últimos e cair para a Série B.', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))],
       ['copa', 'Copa BR', 'Quem cair perde a vaga da Copa do Brasil 2027 pela Série A (ainda pode entrar pelo estadual ou pelo ranking da CBF).', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)', rebaixadoMatematicamente(t) ? '100%' : null))],
@@ -658,7 +658,7 @@
     if (!tem[estado.cen]) estado.cen = tem.z4 ? 'z4' : tem.g4 ? 'g4' : 'pre';
     const z = estado.cen;
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Briga' });
-    [['g4', 'Libertadores'], ['pre', 'Pré-Liberta'], ['z4', 'Z4']].forEach(([k, txt]) => {
+    [['g4', 'Libertadores'], ['pre', 'Pré-Libertadores'], ['z4', 'Z4']].forEach(([k, txt]) => {
       if (tem[k]) seg.append(el('button', { type: 'button', 'aria-pressed': String(z === k), text: txt, onclick: () => { estado.cen = k; render(); } }));
     });
     const lista = el('div', { class: 'cen-lista' });
@@ -677,7 +677,7 @@
   function cartaoCenario(c) {
     const g4 = c.zona !== 'z4', pre = c.zona === 'pre';
     const t = T[c.time];
-    const rot = pre ? 'de pré-Liberta ou melhor' : g4 ? 'de Libertadores' : 'de cair';
+    const rot = pre ? 'de pré-Libertadores ou melhor' : g4 ? 'de Libertadores' : 'de cair';
     const cor = pre ? 'var(--good)' : g4 ? 'var(--info)' : 'var(--bad)';
     const dif = c.linha.dif;
     const linhaTxt = dif === 0 ? `Empatado em pontos com o ${nomeT(c.linha.time)} (${c.linha.pos}º)`
@@ -783,7 +783,7 @@
           el('td', { text: x.gp }), el('td', { text: x.gc }), el('td', { text: sgTxt(x.gp - x.gc) }),
           el('td', { text: x.j ? Math.round(x.pts / (x.j * 3) * 100) + '%' : '—' }))));
     } else {
-      head = ['#', 'Clube', 'Pts', 'Projeção', 'Título', 'Liberta', 'Pré-Liberta', 'Sul-Americana', 'Rebaix.'];
+      head = ['#', 'Clube', 'Pts', 'Projeção', 'Título', 'Libertadores', 'Pré-Libertadores', 'Sul-Americana', 'Rebaix.'];
       const proj = D.times.slice().sort((a, b) => b.pts_projetados - a.pts_projetados);
       const zp = zonasDaLista(proj.map((t) => t.id));
       proj.forEach((t, i) => tb.append(el('tr', { class: 'z-' + zp[t.id] },
