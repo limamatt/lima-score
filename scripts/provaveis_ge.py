@@ -104,9 +104,19 @@ def ler_escalacoes(linhas, ids_jogo):
             if eh_escalacao(grupos) and "titulares" not in out.get(alvo, {}):
                 out.setdefault(alvo, {})["titulares"] = grupos
                 continue
+        # "Desfalques: A e B. Pendurados: C" às vezes vem no mesmo parágrafo: separa as duas partes
+        partes = re.split(r"\s*\.?\s*(?=pendurados?\s*:)", ln, flags=re.I)
+        if len(partes) > 1:
+            ln = partes[0]
+            for extra in partes[1:]:
+                mp2 = PEND.match(extra.strip())
+                if mp2 and clube_atual in ids_jogo:
+                    lst = [x.strip(" .") for x in re.split(r",\s*|\s+e\s+", re.sub(r"\(.*?\)", "", mp2.group(1)).rstrip(".")) if x.strip(" .")]
+                    if lst and not re.match(r"^(ningu[eé]m|nenhum)", lst[0], re.I):
+                        out.setdefault(clube_atual, {})["pendurados"] = lst
         mf = FORA.match(ln)
         if mf and clube_atual in ids_jogo:
-            lista = [x for x in re.split(r",\s*|\s+e\s+|;\s*", re.sub(r"\(.*?\)", "", mf.group("lista")).rstrip(".")) if x.strip()]
+            lista = [x.strip(" .") for x in re.split(r",\s*|\s+e\s+|;\s*", re.sub(r"\(.*?\)", "", mf.group("lista")).rstrip(".")) if x.strip(" .")]
             if lista and not re.match(r"^(ningu[eé]m|nenhum)", lista[0].strip(), re.I):
                 out.setdefault(clube_atual, {}).setdefault("desfalques", []).extend(x.strip() for x in lista)
         mp = PEND.match(ln)
@@ -167,7 +177,7 @@ def main():
                     r["titulares"], r["url"] = dado["titulares"], link
                 for k in ("desfalques", "pendurados"):
                     if dado.get(k) and k not in r:
-                        r[k] = dado[k]
+                        r[k] = list(dict.fromkeys(dado[k]))
         if res:
             jogos_out[str(j["id"])] = {("casa" if cid == j["casa"] else "fora"): v for cid, v in res.items() if v.get("titulares")}
             jogos_out[str(j["id"])] = {k: v for k, v in jogos_out[str(j["id"])].items() if v}
