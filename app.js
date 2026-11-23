@@ -508,6 +508,15 @@
       el('div', { class: 'campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }), metade('fora'), metade('casa')), rot('casa'));
   }
 
+  // casinha = jogo em casa; avião = jogo fora
+  const SVG_CASA = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3z"/></svg>';
+  const SVG_AVIAO = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M21 15.5v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/></svg>';
+  function localIcone(emCasa) {
+    const s = el('span', { class: 'local-ic ' + (emCasa ? 'casa' : 'fora'), title: emCasa ? 'Em casa' : 'Fora de casa', role: 'img', 'aria-label': emCasa ? 'Em casa' : 'Fora de casa' });
+    s.innerHTML = emCasa ? SVG_CASA : SVG_AVIAO;
+    return s;
+  }
+
   const legendaJogo = () => el('div', { class: 'legend' },
     el('span', null, el('i', { style: 'background:var(--good)' }), 'Mandante vence'),
     el('span', null, el('i', { style: 'background:var(--muted)' }), 'Empate'),
@@ -1013,7 +1022,7 @@
         const feito = [g ? `${g} gol${g > 1 ? 's' : ''}` : '', a ? `${a} assist.` : ''].filter(Boolean).join(' · ') || (tit ? 'Titular' : 'Entrou');
         card.append(el('a', { class: 'lg', href: '#jogo-' + j.id, style: 'text-decoration:none;color:inherit' },
           el('span', { class: 'small num', text: `R${j.rodada}` }),
-          el('span', { class: 'team' }, el('span', { class: 'small', text: emCasa ? 'vs' : '@' }), escudo(adv), el('span', { text: T[adv] ? T[adv].nome : '' }), el('span', { class: 'small num', text: ` ${j.gols_casa}–${j.gols_fora}` })),
+          el('span', { class: 'team' }, localIcone(emCasa), escudo(adv), el('span', { text: T[adv] ? T[adv].nome : '' }), el('span', { class: 'small num', text: ` ${j.gols_casa}–${j.gols_fora}` })),
           el('span', { class: 'small', text: feito })));
       });
       app.append(el('section', null, secHead('Jogos', 'Últimos jogos', null), card));
@@ -1073,7 +1082,7 @@
       }
       return el('div', { class: 'lg' },
         el('span', { class: 'small num', text: `R${j.rodada} · ${new Date(j.data).toLocaleDateString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit' })}` }),
-        el('span', { class: 'team' }, el('span', { class: 'small', text: emCasa ? 'vs' : '@' }), escudo(adv), el('a', { href: '#clube-' + adv, text: T[adv] ? T[adv].nome : '' })),
+        el('span', { class: 'team' }, localIcone(emCasa), escudo(adv), el('a', { href: '#clube-' + adv, text: T[adv] ? T[adv].nome : '' })),
         el('span', { class: 'res num ' + res, title: res === 'P' ? 'Chance de vitória' : '', text: txt }));
     };
     const colA = el('div', { class: 'card list-games' }); faltam.forEach((j) => colA.append(linha(j)));
