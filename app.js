@@ -400,7 +400,11 @@
     const titulo = usarOficial ? 'Escalações oficiais' : 'Prováveis escalações';
     const nota = usarOficial ? null
       : (falta <= 60 && !encerrado(j) ? 'A escalação oficial aparece aqui assim que for divulgada. ' : '') +
-        'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor). Lesões e decisões do técnico não entram.';
+        (['casa', 'fora'].every((l) => prov && prov[l] && prov[l].fonte === 'ge')
+          ? 'Prováveis escalações publicadas pelo ge.'
+          : ['casa', 'fora'].some((l) => prov && prov[l] && prov[l].fonte === 'ge')
+            ? 'Provável do ge para um dos times; para o outro, os titulares do último jogo sem os suspensos.'
+            : 'Provável: os titulares do último jogo, sem os suspensos (no lugar entra quem mais foi titular no setor). Lesões e decisões do técnico não entram.');
     const fonte = usarOficial ? oficial : prov;
     if (!fonte || !fonte.casa || !fonte.fora) return null;
     // suspensos aparecem antes e durante o jogo (vêm da provável, que considera cartões e expulsões)
@@ -507,7 +511,10 @@
         el('div', { class: 'cp-rot-l' }, escudo(j[lado]), el('b', { text: t ? t.nome : '' }), el('span', { class: 'small', text: '4-3-3' })),
         el('div', { class: 'cp-info small' },
           t && t.tecnico ? el('span', { class: 'cp-chip' }, el('i', { class: 'cp-ic-tec', 'aria-hidden': 'true', text: '📋' }), `Técnico: ${t.tecnico.nome}${t.tecnico.interino ? ' (interino)' : ''}`) : null,
-          susp.length ? el('span', { class: 'cp-chip susp' }, el('i', { class: 'cart vm', 'aria-hidden': 'true' }), `Suspensos: ${susp.map((x) => x.n).join(', ')}`) : null));
+          susp.length ? el('span', { class: 'cp-chip susp' }, el('i', { class: 'cart vm', 'aria-hidden': 'true' }),
+            `${fonte[lado] && fonte[lado].fonte === 'ge' || (j.provavel && j.provavel[lado] && j.provavel[lado].fonte === 'ge') ? 'Desfalques' : 'Suspensos'}: ${susp.map((x) => x.n).join(', ')}`) : null,
+          (() => { const pd = j.provavel && j.provavel[lado] && j.provavel[lado].pendurados; return pd && pd.length && !encerrado(j)
+            ? el('span', { class: 'cp-chip' }, el('i', { class: 'cart am', 'aria-hidden': 'true' }), `Pendurados: ${pd.join(', ')}`) : null; })()));
     };
     return el('div', { class: 'card cp-card' }, rot('fora'),
       el('div', { class: 'campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }), metade('fora'), metade('casa')), rot('casa'));

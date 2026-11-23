@@ -292,6 +292,38 @@ def montar_jogadores(saida_jogos):
         print(f"Jogadores: {len(saida)} jogadores em {conteudo['jogos_lidos']} jogos.")
 
 
+def _titulares_ge(grupos, cid, elencos):
+    """Linhas do ge (goleiro; defesa; meio; ataque) -> titulares com posição aproximada e camisa do elenco."""
+    n = len(grupos)
+    if n == 4:
+        rot = ["Goleiro", "Zagueiro", "Meio-campista", "Atacante"]
+    elif n == 5:
+        rot = ["Goleiro", "Zagueiro", "Volante", "Meia", "Atacante"]
+    else:
+        rot = ["Goleiro"] + ["Zagueiro"] + ["Meio-campista"] * max(0, n - 3) + ["Atacante"]
+    el = elencos.get(cid, [])
+    def acha(nome):
+        a = _sem_acento(nome)
+        for x in sorted(el, key=lambda y: -y.get("jogos", 0)):
+            b = _sem_acento(x.get("nome"))
+            if a == b or b.endswith(" " + a) or a.endswith(" " + b) or b.startswith(a + " ") or a.startswith(b + " "):
+                return x
+        return None
+    out = []
+    for i, g in enumerate(grupos):
+        for nome in g:
+            x = acha(nome)
+            pos = rot[min(i, len(rot) - 1)]
+            if x and x.get("pos") and i not in (0,):
+                # usa o lado do campo do elenco (lateral esquerdo/direito, ponta) quando bate com a linha
+                if any(k in x["pos"] for k in ("Lateral", "Ala")) and pos == "Zagueiro":
+                    pos = x["pos"]
+                if x["pos"] == "Ponta" and pos == "Atacante":
+                    pos = "Ponta"
+            out.append(dict(n=nome, c=(x or {}).get("camisa"), p=pos))
+    return out
+
+
 def provaveis_escalacoes(saida_jogos):
     """Provável escalação de cada clube no próximo jogo: os titulares do último jogo, tirando quem
     está suspenso (vermelho no último jogo ou 3º, 6º, 9º... amarelo) e pondo no lugar quem mais foi
@@ -794,6 +826,12 @@ def main():
     est_clubes = estatisticas_dos_clubes(saida_jogos, espn)
     try:
         prov = provaveis_escalacoes(saida_jogos)
+        arq_ge = ROOT / "data" / "provaveis_ge.json"
+        prov_ge = (json.loads(arq_ge.read_text(encoding="utf-8")) if arq_ge.exists() else {}).get("jogos", {})
+        arq_jog = ROOT / "data" / "jogadores.json"
+        elencos = {}
+        for x in (json.loads(arq_jog.read_text(encoding="utf-8")) if arq_jog.exists() else {}).get("jogadores", []):
+            elencos.setdefault(x["clube"], []).append(x)
         proximo_de = {}
         for jg in sorted((x for x in saida_jogos if x["status"] != "FINISHED"), key=lambda x: x["data"]):
             for lado in ("casa", "fora"):
@@ -802,6 +840,13 @@ def main():
             if jg["status"] == "FINISHED":
                 continue
             p = {lado: prov[jg[lado]] for lado in ("casa", "fora") if proximo_de.get(jg[lado]) == jg["id"] and jg[lado] in prov}
+            # provável publicada pelo ge tem preferência sobre a calculada
+            ge = (prov_ge.get(str(jg["id"])) or {})
+            for lado in ("casa", "fora"):
+                g = ge.get(lado)
+                if g and g.get("titulares"):
+                    p[lado] = dict(titulares=_titulares_ge(g["titulares"], jg[lado], elencos), desfalques=[{"n": n} for n in g.get("desfalques") or []],
+                                   pendurados=g.get("pendurados") or [], fonte="ge", url=g.get("url"))
             if p:
                 jg["provavel"] = p
     except Exception as ex:

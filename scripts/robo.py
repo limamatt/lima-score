@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "data" / "site.json"
 NOTICIAS = ROOT / "data" / "noticias.json"
 ARQUIVOS = ["data/site.json", "data/noticias.json", "data/videos.json", "data/estatisticas.json", "data/lives.json",
-            "data/escalacoes.json", "data/jogadores.json", "data/vagas.json"]
+            "data/escalacoes.json", "data/jogadores.json", "data/vagas.json", "data/provaveis_ge.json"]
 DURACAO_MAX = int(5.5 * 3600)  # fica ligado enquanto houver jogo (limite de segurança: 5h30)
 INTERVALO = 30              # segundos entre conferências durante os jogos
 ESPACO_ENTRE_PUBLICACOES = 6 * 60  # site completo: no máximo a cada 6 min durante os jogos
@@ -144,6 +144,7 @@ def main():
         rodar("update.py")              # placar, tabela e previsões
         if (volta == 0 and noticias_velhas()) or time.time() - ultima_noticia > 3600:
             rodar("noticias.py")        # notícias: no máximo 1 vez por hora
+            rodar("provaveis_ge.py")    # prováveis escalações publicadas pelo ge
             ultima_noticia = time.time()
         ao_vivo = ha_jogo_agora()
         if ao_vivo:
