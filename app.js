@@ -319,25 +319,98 @@
             d.motivo ? el('span', { class: 'dq-mot', text: d.motivo }) : null))));
     }
 
-    // estatísticas
-    const box = el('div', { class: 'card estat' });
-    const linhas = e ? ESTAT_LINHAS.filter(([k]) => e.casa && e.fora && (e.casa[k] != null || e.fora[k] != null)) : [];
-    if (linhas.length) {
-      linhas.forEach(([k, rot, suf]) => {
-        const a = +(e.casa[k] || 0), b = +(e.fora[k] || 0), tot = a + b;
-        const fmt = (v) => (suf === '%' ? Math.round(v) + '%' : String(v));
-        const pa = tot ? (a / tot) * 100 : 50;
-        box.append(el('div', { class: 'es-l' },
-          el('div', { class: 'es-top' }, el('b', { class: 'num' + (a > b ? ' lider' : ''), text: fmt(a) }), el('span', { text: rot }), el('b', { class: 'num' + (b > a ? ' lider' : ''), text: fmt(b) })),
-          el('div', { class: 'es-bar', role: 'img', 'aria-label': `${rot}: ${fmt(a)} a ${fmt(b)}` },
-            el('span', { class: 'c', style: `width:${tot ? pa : 0}%` }), el('span', { class: 'f', style: `width:${tot ? 100 - pa : 0}%` }))));
-      });
-      box.prepend(el('div', { class: 'es-head' }, escudo(j.casa), el('span', { class: 'small', text: aoVivo(j) ? 'Atualiza sozinho a cada minuto' : '' }), escudo(j.fora)));
-    } else {
-      box.append(el('p', { class: 'pad small', style: 'margin:0', text: E ? 'As estatísticas deste jogo ainda não estão disponíveis. Elas costumam aparecer poucos minutos depois do início.' : 'Carregando estatísticas…' }));
+    // estatísticas, em grupos (como nos apps de futebol)
+    app.append(secaoEstatJogo(j, e));
+  }
+
+  // linha de estatística: valor do mandante, rótulo, valor do visitante e barra proporcional.
+  // menos = 'menos é melhor' (faltas, cartões); fmt = formatação; v = [casa, fora]; txt = textos opcionais
+  function linhaEstat(rot, v, { suf = '', dec = 0, menos = false, txt = null, nota = null } = {}) {
+    const [a, b] = v.map((x) => +x || 0);
+    const tot = a + b;
+    const fmt = (x) => (dec ? x.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : Math.round(x)) + suf;
+    const melhorA = menos ? a < b : a > b, melhorB = menos ? b < a : b > a;
+    const pa = tot ? (a / tot) * 100 : 50;
+    return el('div', { class: 'es-l' },
+      el('div', { class: 'es-top' },
+        el('b', { class: 'num' + (melhorA ? ' lider' : ''), text: txt ? txt[0] : fmt(a) }),
+        el('span', null, rot, nota ? el('small', { class: 'es-nota', text: ' ' + nota }) : null),
+        el('b', { class: 'num' + (melhorB ? ' lider' : ''), text: txt ? txt[1] : fmt(b) })),
+      el('div', { class: 'es-bar', role: 'img', 'aria-label': `${rot}: ${txt ? txt[0] : fmt(a)} a ${txt ? txt[1] : fmt(b)}` },
+        el('span', { class: 'c', style: `width:${tot ? pa : 0}%` }), el('span', { class: 'f', style: `width:${tot ? 100 - pa : 0}%` })));
+  }
+  function secaoEstatJogo(j, e) {
+    const c = (e && e.casa) || {}, f = (e && e.fora) || {};
+    const fc = (e && e.fin && e.fin.casa) || null, ff = (e && e.fin && e.fin.fora) || null;
+    const tem = (k) => c[k] != null || f[k] != null;
+    const par = (k) => [c[k], f[k]];
+    const fin = (k) => [fc ? fc[k] : 0, ff ? ff[k] : 0];
+    const razao = (cert, tot) => {
+      const t = (x) => (x[tot] ? `${x[cert] || 0}/${x[tot]} (${Math.round(100 * (x[cert] || 0) / x[tot])}%)` : '–');
+      return [t(c), t(f)];
+    };
+    const pctDe = (cert, tot) => [c[tot] ? 100 * (c[cert] || 0) / c[tot] : 0, f[tot] ? 100 * (f[cert] || 0) / f[tot] : 0];
+    if (!e || !Object.keys(c).length) {
+      return el('section', null, secHead('Estatísticas', 'Números da partida', null),
+        el('div', { class: 'card estat' }, el('p', { class: 'pad small', style: 'margin:0', text: E ? 'As estatísticas deste jogo ainda não estão disponíveis. Elas costumam aparecer poucos minutos depois do início.' : 'Carregando estatísticas…' })));
     }
-    app.append(el('section', null, secHead('Estatísticas', 'Números da partida', null), box,
-    ));
+    const grupo = (titulo, linhas) => {
+      const l = linhas.filter(Boolean);
+      return l.length ? el('div', { class: 'card estat es-grupo' }, el('div', { class: 'es-gt' }, el('b', { text: titulo })), l) : null;
+    };
+    const head = el('div', { class: 'es-head card' }, el('span', { class: 'es-hl' }, escudo(j.casa), el('b', { text: T[j.casa] ? T[j.casa].nome : '' })),
+      el('span', { class: 'small', text: aoVivo(j) ? 'Atualiza sozinho durante o jogo' : '' }),
+      el('span', { class: 'es-hl' }, el('b', { text: T[j.fora] ? T[j.fora].nome : '' }), escudo(j.fora)));
+    const geral = grupo('Visão geral', [
+      tem('posse') && linhaEstat('Posse de bola', par('posse'), { suf: '%' }),
+      fc && linhaEstat('Gols esperados (xG)', fin('xg'), { dec: 2, nota: 'estimado' }),
+      fc && linhaEstat('Grandes chances', fin('grandes')),
+      tem('finalizacoes') && linhaEstat('Finalizações', par('finalizacoes')),
+      tem('defesas') && linhaEstat('Defesas do goleiro', par('defesas')),
+      tem('escanteios') && linhaEstat('Escanteios', par('escanteios')),
+      tem('faltas') && linhaEstat('Faltas', par('faltas'), { menos: true }),
+      tem('passes') && linhaEstat('Passes', par('passes')),
+      tem('desarmes') && linhaEstat('Desarmes', par('desarmes')),
+      tem('amarelos') && linhaEstat('Cartões amarelos', par('amarelos'), { menos: true }),
+      tem('vermelhos') && linhaEstat('Cartões vermelhos', par('vermelhos'), { menos: true }),
+      tem('impedimentos') && linhaEstat('Impedimentos', par('impedimentos'), { menos: true }),
+    ]);
+    const finaliz = grupo('Finalizações', [
+      tem('finalizacoes') && linhaEstat('Finalizações', par('finalizacoes')),
+      tem('no_alvo') && linhaEstat('Finalizações no gol', par('no_alvo')),
+      fc && linhaEstat('Gols esperados (xG)', fin('xg'), { dec: 2, nota: 'estimado' }),
+      fc && linhaEstat('Finalizações na trave', fin('trave')),
+      fc && linhaEstat('Finalizações para fora', fin('para_fora')),
+      (fc || tem('chutes_bloqueados')) && linhaEstat('Chutes bloqueados', fc ? fin('bloqueados') : par('chutes_bloqueados')),
+      fc && linhaEstat('De dentro da área', fin('dentro')),
+      fc && linhaEstat('De fora da área', fin('fora_area')),
+      fc && linhaEstat('De cabeça', fin('cabeca')),
+    ]);
+    const ataque = fc ? grupo('Ataque', [
+      linhaEstat('Grandes chances marcadas', fin('grandes_gol')),
+      linhaEstat('Grandes chances perdidas', [fc.grandes - fc.grandes_gol, ff.grandes - ff.grandes_gol], { menos: true }),
+      tem('impedimentos') && linhaEstat('Impedimentos', par('impedimentos'), { menos: true }),
+      tem('penaltis') && linhaEstat('Pênaltis (gols/cobrados)', [c.penaltis_gols || 0, f.penaltis_gols || 0], { txt: [`${c.penaltis_gols || 0}/${c.penaltis || 0}`, `${f.penaltis_gols || 0}/${f.penaltis || 0}`] }),
+    ]) : null;
+    const passes = grupo('Passes', [
+      tem('passes_certos') && linhaEstat('Passes certos', par('passes_certos')),
+      tem('precisao_passes') && linhaEstat('Precisão dos passes', par('precisao_passes'), { suf: '%' }),
+      tem('bolas_longas') && linhaEstat('Bolas longas', pctDe('bolas_longas_certas', 'bolas_longas'), { txt: razao('bolas_longas_certas', 'bolas_longas') }),
+      tem('cruzamentos') && linhaEstat('Cruzamentos', pctDe('cruzamentos_certos', 'cruzamentos'), { txt: razao('cruzamentos_certos', 'cruzamentos') }),
+    ]);
+    const defesa = grupo('Defendendo', [
+      tem('desarmes') && linhaEstat('Desarmes ganhos', pctDe('desarmes_certos', 'desarmes'), { txt: razao('desarmes_certos', 'desarmes') }),
+      tem('desarmes') && linhaEstat('Total de desarmes', par('desarmes')),
+      tem('interceptacoes') && linhaEstat('Interceptações', par('interceptacoes')),
+      tem('cortes') && linhaEstat('Cortes', par('cortes')),
+    ]);
+    const goleiro = grupo('Goleiro', [
+      tem('defesas') && linhaEstat('Defesas do goleiro', par('defesas')),
+      fc && linhaEstat('Gols evitados', fin('gols_evitados'), { dec: 2, nota: 'estimado' }),
+    ]);
+    return el('section', null, secHead('Estatísticas', 'Números da partida', null), head,
+      el('div', { class: 'es-grade' }, geral, finaliz, ataque, passes, defesa, goleiro),
+      fc ? el('p', { class: 'small', text: 'xG e gols evitados são estimativas do Lima Score a partir de cada finalização (zona, cabeça, pênalti, contra-ataque). Grande chance = finalização com xG acima de 0,30.' }) : null);
   }
 
   // escalações: prováveis até 1h antes do jogo; depois, as oficiais (quando divulgadas)

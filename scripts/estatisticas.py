@@ -29,7 +29,7 @@ ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada joga
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 9                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 10                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -38,7 +38,14 @@ ESTAT = {
     "wonCorners": "escanteios", "foulsCommitted": "faltas", "yellowCards": "amarelos",
     "redCards": "vermelhos", "offsides": "impedimentos", "saves": "defesas",
     "totalPasses": "passes", "passPct": "precisao_passes",
+    "accuratePasses": "passes_certos", "totalCrosses": "cruzamentos", "accurateCrosses": "cruzamentos_certos",
+    "totalLongBalls": "bolas_longas", "accurateLongBalls": "bolas_longas_certas", "blockedShots": "chutes_bloqueados",
+    "totalTackles": "desarmes", "effectiveTackles": "desarmes_certos", "interceptions": "interceptacoes",
+    "totalClearance": "cortes", "effectiveClearance": "cortes_certos",
+    "penaltyKickGoals": "penaltis_gols", "penaltyKickShots": "penaltis",
 }
+FATOR_XG = 0.89  # calibra o xG estimado (a soma da temporada bate com os gols)
+NOMES_ESTAT_VISTOS = set()
 
 
 def baixar(caminho):
@@ -69,6 +76,7 @@ def ler_estatisticas(times_box):
     for t in times_box:
         d = {}
         for s in t.get("statistics") or []:
+            NOMES_ESTAT_VISTOS.add(str(s.get("name")))
             k = ESTAT.get(s.get("name"))
             v = numero(s.get("displayValue", s.get("value")))
             if k and v is not None:
@@ -454,6 +462,33 @@ def escalacao_oficial(resumo, lado_por_espn):
     return out if len(out) == 2 else None
 
 
+def resumo_finalizacoes(chutes, est):
+    """Por time: xG estimado, grandes chances, onde e como terminaram as finalizações,
+    e 'gols evitados' do goleiro (xG dos chutes no gol que ele enfrentou menos os gols sofridos)."""
+    out = {}
+    for lado in ("casa", "fora"):
+        meus = [c for c in chutes if c.get("lado") == lado]
+        outro = "fora" if lado == "casa" else "casa"
+        contra = [c for c in chutes if c.get("lado") == outro]
+        xg = sum(c["xg"] for c in meus) * FATOR_XG
+        no_alvo_contra = [c for c in contra if c["res"] in ("gol", "defendido")]
+        out[lado] = dict(
+            xg=round(xg, 2),
+            grandes=sum(1 for c in meus if c["xg"] >= 0.3 and c["zona"] != "penalti"),
+            grandes_gol=sum(1 for c in meus if c["xg"] >= 0.3 and c["zona"] != "penalti" and c["res"] == "gol"),
+            dentro=sum(1 for c in meus if c["zona"] in ("pequena_area", "area", "penalti")),
+            fora_area=sum(1 for c in meus if c["zona"] in ("fora", "falta")),
+            trave=sum(1 for c in meus if c["res"] == "trave"),
+            para_fora=sum(1 for c in meus if c["res"] == "fora"),
+            bloqueados=sum(1 for c in meus if c["res"] == "bloqueado"),
+            cabeca=sum(1 for c in meus if c.get("cab")),
+            xg_alvo_contra=round(sum(c["xg"] for c in no_alvo_contra) * FATOR_XG, 2),
+            gols_contra_chute=sum(1 for c in contra if c["res"] == "gol"),
+        )
+        out[lado]["gols_evitados"] = round(out[lado]["xg_alvo_contra"] - out[lado]["gols_contra_chute"], 2)
+    return out
+
+
 def jogadores_do_jogo(resumo, lado_por_espn):
     """Quem entrou em campo em cada lado e os números de cada um nesse jogo."""
     out = {"casa": [], "fora": []}
@@ -630,6 +665,7 @@ def main():
             jj = jogadores_do_jogo(resumo, lado_por_espn)
             try:
                 jj["chutes"], jj["acoes"] = chutes_e_acoes(resumo, lado_por_espn)
+                novo["fin"] = resumo_finalizacoes(jj["chutes"], est)
             except Exception:
                 pass
             if jj["casa"] or jj["fora"]:
@@ -699,7 +735,7 @@ def main():
     if json.dumps(escalacoes, sort_keys=True) != esc_antes or (escalacoes and not ESC.exists()):
         ESC.write_text(json.dumps(escalacoes, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists() or "erro" in dados or not jogos_dados:
-        OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, tipos_espn=sorted(tipos_vistos)[:300], amostras_var=amostras_var[:40], amostras_tipos=amostras_tipos, jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        OUT.write_text(json.dumps(dict(fonte="ESPN", diag=diag, tipos_espn=sorted(tipos_vistos)[:300], nomes_estat=sorted(NOMES_ESTAT_VISTOS), amostras_var=amostras_var[:40], amostras_tipos=amostras_tipos, jogos=jogos_dados), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"Estatísticas: {lidos} jogos lidos ({len(ao_vivo)} ao vivo).")
     else:
         print("Estatísticas: nada mudou.")
