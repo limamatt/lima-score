@@ -2,8 +2,8 @@
 Lima Score — escala oficial de arbitragem da CBF.
 
 Cada jogo do Brasileirão 2026 tem uma página na CBF com a "Escala de Árbitros"
-(árbitro, assistentes, quarto árbitro, VAR e AVAR). O endereço usa o número do jogo:
-id = BASE + número do jogo (1 a 380). Lê as páginas e grava data/arbitros_cbf.json.
+(árbitro, assistentes, quarto árbitro, VAR e AVAR). O número da página não segue a ordem
+dos jogos, então o robô varre a faixa da temporada e guarda o id de cada jogo. Lê as páginas e grava data/arbitros_cbf.json.
 
 Só relê jogos que ainda não têm árbitro escalado ou que são de até 10 dias atrás
 ou dos próximos 7 dias (a CBF às vezes troca a escala em cima da hora).
@@ -22,7 +22,7 @@ from estatisticas import clube_por_nome  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "arbitros_cbf.json"
-BASE = 831889                      # jogo 1 = 831890 ... jogo 380 = 832269
+BASE = 831889                      # perto do primeiro id de página da temporada 2026
 URL = "https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/jogo/{}"
 UA = {"User-Agent": "Mozilla/5.0 (compatible; LimaScore/1.0)"}
 MESES = {m: i + 1 for i, m in enumerate("janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro".split())}
@@ -40,13 +40,15 @@ def sem_acento(t):
     return "".join(c for c in unicodedata.normalize("NFD", t) if unicodedata.category(c) != "Mn").lower()
 
 
-def ler_jogo(n):
-    req = urllib.request.Request(URL.format(BASE + n), headers=UA)
+def ler_jogo(pid):
+    req = urllib.request.Request(URL.format(pid), headers=UA)
     with urllib.request.urlopen(req, timeout=25) as r:
         h = r.read().decode("utf-8", "ignore")
     m = re.search(r"Rodada\s*(?:<!-- -->)?\s*(\d+)\s*(?:<!-- -->)?\s*\|\s*Jogo:\s*(?:<!-- -->)?\s*(\d+)", h)
-    if not m or int(m.group(2)) != n:
+    tit = re.search(r"<title>(.*?)</title>", h, re.S)
+    if not m or not tit or not re.search(r"Campeonato Brasileiro\s*\S\s*Série A\s*\S\s*2026", tit.group(1)):
         return None
+    n = int(m.group(2))
     clubes = [limpa(x) for x in re.findall(r'class="styles_clubContainer[^"]*"[^>]*>\s*<strong>(.*?)</strong>', h, re.S)]
     if len(clubes) < 2:
         clubes = [limpa(x) for x in re.findall(r'class="styles_clubContainer[^"]*".*?<strong>(.*?)</strong>', h, re.S)]
@@ -66,7 +68,7 @@ def ler_jogo(n):
             if k and limpa(nome) and k not in equipe:
                 equipe[k] = dict(nome=limpa(nome), uf=limpa(uf))
     casa, fora = (clubes + [None, None])[:2]
-    return dict(jogo=n, rodada=int(m.group(1)), data=data, casa=casa, fora=fora,
+    return dict(jogo=n, id=pid, rodada=int(m.group(1)), data=data, casa=casa, fora=fora,
                 casa_id=clube_por_nome(casa or ""), fora_id=clube_por_nome(fora or ""), equipe=equipe)
 
 
@@ -74,25 +76,30 @@ def main():
     antigo = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
     jogos = antigo.get("jogos", {})
     agora = datetime.now(timezone(timedelta(hours=-3))).replace(tzinfo=None)
+    # os números de página não seguem a ordem dos jogos: varre a faixa da temporada e guarda o id de cada jogo
+    conhecidos = {j["id"]: k for k, j in jogos.items() if j.get("id")}
+    completo = len(conhecidos) >= 380
+    ids = range(BASE - 150, BASE + 600) if not completo else sorted(conhecidos)
     lidos, erros = 0, 0
-    for n in range(1, 381):
-        j = jogos.get(str(n))
+    for pid in ids:
+        k = conhecidos.get(pid)
+        j = jogos.get(k) if k else None
         if j and j.get("equipe", {}).get("arbitro") and j.get("data"):
             d = datetime.fromisoformat(j["data"])
             if not (agora - timedelta(days=10) <= d <= agora + timedelta(days=7)):
                 continue
         try:
-            novo = ler_jogo(n)
+            novo = ler_jogo(pid)
         except Exception:
             erros += 1
-            if erros >= 15 and lidos == 0:
+            if erros >= 60 and lidos == 0:
                 break  # CBF fora do ar: tenta na próxima
             continue
         if novo:
-            jogos[str(n)] = novo
+            jogos[str(novo["jogo"])] = novo
             lidos += 1
-        time.sleep(0.3)
-    saida = dict(jogos=jogos)
+        time.sleep(0.2)
+    saida = dict(jogos=dict(sorted(jogos.items(), key=lambda kv: int(kv[0]))))
     if json.dumps(saida, sort_keys=True) != json.dumps({"jogos": antigo.get("jogos", {})}, sort_keys=True):
         saida["atualizado"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         OUT.write_text(json.dumps(saida, ensure_ascii=False, indent=1), encoding="utf-8")
