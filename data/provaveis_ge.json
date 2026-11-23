@@ -84,10 +84,55 @@
      "Artur"
     ]
    }
+  },
+  "555108": {
+   "casa": {
+    "titulares": [
+     [
+      "Rafael"
+     ],
+     [
+      "Newton",
+      "Arboleda",
+      "Osório"
+     ],
+     [
+      "Pedro Lima",
+      "Bobadilla",
+      "Pablo Maia",
+      "Lucas",
+      "Iago"
+     ],
+     [
+      "Luciano",
+      "Calleri"
+     ]
+    ],
+    "url": "https://ge.globo.com/rj/futebol/brasileirao-serie-a/noticia/2026/11/23/botafogo-x-sao-paulo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "desfalques": [
+     "Nicolas",
+     "Buta",
+     "Domingos Duarte",
+     "Marcos Antonio",
+     "Rafael Tolói",
+     "Artur",
+     "Sabino"
+    ],
+    "pendurados": [
+     "Lucas Ramon",
+     "Wendell",
+     "Djhordney",
+     "Marcos Antônio",
+     "Danielzinho",
+     "Gustavo Santana",
+     "André Silva",
+     "Artur"
+    ]
+   }
   }
  },
  "diag": {
-  "hora": "2026-11-23T15:03:24+00:00",
+  "hora": "2026-11-23T23:05:55+00:00",
   "materias": [
    [
     "Botafogo x São Paulo: onde assistir ao vivo, horário e escalações",
@@ -104,6 +149,12 @@
     "Escalação do Botafogo: Tite deve ter retorno de Danilo em jogo decisivo contra o",
     {
      "1770": 5
+    }
+   ],
+   [
+    "Botafogo x São Paulo: onde assistir ao vivo, horário e escalações",
+    {
+     "1776": 4
     }
    ]
   ],
