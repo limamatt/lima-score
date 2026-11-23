@@ -132,6 +132,8 @@ def main():
     inicio = time.time()
     ultima_pub = 0.0
     ultima_noticia = time.time()
+    ultima_provavel = 0.0
+    ultima_provavel = 0.0
     ultimo_ao_vivo = None
     volta = 0
     while True:
@@ -141,10 +143,12 @@ def main():
             rodar("videos.py")          # melhores momentos e gols (a cada ~3 min no modo ao vivo)
         if volta % 2 == 0:
             rodar("lives.py")           # link exato da transmissão no YouTube (CazéTV, ge tv)
+        if volta == 0 or time.time() - ultima_provavel > 1800:
+            rodar("provaveis_ge.py")    # prováveis escalações publicadas pelo ge (a cada 30 min)
+            ultima_provavel = time.time()
         rodar("update.py")              # placar, tabela e previsões
         if (volta == 0 and noticias_velhas()) or time.time() - ultima_noticia > 3600:
             rodar("noticias.py")        # notícias: no máximo 1 vez por hora
-            rodar("provaveis_ge.py")    # prováveis escalações publicadas pelo ge
             ultima_noticia = time.time()
         ao_vivo = ha_jogo_agora()
         if ao_vivo:
