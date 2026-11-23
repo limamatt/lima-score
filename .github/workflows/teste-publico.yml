@@ -6,23 +6,21 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-          t() { curl -sL -m 40 -A "$UA" "${@:3}" -o "$1" -w "$1 %{http_code} %{size_download}\n" "$2" || echo "falhou $1"; }
-          t tsdb.json "https://www.thesportsdb.com/api/v1/json/3/eventsseason.php?id=4351&s=2026"
-          t tsdb2.json "https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=4351"
-          t pt.html "https://www.portaltela.com/esportes/2026/05/17/publicos-da-16a-rodada-do-brasileirao/"
-          t nv.html "https://netvasco.com.br/n/391078/palmeiras-4-x-1-vasco-tem-o-maior-publico-da-24-rodada-do-brasileiro"
-          t espnbr.html "https://www.espn.com.br/futebol/partida/_/jogoId/401841318"
-          t cbfapi.json "https://www.cbf.com.br/api/proxy?path=/jogos/832122"
+          curl -sL -m 40 -A "$UA" -o b.html -w "busca %{http_code} %{size_download}\n" "https://ge.globo.com/busca/?q=p%C3%BAblicos+e+rendas+rodada+brasileir%C3%A3o&order=recent&species=not%C3%ADcias"
+          curl -sL -m 40 -A "$UA" -o b2.html -w "busca2 %{http_code} %{size_download}\n" "https://ge.globo.com/busca/?q=p%C3%BAblicos+rendas+24%C2%AA+rodada+brasileir%C3%A3o"
           python3 - <<'PY'
-          import json,re
-          for f in ["tsdb.json","tsdb2.json"]:
-              try:
-                  d=json.load(open(f)); ev=d.get("events") or []
-                  print(f,len(ev),sum(1 for e in ev if e.get("intSpectators")), [ (e.get("strEvent"),e.get("intSpectators"),e.get("intRound")) for e in ev[:5]])
-              except Exception as e: print(f,e)
-          for f in ["pt.html","nv.html","espnbr.html","cbfapi.json"]:
+          import re,html,urllib.parse
+          for f in ["b.html","b2.html"]:
               h=open(f,encoding="utf-8",errors="ignore").read()
-              print("=====",f,len(h),re.findall(r"<title>(.*?)</title>",h)[:1])
-              txt=re.sub(r"<[^>]+>"," ",h)
-              for m in list(re.finditer(r"(?i)(pagantes|público|attendance)",txt))[:8]: print("  ",re.sub(r"\s+"," ",txt[m.start()-150:m.start()+120]))
+              print("=====",f,len(h))
+              links=re.findall(r'href="([^"]+)"',h)
+              out=[]
+              for l in links:
+                  l=html.unescape(l)
+                  if "u=" in l: 
+                      q=urllib.parse.parse_qs(urllib.parse.urlparse(l).query).get("u")
+                      if q: l=q[0]
+                  if "ge.globo.com" in l and "noticia" in l and l not in out: out.append(l)
+              print("\n".join(out[:25]))
+              print([re.sub(r"\s+"," ",re.sub(r"<[^>]+>"," ",x))[:120] for x in re.findall(r'<div class="widget--info__title[^"]*">(.*?)</div>',h,re.S)][:20])
           PY
