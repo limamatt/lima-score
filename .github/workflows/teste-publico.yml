@@ -5,22 +5,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-          t() { curl -sL -m 40 -A "$UA" -H "Accept-Language: pt-BR,pt;q=0.9,en;q=0.8" -o "$1" -w "$1 %{http_code} %{size_download}\n" "$2" || echo "falhou $1"; }
-          t fbref.html "https://fbref.com/en/comps/24/schedule/Serie-A-Scores-and-Fixtures"
-          t wf.html "https://www.worldfootball.net/all_matches/bra-serie-a-2026/"
-          t tm.html "https://www.transfermarkt.com.br/campeonato-brasileiro-serie-a/besucherzahlen/wettbewerb/BRA1/saison_id/2025"
-          t ogol.html "https://www.ogol.com.br/edicao/brasileirao-serie-a-2026/"
-          t sofa.json "https://api.sofascore.com/api/v1/unique-tournament/325/seasons"
-          t fotmob.json "https://www.fotmob.com/api/leagues?id=268"
-          t espnsb.json "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=20261122"
+          UA="LimaScore/1.0 (https://limamatt.github.io/lima-score/)"
+          t() { curl -sL -m 40 -A "$UA" -o "$1" -w "$1 %{http_code} %{size_download}\n" "$2" || echo "falhou $1"; }
+          t pt.txt "https://pt.wikipedia.org/w/index.php?title=Campeonato_Brasileiro_de_Futebol_de_2026_-_S%C3%A9rie_A&action=raw"
+          t en.txt "https://en.wikipedia.org/w/index.php?title=2026_Campeonato_Brasileiro_S%C3%A9rie_A&action=raw"
           python3 - <<'PY'
-          import re,json
-          for f in ["fbref.html","wf.html","tm.html","ogol.html","sofa.json","fotmob.json","espnsb.json"]:
-              try: h=open(f,encoding="utf-8",errors="ignore").read()
-              except Exception as e: print(f,e); continue
-              print("=====",f,len(h), re.findall(r"<title>(.*?)</title>",h)[:1])
-              for k in ["attendance","Attendance","Zuschauer","Público","publico","Spectators","Espectadores"]:
-                  i=h.find(k)
-                  if i>=0: print(k, repr(h[max(0,i-200):i+300])); break
+          import re
+          for f in ["pt.txt","en.txt"]:
+              h=open(f,encoding="utf-8",errors="ignore").read()
+              print("=====",f,len(h))
+              for m in re.finditer(r"(?im)^=+\s*[^=\n]*(p[úu]blico|attendance)[^=\n]*=+", h):
+                  print(h[m.start():m.start()+2500]); print("-----")
+              print([h[i.start()-100:i.start()+200] for i in re.finditer(r"(?i)público|attendance", h)][:4])
           PY
