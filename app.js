@@ -654,16 +654,16 @@
   // ---------- cenários (G4 e Z4)
   function secaoCenarios() {
     const C = D.cenarios;
-    const tem = { g4: C.some((c) => c.zona === 'g4'), z4: C.some((c) => c.zona === 'z4') };
-    if (!tem[estado.cen]) estado.cen = tem.z4 ? 'z4' : 'g4';
+    const tem = { g4: C.some((c) => c.zona === 'g4'), pre: C.some((c) => c.zona === 'pre'), z4: C.some((c) => c.zona === 'z4') };
+    if (!tem[estado.cen]) estado.cen = tem.z4 ? 'z4' : tem.g4 ? 'g4' : 'pre';
     const z = estado.cen;
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Briga' });
-    [['g4', 'Pela vaga direta'], ['z4', 'Contra o Z4']].forEach(([k, txt]) => {
+    [['g4', 'Vaga direta'], ['pre', 'Pré-Liberta'], ['z4', 'Z4']].forEach(([k, txt]) => {
       if (tem[k]) seg.append(el('button', { type: 'button', 'aria-pressed': String(z === k), text: txt, onclick: () => { estado.cen = k; render(); } }));
     });
     const lista = el('div', { class: 'cen-lista' });
     // G4: da maior para a menor chance; Z4: da menor para a maior chance de cair
-    C.filter((c) => c.zona === z).sort((a, b) => z === 'g4' ? b.chance - a.chance : a.chance - b.chance).forEach((c) => lista.append(cartaoCenario(c)));
+    C.filter((c) => c.zona === z).sort((a, b) => z !== 'z4' ? b.chance - a.chance : a.chance - b.chance).forEach((c) => lista.append(cartaoCenario(c)));
     return el('section', null, secHead('Cenários', 'O que cada um precisa', null), seg, lista);
   }
   const nomeT = (id) => (T[id] ? T[id].nome : '?');
@@ -675,10 +675,10 @@
     return `Secar o ${nomeT(contra)}: torcer pelo ${nomeT(quem)}`;
   }
   function cartaoCenario(c) {
-    const g4 = c.zona === 'g4';
+    const g4 = c.zona !== 'z4', pre = c.zona === 'pre';
     const t = T[c.time];
-    const rot = g4 ? 'de vaga direta' : 'de cair';
-    const cor = g4 ? 'var(--info)' : 'var(--bad)';
+    const rot = pre ? 'de Libertadores' : g4 ? 'de vaga direta' : 'de cair';
+    const cor = pre ? 'var(--good)' : g4 ? 'var(--info)' : 'var(--bad)';
     const dif = c.linha.dif;
     const linhaTxt = dif === 0 ? `Empatado em pontos com o ${nomeT(c.linha.time)} (${c.linha.pos}º)`
       : dif > 0 ? `${dif} ponto${dif === 1 ? '' : 's'} à frente do ${nomeT(c.linha.time)} (${c.linha.pos}º)`
@@ -707,7 +707,7 @@
         const torc = c.decide.torcer === 'empate' ? `${nomeT(j.casa)} e ${nomeT(j.fora)} empatarem`
           : `o ${nomeT(c.decide.torcer === 'casa' ? j.casa : j.fora)} vencer o ${nomeT(c.decide.torcer === 'casa' ? j.fora : j.casa)}`;
         card.append(el('p', { class: 'cen-decide ' + (g4 ? 'bom' : 'ruim'),
-          text: g4 ? `Praticamente garante a vaga direta na Libertadores já nesta rodada se vencer e ${torc}.`
+          text: g4 ? `Praticamente garante ${pre ? 'vaga na Libertadores (ao menos na pré)' : 'a vaga direta na Libertadores'} já nesta rodada se vencer e ${torc}.`
             : `Fica praticamente rebaixado nesta rodada se perder e ${c.decide.torcer === 'empate' ? 'não houver empate entre ' + nomeT(j.casa) + ' e ' + nomeT(j.fora) : 'o ' + nomeT(c.decide.torcer === 'casa' ? j.casa : j.fora) + ' não vencer'}.` }));
       }
     }
@@ -723,7 +723,7 @@
     // meta de pontos
     const m = c.meta;
     card.append(el('p', { class: 'cen-meta' }, m
-      ? (g4 ? `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), a vaga fica praticamente garantida.`
+      ? (g4 ? `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), ${pre ? 'a Libertadores (ao menos a pré)' : 'a vaga direta'} fica praticamente garantida.`
         : `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), fica praticamente livre do Z4.`)
       : (g4 ? 'Nem vencendo tudo a vaga está garantida: depende também de tropeços dos rivais.'
         : 'Nem vencendo tudo está garantido: depende também dos resultados dos rivais.')));

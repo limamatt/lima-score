@@ -379,6 +379,7 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .cen{padding:.9rem 1rem;display:flex;flex-direction:column;gap:.65rem}
 .cen.g4{box-shadow:inset 4px 0 0 var(--info)}
 .cen.z4{box-shadow:inset 4px 0 0 var(--bad)}
+.cen.pre{box-shadow:inset 4px 0 0 var(--good)}
 .cen-top{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
 .cen-time{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:inherit;min-width:0}
 .cen-time > span{display:flex;flex-direction:column;min-width:0}

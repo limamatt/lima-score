@@ -534,7 +534,8 @@ def regras_vagas(ids, idx, times, posicoes, token):
     return grupos, pre, sul, info
 
 
-def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts, direta=None, g_hoje=4, pular=None):
+def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts, direta=None, g_hoje=4, pular=None,
+                    pre=None, g_pre=None):
     """Para cada clube que ainda briga pelo G4 ou contra o Z4: o que muda com o resultado do
     próximo jogo, para quem torcer (quem secar) e quantos pontos deixam a vaga praticamente certa.
     Tudo sai das mesmas simulações do fim do campeonato."""
@@ -545,12 +546,18 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
     pts_de = {t: times[t]["points"] for t in ids}
     faltam = {t: sum(1 for j in restantes if t in (j["homeTeam"]["id"], j["awayTeam"]["id"])) for t in ids}
     saida = []
-    for zona, lo, hi in (("g4", 1, 4), ("z4", 17, 20)):
+    zonas = [("g4", 1, 4), ("z4", 17, 20)]
+    if pre is not None and direta is not None and g_pre:
+        zonas.insert(1, ("pre", 1, g_pre))
+    for zona, lo, hi in zonas:
+        sobe = zona != "z4"   # g4 e pré: quanto mais, melhor
         for t in ids:
             i = idx[t]
-            if zona == "g4" and t == pular:
+            if sobe and t == pular:
                 continue  # o clube da Copa do Brasil não disputa a vaga pela tabela
-            if zona == "g4" and direta is not None:
+            if zona == "pre":
+                dentro = direta[:, i].astype(bool) | pre[:, i].astype(bool)
+            elif zona == "g4" and direta is not None:
                 dentro = direta[:, i]
             else:
                 dentro = (posicoes[:, i] >= lo) & (posicoes[:, i] <= hi)
@@ -573,8 +580,8 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
                 ch = [pc(r == k) for k in range(3)]
                 if None in ch:
                     continue
-                melhor = (max if zona == "g4" else min)(range(3), key=lambda k: ch[k])
-                pior = (min if zona == "g4" else max)(range(3), key=lambda k: ch[k])
+                melhor = (max if sobe else min)(range(3), key=lambda k: ch[k])
+                pior = (min if sobe else max)(range(3), key=lambda k: ch[k])
                 impacto = abs(ch[melhor] - ch[pior])
                 if impacto >= 1.5:
                     torcidas.append(dict(jogo=j["id"], torcer=["casa", "empate", "fora"][melhor],
@@ -590,7 +597,7 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
             for p in range(base, base + 3 * faltam[t] + 1):
                 m = final == p
                 if m.sum() >= 30:
-                    ok_por_p[p] = float(dentro[m].mean()) if zona == "g4" else float((~dentro[m]).mean())
+                    ok_por_p[p] = float(dentro[m].mean()) if sobe else float((~dentro[m]).mean())
             for p in sorted(ok_por_p):
                 if all(v >= 0.95 for q, v in ok_por_p.items() if q >= p):
                     if p > base:
@@ -602,7 +609,7 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
                 alvo = torcidas[0]
                 r = resultados[alvo["jogo"]]
                 k = ["casa", "empate", "fora"].index(alvo["torcer"])
-                if zona == "g4":
+                if sobe:
                     m = vence & (r == k)
                     v = pc(m)
                     if v is not None and v >= 99.5:
@@ -614,8 +621,9 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
                         decide = dict(tipo="cai", com="perde", jogo=alvo["jogo"], torcer=alvo["torcer"])
             # distância para a linha (4º/5º ou 16º/17º)
             pos = times[t]["position"]
-            if zona == "g4":
-                ref = tabela[g_hoje] if pos <= g_hoje else tabela[g_hoje - 1]
+            if sobe:
+                g = g_pre if zona == "pre" else g_hoje
+                ref = tabela[g] if pos <= g else tabela[g - 1]
             else:
                 ref = tabela[16] if pos <= 16 else tabela[15]
             saida.append(dict(time=t, zona=zona, chance=round(chance, 1), pos=pos, pts=pts_de[t], jogos=faltam[t],
@@ -818,7 +826,8 @@ def main():
         ))
     saida_times.sort(key=lambda x: x["pos"])
     cenarios = montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts,
-                               direta=v_grupos, g_hoje=vagas["grupos"], pular=vagas["copa"]["time"])
+                               direta=v_grupos, g_hoje=vagas["grupos"], pular=vagas["copa"]["time"],
+                               pre=v_pre, g_pre=vagas["grupos"] + vagas["pre"])
 
     # canais de transmissão (preenchidos em data/transmissoes.json)
     arq_canais = ROOT / "data" / "transmissoes.json"
