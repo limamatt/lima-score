@@ -19413,7 +19413,52 @@
    "fora": "Cruzeiro",
    "casa_id": 1765,
    "fora_id": 1771,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Matheus Delgado Candançan",
+     "uf": "SP"
+    },
+    "assistente1": {
+     "nome": "Danilo Ricardo Simon Manis",
+     "uf": "SP"
+    },
+    "assistente2": {
+     "nome": "Daniel Paulo Ziolli",
+     "uf": "SP"
+    },
+    "quarto": {
+     "nome": "Joao Vitor Gobi",
+     "uf": "SP"
+    },
+    "quinto_arbitro": {
+     "nome": "Denis Matheus Afonso Ferreira",
+     "uf": "SP"
+    },
+    "assessor": {
+     "nome": "Regildenia de Holanda Moura",
+     "uf": "BR"
+    },
+    "var": {
+     "nome": "Flavio Rodrigues de Souza",
+     "uf": "SP"
+    },
+    "avar": {
+     "nome": "Wagner Reway",
+     "uf": "SC"
+    },
+    "avar2": {
+     "nome": "Adeli Mara Monteiro",
+     "uf": "SP"
+    },
+    "observador_de_var": {
+     "nome": "Raimundo Nonato Lopo De Abreu",
+     "uf": "DF"
+    },
+    "quality_manager": {
+     "nome": "Larissa Ramos Monteiro",
+     "uf": "BR"
+    }
+   }
   },
   "362": {
    "jogo": 362,
@@ -19424,7 +19469,52 @@
    "fora": "Bahia",
    "casa_id": 1770,
    "fora_id": 1777,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Ramon Abatti Abel",
+     "uf": "SC"
+    },
+    "assistente1": {
+     "nome": "Nailton Junior de Sousa Oliveira",
+     "uf": "CE"
+    },
+    "assistente2": {
+     "nome": "Thiaggo Americano Labes",
+     "uf": "SC"
+    },
+    "quarto": {
+     "nome": "Paulo Belence Alves dos Prazeres Filho",
+     "uf": "PE"
+    },
+    "quinto_arbitro": {
+     "nome": "Antonia Soliane Oliveira dos Santos",
+     "uf": "RR"
+    },
+    "assessor": {
+     "nome": "Rodrigo Pereira Joia",
+     "uf": "BR"
+    },
+    "var": {
+     "nome": "Gilberto Rodrigues Castro Junior",
+     "uf": "PE"
+    },
+    "avar": {
+     "nome": "Clovis Amaral da Silva",
+     "uf": "PE"
+    },
+    "avar2": {
+     "nome": "Jose Ricardo Vasconcellos Laranjeira",
+     "uf": "AL"
+    },
+    "observador_de_var": {
+     "nome": "Eveliny Pereira de Almeida da Silva",
+     "uf": "CE"
+    },
+    "quality_manager": {
+     "nome": "Bernardo Campos Martins",
+     "uf": "SP"
+    }
+   }
   },
   "363": {
    "jogo": 363,
@@ -19446,7 +19536,52 @@
    "fora": "Grêmio",
    "casa_id": 1779,
    "fora_id": 1767,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Davi De Oliveira Lacerda",
+     "uf": "ES"
+    },
+    "assistente1": {
+     "nome": "Bruno Raphael Pires",
+     "uf": "GO"
+    },
+    "assistente2": {
+     "nome": "Alex dos Santos",
+     "uf": "SC"
+    },
+    "quarto": {
+     "nome": "Paulo Henrique Schleich Vollkopf",
+     "uf": "MS"
+    },
+    "quinto_arbitro": {
+     "nome": "Jordana Pereira Batista",
+     "uf": "GO"
+    },
+    "assessor": {
+     "nome": "Claudio Jose de Oliveira Soares",
+     "uf": "BR"
+    },
+    "var": {
+     "nome": "Pablo Ramon Goncalves Pinheiro",
+     "uf": "RN"
+    },
+    "avar": {
+     "nome": "Helen Aparecida Goncalves Silva Araujo",
+     "uf": "MG"
+    },
+    "avar2": {
+     "nome": "Raphael Garcia de Andrade",
+     "uf": "ES"
+    },
+    "observador_de_var": {
+     "nome": "Ricardo Marques Ribeiro",
+     "uf": "MG"
+    },
+    "quality_manager": {
+     "nome": "Jose Thiago Alves Reis",
+     "uf": "BR"
+    }
+   }
   },
   "365": {
    "jogo": 365,
@@ -19457,7 +19592,52 @@
    "fora": "Athletico Paranaense",
    "casa_id": 4364,
    "fora_id": 1768,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Savio Pereira Sampaio",
+     "uf": "DF"
+    },
+    "assistente1": {
+     "nome": "Guilherme Dias Camilo",
+     "uf": "MG"
+    },
+    "assistente2": {
+     "nome": "Anne Kesy Gomes de Sa",
+     "uf": "AM"
+    },
+    "quarto": {
+     "nome": "Arthur Gomes Rabelo",
+     "uf": "ES"
+    },
+    "quinto_arbitro": {
+     "nome": "Gizeli Casaril",
+     "uf": "SC"
+    },
+    "assessor": {
+     "nome": "Jose Alexandre Barbosa Lima",
+     "uf": "RJ"
+    },
+    "var": {
+     "nome": "Charly Wendy Straub Deretti",
+     "uf": "SC"
+    },
+    "avar": {
+     "nome": "Johnny Barros de Oliveira",
+     "uf": "SC"
+    },
+    "avar2": {
+     "nome": "Gleika Oliveira Pinheiro",
+     "uf": "PA"
+    },
+    "observador_de_var": {
+     "nome": "Cleriston Clay Barreto Rios",
+     "uf": "BR"
+    },
+    "quality_manager": {
+     "nome": "Felipe Costa Bastos Abrahao",
+     "uf": "BR"
+    }
+   }
   },
   "366": {
    "jogo": 366,
@@ -19468,7 +19648,52 @@
    "fora": "Vasco da Gama Saf",
    "casa_id": 1766,
    "fora_id": 1780,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Rafael Rodrigo Klein",
+     "uf": "RS"
+    },
+    "assistente1": {
+     "nome": "Rafael da Silva Alves",
+     "uf": "RS"
+    },
+    "assistente2": {
+     "nome": "Luciane Rodrigues dos Santos",
+     "uf": "RS"
+    },
+    "quarto": {
+     "nome": "Marianna Nanni Batalha",
+     "uf": "SP"
+    },
+    "quinto_arbitro": {
+     "nome": "Jeissyevan Freitag Goncalves",
+     "uf": "RS"
+    },
+    "assessor": {
+     "nome": "Marcelo Rogerio",
+     "uf": "SP"
+    },
+    "var": {
+     "nome": "Elizabete Esmeralda Cordeiro dos Santos Gomes",
+     "uf": "CE"
+    },
+    "avar": {
+     "nome": "Rafael Traci",
+     "uf": "SC"
+    },
+    "avar2": {
+     "nome": "Ruthyanna Camila Medeiros da Silva",
+     "uf": "PB"
+    },
+    "observador_de_var": {
+     "nome": "Marcelo Carvalho Van Gasse",
+     "uf": "SP"
+    },
+    "quality_manager": {
+     "nome": "Maria Victoria Benetti Vargas",
+     "uf": "BR"
+    }
+   }
   },
   "367": {
    "jogo": 367,
@@ -19479,7 +19704,52 @@
    "fora": "Red Bull Bragantino",
    "casa_id": 6684,
    "fora_id": 4286,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Rodrigo Jose Pereira de Lima",
+     "uf": "PE"
+    },
+    "assistente1": {
+     "nome": "Brigida Cirilo Ferreira",
+     "uf": "AL"
+    },
+    "assistente2": {
+     "nome": "Joverton Wesley De Souza Lima",
+     "uf": "RO"
+    },
+    "quarto": {
+     "nome": "Gustavo Ervino Bauermann",
+     "uf": "SC"
+    },
+    "quinto_arbitro": {
+     "nome": "Vanessa Santos Azevedo",
+     "uf": "SE"
+    },
+    "assessor": {
+     "nome": "Djalma Jose Beltrami Teixeira",
+     "uf": "RJ"
+    },
+    "var": {
+     "nome": "Rodolpho Toski Marques",
+     "uf": "PR"
+    },
+    "avar": {
+     "nome": "Flavio Gomes Barroca",
+     "uf": "RN"
+    },
+    "avar2": {
+     "nome": "Eduardo Tomaz de Aquino Valadao",
+     "uf": "GO"
+    },
+    "observador_de_var": {
+     "nome": "Fabricio Vilarinho da Silva",
+     "uf": "BR"
+    },
+    "quality_manager": {
+     "nome": "Nayara Pereira dos Santos",
+     "uf": "BR"
+    }
+   }
   },
   "368": {
    "jogo": 368,
@@ -19490,7 +19760,52 @@
    "fora": "Flamengo",
    "casa_id": 4241,
    "fora_id": 1783,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Fernando Antonio Mendes de Salles Nascimento Filho",
+     "uf": "PA"
+    },
+    "assistente1": {
+     "nome": "Fernanda Nandrea Gomes Antunes",
+     "uf": "MG"
+    },
+    "assistente2": {
+     "nome": "Daniella Coutinho Pinto",
+     "uf": "BA"
+    },
+    "quarto": {
+     "nome": "Andreza Helena de Siqueira",
+     "uf": "MG"
+    },
+    "quinto_arbitro": {
+     "nome": "Isabela Morais Vivas",
+     "uf": "DF"
+    },
+    "assessor": {
+     "nome": "Erich Bartolomeu Antas E Silva Bandeira",
+     "uf": "PE"
+    },
+    "var": {
+     "nome": "Diego Pombo Lopez",
+     "uf": "BA"
+    },
+    "avar": {
+     "nome": "Andre da Silva Bitencourt",
+     "uf": "RS"
+    },
+    "avar2": {
+     "nome": "Andressa Hartmann",
+     "uf": "RS"
+    },
+    "observador_de_var": {
+     "nome": "Cleidy Mary dos Santos Nunes Ribeiro",
+     "uf": "SC"
+    },
+    "quality_manager": {
+     "nome": "Mikael Silva de Araujo",
+     "uf": "BR"
+    }
+   }
   },
   "369": {
    "jogo": 369,
@@ -19501,7 +19816,52 @@
    "fora": "Santos FC",
    "casa_id": 1782,
    "fora_id": 6685,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Wilton Pereira Sampaio",
+     "uf": "GO"
+    },
+    "assistente1": {
+     "nome": "Leone Carvalho Rocha",
+     "uf": "GO"
+    },
+    "assistente2": {
+     "nome": "Fernanda Kruger",
+     "uf": "MT"
+    },
+    "quarto": {
+     "nome": "Afro Rocha De Carvalho Filho",
+     "uf": "PB"
+    },
+    "quinto_arbitro": {
+     "nome": "Thania Lopes da Silva",
+     "uf": "PA"
+    },
+    "assessor": {
+     "nome": "Sergio Cristiano Nascimento",
+     "uf": "RJ"
+    },
+    "var": {
+     "nome": "Heber Roberto Lopes",
+     "uf": "SC"
+    },
+    "avar": {
+     "nome": "Eder Alexandre",
+     "uf": "SC"
+    },
+    "avar2": {
+     "nome": "Deborah Cecilia Cruz Correia",
+     "uf": "PE"
+    },
+    "observador_de_var": {
+     "nome": "Anderson Carlos Goncalves",
+     "uf": "PR"
+    },
+    "quality_manager": {
+     "nome": "Larissa Ramos Monteiro",
+     "uf": "BR"
+    }
+   }
   },
   "370": {
    "jogo": 370,
@@ -19670,5 +20030,5 @@
    "equipe": {}
   }
  },
- "atualizado": "2026-11-23T19:11:34+00:00"
+ "atualizado": "2026-11-24T23:32:46+00:00"
 }
