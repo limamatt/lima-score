@@ -19413,52 +19413,7 @@
    "fora": "Cruzeiro",
    "casa_id": 1765,
    "fora_id": 1771,
-   "equipe": {
-    "arbitro": {
-     "nome": "Matheus Delgado Candançan",
-     "uf": "SP"
-    },
-    "assistente1": {
-     "nome": "Danilo Ricardo Simon Manis",
-     "uf": "SP"
-    },
-    "assistente2": {
-     "nome": "Daniel Paulo Ziolli",
-     "uf": "SP"
-    },
-    "quarto": {
-     "nome": "Joao Vitor Gobi",
-     "uf": "SP"
-    },
-    "quinto_arbitro": {
-     "nome": "Denis Matheus Afonso Ferreira",
-     "uf": "SP"
-    },
-    "assessor": {
-     "nome": "Regildenia de Holanda Moura",
-     "uf": "BR"
-    },
-    "var": {
-     "nome": "Flavio Rodrigues de Souza",
-     "uf": "SP"
-    },
-    "avar": {
-     "nome": "Wagner Reway",
-     "uf": "SC"
-    },
-    "avar2": {
-     "nome": "Adeli Mara Monteiro",
-     "uf": "SP"
-    },
-    "observador_de_var": {
-     "nome": "Raimundo Nonato Lopo De Abreu",
-     "uf": "DF"
-    },
-    "quality_manager": {
-     "nome": "Larissa Ramos Monteiro",
-     "uf": "BR"
-    }
-   }
+   "equipe": {}
   },
   "362": {
    "jogo": 362,
@@ -19525,7 +19480,52 @@
    "fora": "Remo",
    "casa_id": 1776,
    "fora_id": 4287,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Bruno Arleu de Araujo",
+     "uf": "RJ"
+    },
+    "assistente1": {
+     "nome": "Thiago Henrique Neto Correa Farinha",
+     "uf": "RJ"
+    },
+    "assistente2": {
+     "nome": "Luiz Claudio Regazone",
+     "uf": "RJ"
+    },
+    "quarto": {
+     "nome": "Lucas Guimaraes Rechatiko Horn",
+     "uf": "RS"
+    },
+    "quinto_arbitro": {
+     "nome": "Luan Patrique Pereira da Silva",
+     "uf": "AP"
+    },
+    "assessor": {
+     "nome": "Kleber Lucio Gil",
+     "uf": "BR"
+    },
+    "var": {
+     "nome": "Wagner Reway",
+     "uf": "SC"
+    },
+    "avar": {
+     "nome": "Diogo Carvalho Silva",
+     "uf": "RJ"
+    },
+    "avar2": {
+     "nome": "Leonardo Rotondo Pinto",
+     "uf": "MG"
+    },
+    "observador_de_var": {
+     "nome": "Marcio Eustaquio Sousa Santiago",
+     "uf": "MG"
+    },
+    "quality_manager": {
+     "nome": "Maria Victoria Benetti Vargas",
+     "uf": "BR"
+    }
+   }
   },
   "364": {
    "jogo": 364,
@@ -19592,52 +19592,7 @@
    "fora": "Athletico Paranaense",
    "casa_id": 4364,
    "fora_id": 1768,
-   "equipe": {
-    "arbitro": {
-     "nome": "Savio Pereira Sampaio",
-     "uf": "DF"
-    },
-    "assistente1": {
-     "nome": "Guilherme Dias Camilo",
-     "uf": "MG"
-    },
-    "assistente2": {
-     "nome": "Anne Kesy Gomes de Sa",
-     "uf": "AM"
-    },
-    "quarto": {
-     "nome": "Arthur Gomes Rabelo",
-     "uf": "ES"
-    },
-    "quinto_arbitro": {
-     "nome": "Gizeli Casaril",
-     "uf": "SC"
-    },
-    "assessor": {
-     "nome": "Jose Alexandre Barbosa Lima",
-     "uf": "RJ"
-    },
-    "var": {
-     "nome": "Charly Wendy Straub Deretti",
-     "uf": "SC"
-    },
-    "avar": {
-     "nome": "Johnny Barros de Oliveira",
-     "uf": "SC"
-    },
-    "avar2": {
-     "nome": "Gleika Oliveira Pinheiro",
-     "uf": "PA"
-    },
-    "observador_de_var": {
-     "nome": "Cleriston Clay Barreto Rios",
-     "uf": "BR"
-    },
-    "quality_manager": {
-     "nome": "Felipe Costa Bastos Abrahao",
-     "uf": "BR"
-    }
-   }
+   "equipe": {}
   },
   "366": {
    "jogo": 366,
@@ -20030,5 +19985,5 @@
    "equipe": {}
   }
  },
- "atualizado": "2026-11-24T23:32:46+00:00"
+ "atualizado": "2026-11-24T23:51:08+00:00"
 }
