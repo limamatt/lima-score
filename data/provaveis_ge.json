@@ -26,80 +26,6 @@
     "url": "https://ge.globo.com/futebol/times/atletico-mg/noticia/2026/11/24/escalacao-do-atletico-mg-sem-fred-dominguez-tera-que-mudar-time-contra-o-corinthians.ghtml"
    }
   },
-  "555102": {
-   "casa": {
-    "titulares": [
-     [
-      "Gabriel Werner"
-     ],
-     [
-      "Heitor",
-      "Kauan Faria",
-      "Victor Caetano",
-      "Eduardo Doma",
-      "Bruno Pacheco"
-     ],
-     [
-      "Camilo",
-      "David",
-      "Max Alves",
-      "Giovanni Augusto"
-     ],
-     [
-      "Túlio Eduardo"
-     ]
-    ],
-    "url": "https://ge.globo.com/sc/futebol/brasileirao-serie-a/noticia/2026/11/24/chapecoense-x-palmeiras-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "desfalques": [
-     "Yago Felipe",
-     "Dylan Borrero",
-     "Garcez estão no departamento médico"
-    ],
-    "pendurados": [
-     "Camilo",
-     "Bruno Pacheco",
-     "Rubens"
-    ]
-   },
-   "fora": {
-    "titulares": [
-     [
-      "Marcelo Lomba"
-     ],
-     [
-      "Khellven",
-      "Benedetti",
-      "Koné",
-      "André Lucas"
-     ],
-     [
-      "Emiliano Martínez",
-      "Luis Pacheco",
-      "Larson"
-     ],
-     [
-      "Felipe Anderson",
-      "Erick Belé",
-      "Heittor"
-     ]
-    ],
-    "url": "https://ge.globo.com/sc/futebol/brasileirao-serie-a/noticia/2026/11/24/chapecoense-x-palmeiras-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "desfalques": [
-     "Paulinho",
-     "Jefté"
-    ],
-    "pendurados": [
-     "Arias",
-     "Arthur",
-     "Flaco López",
-     "Lucas Evangelista",
-     "Luis Pacheco",
-     "Mauricio",
-     "Sosa",
-     "Vitor Roque"
-    ]
-   }
-  },
   "555108": {
    "casa": {
     "titulares": [
@@ -147,7 +73,7 @@
   }
  },
  "diag": {
-  "hora": "2026-11-24T22:03:37+00:00",
+  "hora": "2026-11-24T23:05:37+00:00",
   "materias": [
    [
     "Treino do Corinthians: Seedorf prepara mudanças na escalação para enfrentar o At",
@@ -157,13 +83,6 @@
     "Escalação do Atlético-MG: sem Fred, Domínguez terá que mudar time contra o Corin",
     {
      "1779": 4
-    }
-   ],
-   [
-    "Chapecoense x Palmeiras: onde assistir ao vivo, horário e escalações",
-    {
-     "1772": 4,
-     "1769": 4
     }
    ]
   ],
