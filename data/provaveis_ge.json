@@ -1,5 +1,31 @@
 {
  "jogos": {
+  "555091": {
+   "fora": {
+    "titulares": [
+     [
+      "Everson"
+     ],
+     [
+      "Natanael",
+      "Vitão",
+      "Ruan",
+      "Lodi"
+     ],
+     [
+      "Castaño",
+      "Igor Gomes",
+      "Victor Hugo"
+     ],
+     [
+      "Bernard",
+      "Cuello",
+      "Borbas"
+     ]
+    ],
+    "url": "https://ge.globo.com/futebol/times/atletico-mg/noticia/2026/11/24/escalacao-do-atletico-mg-sem-fred-dominguez-tera-que-mudar-time-contra-o-corinthians.ghtml"
+   }
+  },
   "555102": {
    "casa": {
     "titulares": [
@@ -121,22 +147,34 @@
   }
  },
  "diag": {
-  "hora": "2026-11-24T08:40:34+00:00",
+  "hora": "2026-11-24T22:03:37+00:00",
   "materias": [
+   [
+    "Treino do Corinthians: Seedorf prepara mudanças na escalação para enfrentar o At",
+    {}
+   ],
+   [
+    "Escalação do Atlético-MG: sem Fred, Domínguez terá que mudar time contra o Corin",
+    {
+     "1779": 4
+    }
+   ],
    [
     "Chapecoense x Palmeiras: onde assistir ao vivo, horário e escalações",
     {
      "1772": 4,
      "1769": 4
     }
-   ],
-   [
-    "Botafogo x São Paulo: onde assistir ao vivo, horário e escalações",
-    {
-     "1776": 4
-    }
    ]
   ],
-  "amostra": []
+  "amostra": [
+   [
+    "Treino do Corinthians: Seedorf prepara mudanças na escalação para enfrentar o At",
+    [
+     "O zagueiro André Ramalho e o volante André retornam ao time depois de serem desfalques na rodada passada. No meio de campo há a possibilidade de que Rodrigo Gar",
+     "A provável escalação do Corinthians para enfrentar o Atlético-MG na Arena MRV tem Hugo Souza; Matheuzinho, André Ramalho, Gustavo Henrique e Fabrizio Angileri; "
+    ]
+   ]
+  ]
  }
 }
