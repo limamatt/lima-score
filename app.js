@@ -849,9 +849,9 @@
     const quem = el('div', { class: 'who' },
       p.pid ? el('a', { class: 'pl-nome', href: '#jogador-' + p.pid }, el('b', { text: p.nome })) : el('b', { text: p.nome }),
       el('span', { class: 'small' }, escudo(p.time), el('a', { href: '#clube-' + p.time, text: t ? t.nome : '' }), ` · ${p.jogos} jogos`));
-    const valor = modo === 'gols' ? p.gols : p.assistencias;
+    const valor = modo === 'gols' ? p.gols : modo === 'uteis' ? p.uteis : p.assistencias;
     const stat = el('div', { class: 'stat' },
-      el('div', { class: 'big num' }, String(valor), el('small', { text: modo === 'gols' ? 'gols' : 'assist.' })));
+      el('div', { class: 'big num' }, String(valor), el('small', { text: modo === 'gols' ? 'gols' : modo === 'uteis' ? 'úteis' : 'assist.' })));
     return el('div', { class: 'pl' }, el('span', { class: 'rk num', text: rank }), quem, stat);
   }
 
@@ -938,12 +938,13 @@
   };
   function telaJogadores(app) {
     app.append(secHead('Jogadores', 'Jogadores do Brasileirão', null, 'h1'));
-    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Visão' });
-    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons']].forEach(([k, txt]) => {
+    const seg = el('div', { class: 'seg seg-auto', role: 'group', 'aria-label': 'Visão' });
+    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons'], ['uteis', 'Úteis']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.artilharia === k), text: txt, onclick: () => { estado.artilharia = k; render(); } }));
     });
     app.append(seg);
     if (estado.artilharia === 'clube') return jogadoresPorClube(app);
+    if (estado.artilharia === 'uteis') return golsUteis(app);
     const modo = estado.artilharia;
     const fonte = P && P.jogadores && P.jogadores.length
       ? P.jogadores.map((x) => ({ pid: x.id, nome: x.nome, time: x.clube, jogos: x.jogos, gols: x.gols, assistencias: x.assist }))
@@ -957,6 +958,28 @@
       const v = modo === 'gols' ? p.gols : p.assistencias;
       if (v !== ultimo) { rank = i + 1; ultimo = v; }
       card.append(linhaJogador(p, rank, modo === 'gols' ? 'gols' : 'assist'));
+    });
+    app.append(card);
+  }
+
+  // gols úteis: gols que deixam o time exatamente 1 gol à frente (1x0, 2x1, 3x2...)
+  function golsUteis(app) {
+    if (!P) { app.append(el('p', { class: 'small', text: 'Carregando jogadores…' })); carregarJogadores(); return; }
+    app.append(el('p', { class: 'small', style: 'margin:0 0 .8rem',
+      text: 'Gols que deixam o time um gol à frente do adversário: o primeiro gol de um 0x0 e os gols de desempate (2x1, 3x2…). Gols contra não contam.' }));
+    const lista = (P.jogadores || []).filter((x) => x.gols_uteis > 0)
+      .map((x) => ({ pid: x.id, nome: x.nome, time: x.clube, jogos: x.jogos, gols: x.gols || 0, uteis: x.gols_uteis }))
+      .sort((a, b) => b.uteis - a.uteis || a.gols - b.gols || a.jogos - b.jogos)
+      .slice(0, 50);
+    if (!lista.length) { app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0', text: 'Os gols úteis aparecem aqui na próxima atualização do robô.' }))); return; }
+    const card = el('div', { class: 'card players' });
+    let rank = 0, ultimo = null;
+    lista.forEach((p, i) => {
+      if (p.uteis !== ultimo) { rank = i + 1; ultimo = p.uteis; }
+      const linha = linhaJogador(p, rank, 'uteis');
+      const quem = linha.querySelector('.who');
+      if (quem) quem.append(el('span', { class: 'small', text: `${p.uteis} de ${p.gols} gols (${Math.round(100 * p.uteis / (p.gols || p.uteis))}%)` }));
+      card.append(linha);
     });
     app.append(card);
   }
@@ -1048,6 +1071,7 @@
     } else {
       grupos.push(grupo('Finalização', [tile('Gols', x.gols || 0, `${p90(x.gols)} por 90 min`, 'gols'),
         tile('xG estimado', dec(x.xg, 2), `${p90(x.xg)} por 90 min`, 'xg'),
+        tile('Gols úteis', x.gols_uteis || 0, x.gols ? `${Math.round(100 * (x.gols_uteis || 0) / x.gols)}% dos gols deixaram o time à frente` : 'gols que deixam o time 1 gol à frente', 'gols_uteis'),
         tile('Gols − xG', x.xg != null ? sinal((x.gols || 0) - (x.xg || 0)) : '–', (x.gols || 0) - (x.xg || 0) >= 0 ? 'acima do esperado' : 'abaixo do esperado', null),
         tile('Finalizações', x.chutes || 0, `${p90(x.chutes)} por 90 min`, 'chutes'),
         tile('Chutes no gol', x.no_alvo || 0, `${pctTxt2(x.no_alvo || 0, x.chutes || 0)} das finalizações`, 'no_alvo'),

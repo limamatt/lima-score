@@ -267,6 +267,12 @@ def montar_jogadores(saida_jogos):
         return
     esc = json.loads(arq.read_text(encoding="utf-8"))
     por_id = {str(j["id"]): j for j in saida_jogos}
+    # lances de gol (com minuto) de cada jogo, para os "gols úteis"
+    try:
+        lances_jogo = {k: v.get("lances") or [] for k, v in
+                       json.loads((ROOT / "data" / "estatisticas.json").read_text(encoding="utf-8")).get("jogos", {}).items()}
+    except Exception:
+        lances_jogo = {}
     CAMPOS = {"totalGoals": "gols", "goalAssists": "assist", "totalShots": "chutes", "shotsOnTarget": "no_alvo",
               "foulsCommitted": "faltas", "foulsSuffered": "sofridas", "offsides": "impedimentos",
               "yellowCards": "amarelos", "redCards": "vermelhos", "ownGoals": "contra", "saves": "defesas",
@@ -310,6 +316,19 @@ def montar_jogadores(saida_jogos):
                 nomes[_sem_acento(p.get("nome"))] = p["id"]
         def quem(nome):
             return nomes.get(nome or "") or nomes.get(_sem_acento(nome))
+        # gols úteis: gols que deixam o time exatamente 1 gol à frente (1x0, 2x1, 3x2...),
+        # ou seja, os que tiram o time do empate. Gol contra muda o placar mas não conta para ninguém.
+        gols_jogo = [l for l in lances_jogo.get(jid, []) if l.get("tipo") == "gol"]
+        if len(gols_jogo) == jg["gols_casa"] + jg["gols_fora"]:  # só usa jogos com todos os gols nos lances
+            plac = {"casa": 0, "fora": 0}
+            for l in gols_jogo:
+                lado = l["lado"]
+                plac[lado] += 1
+                outro = "fora" if lado == "casa" else "casa"
+                if plac[lado] - plac[outro] == 1 and not l.get("contra"):
+                    pid = quem(l.get("jogador"))
+                    if pid in jog:
+                        jog[pid]["gols_uteis"] = jog[pid].get("gols_uteis", 0) + 1
         for c in lados.get("chutes") or []:
             pid = quem(c.get("j"))
             if pid in jog:
