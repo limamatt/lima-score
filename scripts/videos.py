@@ -25,6 +25,15 @@ API = "https://www.googleapis.com/youtube/v3"
 # ordem de preferência: 1º ge tv, 2º CazéTV, 3º PernaPlays (só entra se as outras não tiverem o vídeo)
 CANAIS = ["getv", "geglobo", "CazeTV", "PernaPlays"]
 PRIORIDADE = {"getv": 1, "geglobo": 1, "CazeTV": 2, "PernaPlays": 3}
+
+
+def prioridade(handle, jogo):
+    """Prioridade do canal para os melhores momentos deste jogo (menor = preferido).
+    Jogo transmitido pela CazéTV: o vídeo da própria CazéTV vem antes do ge."""
+    canais = " ".join(norm(c) for c in ((jogo or {}).get("canais") or []))
+    if handle == "CazeTV" and "CAZE" in canais:
+        return 0
+    return PRIORIDADE.get(handle, 9)
 MAX_PAGINAS = 500
 
 # como cada clube aparece nos títulos do ge (sem acento, maiúsculas)
@@ -275,7 +284,7 @@ def main():
                     continue
                 atual = videos.get(str(jogo["id"]))
                 # se houver mais de um vídeo, fica o publicado primeiro (o oficial da partida)
-                pri, pri_atual = PRIORIDADE.get(handle, 9), PRIORIDADE.get((atual or {}).get("canal"), 9)
+                pri, pri_atual = prioridade(handle, jogo), prioridade((atual or {}).get("canal"), jogo)
                 if not atual or pri < pri_atual or (pri == pri_atual and sn["publishedAt"] < atual["publicado"]):
                     videos[str(jogo["id"])] = dict(id=vid, titulo=sn.get("title", ""), publicado=sn["publishedAt"], canal=handle)
                     ligados += 1
