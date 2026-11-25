@@ -939,12 +939,13 @@
   function telaJogadores(app) {
     app.append(secHead('Jogadores', 'Jogadores do Brasileirão', null, 'h1'));
     const seg = el('div', { class: 'seg seg-auto', role: 'group', 'aria-label': 'Visão' });
-    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons'], ['uteis', 'Úteis']].forEach(([k, txt]) => {
+    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons'], ['uteis', 'Úteis'], ['selecao', 'Seleção']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.artilharia === k), text: txt, onclick: () => { estado.artilharia = k; render(); } }));
     });
     app.append(seg);
     if (estado.artilharia === 'clube') return jogadoresPorClube(app);
     if (estado.artilharia === 'uteis') return golsUteis(app);
+    if (estado.artilharia === 'selecao') return selecao(app);
     const modo = estado.artilharia;
     const fonte = P && P.jogadores && P.jogadores.length
       ? P.jogadores.map((x) => ({ pid: x.id, nome: x.nome, time: x.clube, jogos: x.jogos, gols: x.gols, assistencias: x.assist }))
@@ -960,6 +961,77 @@
       card.append(linhaJogador(p, rank, modo === 'gols' ? 'gols' : 'assist'));
     });
     app.append(card);
+  }
+
+  // seleção do campeonato em 4-3-3: nota = média dos percentis do scout da função (mín. de minutos)
+  const MIN_SELECAO = 1000;
+  function notasPorFuncao(todos) {
+    const nota = new Map();
+    Object.keys(METRICAS).forEach((fn) => {
+      const pool = todos.filter((y) => FUNCAO(y.pos) === fn && (y.minutos || 0) >= MIN_SELECAO && y.pos);
+      if (!pool.length) return;
+      const ms = METRICAS[fn].map(([, f, , inv]) => { const vs = pool.map((y) => f(y)); return [f, inv, vs]; });
+      pool.forEach((y) => {
+        const pcs = ms.map(([f, inv, vs]) => { const v = f(y); return vs.filter((w) => (inv ? w > v : w < v)).length / Math.max(1, vs.length - 1); });
+        nota.set(y.id, Math.round(100 * pcs.reduce((a, b) => a + b, 0) / pcs.length));
+      });
+    });
+    return nota;
+  }
+  function selecao(app) {
+    if (!P) { app.append(el('p', { class: 'small', text: 'Carregando jogadores…' })); carregarJogadores(); return; }
+    const todos = P.jogadores || [];
+    const nota = notasPorFuncao(todos);
+    const usados = new Set();
+    const melhores = (filtro, n) => {
+      const lista = todos.filter((y) => nota.has(y.id) && filtro(y) && !usados.has(y.id))
+        .sort((a, b) => nota.get(b.id) - nota.get(a.id) || b.minutos - a.minutos);
+      const esc = lista.slice(0, n);
+      esc.forEach((y) => usados.add(y.id));
+      return { esc, banco: lista.slice(n, n + 2) };
+    };
+    const P_ = (re) => (y) => re.test(y.pos || '');
+    const vagas = [
+      ['Goleiro', melhores(P_(/goleiro/i), 1)],
+      ['Lateral-direito', melhores(P_(/lateral-direito|ala direit/i), 1)],
+      ['Zagueiros', melhores(P_(/zagueiro/i), 2)],
+      ['Lateral-esquerdo', melhores(P_(/lateral-esquerdo|ala esquerd/i), 1)],
+      ['Volante', melhores((y) => FUNCAO(y.pos) === 'volante', 1)],
+      ['Meias', melhores((y) => FUNCAO(y.pos) === 'meia', 2)],
+      ['Pontas', melhores((y) => FUNCAO(y.pos) === 'ponta', 2)],
+      ['Centroavante', melhores((y) => FUNCAO(y.pos) === 'centroavante', 1)],
+    ];
+    const V = Object.fromEntries(vagas);
+    const curto = (n) => { const ps = (n || '').trim().split(/\s+/); return ps.length === 1 || n.length <= 11 ? n : ps[ps.length - 1].length > 2 ? ps[ps.length - 1] : ps.slice(-2).join(' '); };
+    const cor = (v) => (v >= 75 ? 'var(--good)' : v >= 55 ? 'var(--accent)' : 'var(--muted)');
+    const jog = (y) => (y ? el('a', { class: 'cp-j sel-j', href: '#jogador-' + y.id, title: `${y.nome} · ${T[y.clube] ? T[y.clube].nome : ''} · nota ${nota.get(y.id)}` },
+      el('span', { class: 'sel-esc' }, escudo(y.clube, 'md'), el('b', { class: 'sel-nota num', style: `background:${cor(nota.get(y.id))}`, text: String(nota.get(y.id)) })),
+      el('span', { class: 'cp-nome', text: curto(y.nome) })) : el('div', { class: 'cp-j' }));
+    const pontas = V.Pontas.esc, meias = V.Meias.esc;
+    const linhas = [
+      [pontas[0], V.Centroavante.esc[0], pontas[1]],
+      [meias[0], V.Volante.esc[0], meias[1]],
+      [V['Lateral-esquerdo'].esc[0], V.Zagueiros.esc[0], V.Zagueiros.esc[1], V['Lateral-direito'].esc[0]],
+      [V.Goleiro.esc[0]],
+    ];
+    app.append(el('div', { class: 'card cp-card' },
+      el('div', { class: 'cp-rot' }, el('div', { class: 'cp-rot-l' }, el('b', { text: 'Seleção do Brasileirão' }), el('span', { class: 'small', text: '4-3-3' }))),
+      el('div', { class: 'campo sel-campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }),
+        el('div', { class: 'cp-metade casa' }, linhas.map((ln) => el('div', { class: 'cp-linha' }, ln.map(jog)))))));
+    // quem ficou perto
+    const card = el('div', { class: 'card players' });
+    vagas.forEach(([rot, { esc, banco }]) => {
+      card.append(el('div', { class: 'sel-pos' }, rot));
+      esc.concat(banco).forEach((y, i) => {
+        card.append(el('div', { class: 'pl' + (i >= esc.length ? ' sel-banco' : '') },
+          el('span', { class: 'rk num', text: i < esc.length ? '★' : String(i + 1) }),
+          el('div', { class: 'who' }, el('a', { class: 'pl-nome', href: '#jogador-' + y.id }, el('b', { text: y.nome })),
+            el('span', { class: 'small' }, escudo(y.clube), el('a', { href: '#clube-' + y.clube, text: T[y.clube] ? T[y.clube].nome : '' }), ` · ${y.minutos.toLocaleString('pt-BR')} min`)),
+          el('div', { class: 'stat' }, el('div', { class: 'big num', style: `color:${cor(nota.get(y.id))}` }, String(nota.get(y.id)), el('small', { text: 'nota' })))));
+      });
+    });
+    app.append(el('section', null, secHead('Posições', 'Titulares e os próximos da fila', null), card));
+    app.append(el('p', { class: 'small', text: `A nota (0 a 100) é a média de quanto o jogador supera os outros da mesma função em cada item do scout dele (gols, xG, passes para finalização, defesas, gols sofridos, cartões…), contando só quem jogou pelo menos ${MIN_SELECAO.toLocaleString('pt-BR')} minutos. Atualiza a cada rodada.` }));
   }
 
   // gols úteis: gols que deixam o time exatamente 1 gol à frente (1x0, 2x1, 3x2...)
