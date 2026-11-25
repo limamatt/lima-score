@@ -19413,7 +19413,52 @@
    "fora": "Cruzeiro",
    "casa_id": 1765,
    "fora_id": 1771,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Matheus Delgado Candançan",
+     "uf": "SP"
+    },
+    "assistente1": {
+     "nome": "Danilo Ricardo Simon Manis",
+     "uf": "SP"
+    },
+    "assistente2": {
+     "nome": "Daniel Paulo Ziolli",
+     "uf": "SP"
+    },
+    "quarto": {
+     "nome": "Joao Vitor Gobi",
+     "uf": "SP"
+    },
+    "quinto_arbitro": {
+     "nome": "Denis Matheus Afonso Ferreira",
+     "uf": "SP"
+    },
+    "assessor": {
+     "nome": "Regildenia de Holanda Moura",
+     "uf": "BR"
+    },
+    "var": {
+     "nome": "Flavio Rodrigues de Souza",
+     "uf": "SP"
+    },
+    "avar": {
+     "nome": "Wagner Reway",
+     "uf": "SC"
+    },
+    "avar2": {
+     "nome": "Adeli Mara Monteiro",
+     "uf": "SP"
+    },
+    "observador_de_var": {
+     "nome": "Raimundo Nonato Lopo De Abreu",
+     "uf": "DF"
+    },
+    "quality_manager": {
+     "nome": "Larissa Ramos Monteiro",
+     "uf": "BR"
+    }
+   }
   },
   "362": {
    "jogo": 362,
@@ -19592,7 +19637,52 @@
    "fora": "Athletico Paranaense",
    "casa_id": 4364,
    "fora_id": 1768,
-   "equipe": {}
+   "equipe": {
+    "arbitro": {
+     "nome": "Savio Pereira Sampaio",
+     "uf": "DF"
+    },
+    "assistente1": {
+     "nome": "Guilherme Dias Camilo",
+     "uf": "MG"
+    },
+    "assistente2": {
+     "nome": "Anne Kesy Gomes de Sa",
+     "uf": "AM"
+    },
+    "quarto": {
+     "nome": "Arthur Gomes Rabelo",
+     "uf": "ES"
+    },
+    "quinto_arbitro": {
+     "nome": "Gizeli Casaril",
+     "uf": "SC"
+    },
+    "assessor": {
+     "nome": "Jose Alexandre Barbosa Lima",
+     "uf": "RJ"
+    },
+    "var": {
+     "nome": "Charly Wendy Straub Deretti",
+     "uf": "SC"
+    },
+    "avar": {
+     "nome": "Johnny Barros de Oliveira",
+     "uf": "SC"
+    },
+    "avar2": {
+     "nome": "Gleika Oliveira Pinheiro",
+     "uf": "PA"
+    },
+    "observador_de_var": {
+     "nome": "Cleriston Clay Barreto Rios",
+     "uf": "BR"
+    },
+    "quality_manager": {
+     "nome": "Felipe Costa Bastos Abrahao",
+     "uf": "BR"
+    }
+   }
   },
   "366": {
    "jogo": 366,
@@ -19985,5 +20075,5 @@
    "equipe": {}
   }
  },
- "atualizado": "2026-11-24T23:51:08+00:00"
+ "atualizado": "2026-11-25T01:05:29+00:00"
 }
