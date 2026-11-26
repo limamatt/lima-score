@@ -23,15 +23,27 @@ SITE = ROOT / "data" / "site.json"
 OUT = ROOT / "data" / "videos.json"
 API = "https://www.googleapis.com/youtube/v3"
 # ordem de preferência: 1º ge tv, 2º CazéTV, 3º PernaPlays (só entra se as outras não tiverem o vídeo)
-CANAIS = ["getv", "geglobo", "CazeTV", "PernaPlays"]
+# ordem de preferência geral: 1º ge tv, 2º CazéTV / Prime Video, 3º PernaPlays.
+# Mas, em cada jogo, quem tem o direito de transmissão vem antes de todos (ver prioridade()).
+PRIME = ["primevideobr"]
+CANAIS = ["getv", "geglobo", "CazeTV"] + PRIME + ["PernaPlays"]
 PRIORIDADE = {"getv": 1, "geglobo": 1, "CazeTV": 2, "PernaPlays": 3}
+PRIORIDADE.update({h: 2 for h in PRIME})
+# regra 2: vídeo de quem transmitiu. Na primeira volta com a regra nova, relê a temporada desses canais.
+REGRA = 2
+RELER = ["CazeTV"] + PRIME
 
 
 def prioridade(handle, jogo):
     """Prioridade do canal para os melhores momentos deste jogo (menor = preferido).
-    Jogo transmitido pela CazéTV: o vídeo da própria CazéTV vem antes do ge."""
-    canais = " ".join(norm(c) for c in ((jogo or {}).get("canais") or []))
+    Quem tem o direito de transmissão vem antes do ge: jogo da CazéTV -> vídeo da CazéTV;
+    jogo exclusivo do Prime Video -> vídeo do Prime Video. Sem vídeo deles, fica o do ge."""
+    lista = [norm(c) for c in ((jogo or {}).get("canais") or [])]
+    canais = " ".join(lista)
     if handle == "CazeTV" and "CAZE" in canais:
+        return 0
+    # jogo exclusivo do Prime Video: o vídeo do próprio Prime vem primeiro
+    if handle in PRIME and lista and all("PRIME" in c for c in lista):
         return 0
     return PRIORIDADE.get(handle, 9)
 MAX_PAGINAS = 500
@@ -235,6 +247,8 @@ def main():
             print(f"@{handle}: canal não encontrado")
             continue
         corte = datetime.fromisoformat(ultimo[pl]) - timedelta(days=2) if pl in ultimo else inicio
+        if handle in RELER and dados.get("regra") != REGRA:
+            corte = inicio
         token, paginas, lidos, ligados = None, 0, 0, 0
         while paginas < MAX_PAGINAS:
             params = dict(part="snippet", playlistId=pl, maxResults=50)
@@ -329,7 +343,7 @@ def main():
     brutos = {k: v for k, v in brutos.items() if v}
 
     # só grava quando algo mudou (evita mudanças a cada volta)
-    novo = dict(jogos=videos, gols=gols, gols_brutos=brutos, ultimo_visto=novos_ultimos, diag=diag)
+    novo = dict(jogos=videos, gols=gols, gols_brutos=brutos, ultimo_visto=novos_ultimos, diag=diag, regra=REGRA)
     if videos != dados.get("jogos", {}) or json.dumps(gols, sort_keys=True) != gols_antes \
             or json.dumps(brutos, sort_keys=True) != brutos_antes or not dados.get("ultimo_visto") or True:  # diag temporário
         OUT.write_text(json.dumps(novo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
