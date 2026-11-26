@@ -29,7 +29,7 @@ ESC = ROOT / "data" / "escalacoes.json"  # quem jogou e os números de cada joga
 API = "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1"
 MAX_ENCERRADOS_POR_VEZ = 8      # com jogo rolando
 MAX_ENCERRADOS_SEM_JOGO = 400   # sem jogo, completa a temporada mais rápido
-VERSAO = 12                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
+VERSAO = 13                      # sobe quando passamos a ler algo novo (relê os jogos antigos)
 MAX_TENTATIVAS = 4
 
 # nome na ESPN -> chave no site
@@ -475,6 +475,18 @@ def chutes_e_acoes(resumo, lado_por_espn):
     """Pela narração: cada finalização (quem chutou, quem deu o passe, de onde, resultado, xG
     estimado, posição no campo) e ações de cada jogador (faltas sofridas/cometidas, pênaltis)."""
     chutes, acoes = [], {}
+    pontos = {}   # nome -> [[x, y], ...] no campo de quem fez a ação (0-100, atacando para o 100)
+
+    def ponto(nome, x, y):
+        if nome and x is not None and y is not None and 0 <= x <= 100 and 0 <= y <= 100:
+            pontos.setdefault(nome, []).append([int(round(x)), int(round(y))])
+
+    def coords(play):
+        x, y = play.get("fieldPositionX"), play.get("fieldPositionY")
+        if x is None or y is None or (not x and not y):
+            return None
+        return ("100", float(x), float(y)) if (x > 1.5 or y > 1.5) else ("1", float(x), float(y))
+
     def soma(nome, k):
         if nome:
             d = acoes.setdefault(nome, {})
@@ -514,10 +526,32 @@ def chutes_e_acoes(resumo, lado_por_espn):
             mg = re.search(r"saved .*? by ([^(]+?) \(", texto)
             if mg:
                 gk = mg.group(1).strip()
+            cc = coords(play)
+            if cc:
+                ponto(parts[0], cc[1] if cc[0] == "100" else 100 * (1 - cc[1]), cc[2] if cc[0] == "100" else 100 * cc[2])
             chutes.append(dict(tp=tp, gk=gk, j=parts[0], a=(parts[1] if len(parts) > 1 and m else None), lado=lado, res=res, xg=xg, zona=zona,
                                cab="header" in t, x=play.get("fieldPositionX"), y=play.get("fieldPositionY"),
                                min=(rel.get("displayValue") or "").strip() or None))
             continue
+        cc = coords(play)
+        if cc and "wins a free kick" in t and parts:
+            # lugar da falta: o texto diz em que metade estava quem sofreu; acerta a orientação por ele
+            cands = [100 - cc[1], cc[1]] if cc[0] == "100" else [100 * cc[1], 100 * (1 - cc[1])]
+            ys = [100 - cc[2], cc[2]] if cc[0] == "100" else [100 - 100 * cc[2], 100 * cc[2]]
+            k = 0
+            if "defensive half" in t and cands[0] > 50 or "attacking half" in t and cands[0] < 50:
+                k = 1
+            ponto(parts[-1], cands[k], ys[k])
+            if len(parts) > 1 and parts[0] != parts[-1]:
+                ponto(parts[0], 100 - cands[k], 100 - ys[k])   # quem fez a falta, no campo dele
+        elif cc and "is caught offside" in t:
+            mo = re.search(r"\.\s*([^.]+?) is caught offside", texto)
+            if mo:
+                ponto(mo.group(1).strip(), cc[1] if cc[0] == "100" else 100 * (1 - cc[1]), cc[2] if cc[0] == "100" else 100 * cc[2])
+        elif cc and t.startswith("corner,") and "conceded by" in t:
+            mc = re.search(r"conceded by ([^.]+)", texto, re.I)
+            if mc:
+                ponto(mc.group(1).strip(), 100 - cc[1] if cc[0] == "100" else 100 * cc[1], 100 - cc[2] if cc[0] == "100" else 100 - 100 * cc[2])
         if "wins a free kick" in t and parts:
             soma(parts[-1], "faltas_sofridas")
         elif t.startswith("foul by") and parts:
@@ -531,6 +565,7 @@ def chutes_e_acoes(resumo, lado_por_espn):
             m = re.search(r"\.\s*([^.]+?) is caught offside", texto)
             if m:
                 soma(m.group(1).strip(), "impedimentos")
+    chutes_e_acoes.pontos = pontos
     return chutes, acoes
 
 
@@ -786,6 +821,7 @@ def main():
             jj = jogadores_do_jogo(resumo, lado_por_espn)
             try:
                 jj["chutes"], jj["acoes"] = chutes_e_acoes(resumo, lado_por_espn)
+                jj["mapa"] = getattr(chutes_e_acoes, "pontos", {})
                 # a narração nem sempre traz o time do lance: descobre o lado pelo elenco do jogo
                 lado_nome = {}
                 for ld in ("casa", "fora"):

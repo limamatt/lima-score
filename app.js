@@ -1199,6 +1199,40 @@
       app.append(el('section', null, secHead('Mapa', 'Onde ele finaliza', null), el('div', { class: 'card pad' }, svg, leg)));
     }
 
+    // mapa de calor: onde ele aparece nas ações narradas (finalizações, faltas, impedimentos, escanteios cedidos)
+    if (x.calor && (x.calor_n || 0) >= 5) {
+      const NS = 'http://www.w3.org/2000/svg';
+      const sv = (tag, at) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
+      const W = 105, H = 68, uid = 'cal' + x.id;
+      const svg = sv('svg', { viewBox: `-2 -2 ${W + 4} ${H + 4}`, class: 'mapa-calor', role: 'img', 'aria-label': `Mapa de calor com ${x.calor_n} ações` });
+      const defs = sv('defs', {});
+      const filt = sv('filter', { id: uid + 'f', x: '-20%', y: '-20%', width: '140%', height: '140%' });
+      filt.append(sv('feGaussianBlur', { stdDeviation: '4.2' }));
+      const clip = sv('clipPath', { id: uid + 'c' }); clip.append(sv('rect', { x: 0, y: 0, width: W, height: H, rx: 1.5 }));
+      defs.append(filt, clip); svg.append(defs);
+      svg.append(sv('rect', { x: 0, y: 0, width: W, height: H, rx: 1.5, fill: '#1d6b45' }));
+      const calor = sv('g', { filter: `url(#${uid}f)`, 'clip-path': `url(#${uid}c)` });
+      const mx = Math.max(...x.calor);
+      const ramp = (k) => (k < 0.35 ? `rgba(180,230,90,${(k / 0.35) * 0.55})` : k < 0.7 ? `rgba(250,210,60,${0.55 + (k - 0.35) * 0.9})` : `rgba(240,80,40,${0.85 + (k - 0.7) * 0.5})`);
+      x.calor.forEach((v, i) => {
+        if (!v) return;
+        const cx = i % 12, cy = Math.floor(i / 12);
+        calor.append(sv('rect', { x: cx * W / 12 - 1, y: cy * H / 8 - 1, width: W / 12 + 2, height: H / 8 + 2, fill: ramp(Math.sqrt(v / mx)) }));
+      });
+      svg.append(calor);
+      const ln = { fill: 'none', stroke: 'rgba(255,255,255,.55)', 'stroke-width': '.4' };
+      svg.append(sv('rect', { x: 0, y: 0, width: W, height: H, rx: 1.5, ...ln }));
+      svg.append(sv('line', { x1: W / 2, y1: 0, x2: W / 2, y2: H, ...ln }));
+      svg.append(sv('circle', { cx: W / 2, cy: H / 2, r: 9.15, ...ln }));
+      svg.append(sv('rect', { x: 0, y: (H - 40.3) / 2, width: 16.5, height: 40.3, ...ln }));
+      svg.append(sv('rect', { x: W - 16.5, y: (H - 40.3) / 2, width: 16.5, height: 40.3, ...ln }));
+      svg.append(sv('rect', { x: 0, y: (H - 18.3) / 2, width: 5.5, height: 18.3, ...ln }));
+      svg.append(sv('rect', { x: W - 5.5, y: (H - 18.3) / 2, width: 5.5, height: 18.3, ...ln }));
+      app.append(el('section', null, secHead('Mapa de calor', 'Onde ele aparece', null), el('div', { class: 'card pad' }, svg,
+        el('p', { class: 'small mapa-leg', style: 'justify-content:space-between' }, el('span', { text: 'Ataca para a direita →' }), el('span', { text: `${x.calor_n} ações na temporada` })),
+        el('p', { class: 'small', style: 'margin:.3rem 0 0;color:var(--muted)', text: 'Feito com os lances narrados de cada jogo: finalizações, faltas cometidas e sofridas, impedimentos e escanteios cedidos. Não inclui todos os toques na bola, então mostra as zonas onde ele mais participa das jogadas.' }))));
+    }
+
     // scout: as métricas principais da função, com percentil contra a mesma função (pelo menos 450 minutos)
     const fn = FUNCAO(x.pos);
     let pares = todos.filter((y) => FUNCAO(y.pos) === fn && (y.minutos || 0) >= 450);

@@ -414,6 +414,15 @@ def montar_jogadores(saida_jogos):
                 r["def_" + ("pen" if c["zona"] == "penalti" else "fora" if c["zona"] == "fora" else "area")] = \
                     r.get("def_" + ("pen" if c["zona"] == "penalti" else "fora" if c["zona"] == "fora" else "area"), 0) + 1
                 r["xg_defendido"] = round(r.get("xg_defendido", 0) + c["xg"], 3)
+        # mapa de calor: onde cada um fez as ações narradas (finalizações, faltas, impedimentos...)
+        for nome, pts_ in (lados.get("mapa") or {}).items():
+            pid = quem(nome)
+            if pid in jog:
+                r = jog[pid]
+                g = r.setdefault("calor", [0] * 96)          # grade 12 x 8, atacando para a direita
+                for x, y in pts_:
+                    g[min(7, int(y / 100 * 8)) * 12 + min(11, int(x / 100 * 12))] += 1
+                r["calor_n"] = r.get("calor_n", 0) + len(pts_)
         for nome, acs in (lados.get("acoes") or {}).items():
             pid = quem(nome)
             if pid in jog:
