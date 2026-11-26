@@ -28,9 +28,12 @@
   }
   const pct = (v) => {
     if (v == null) return '—';
-    if (v > 99) return '100%';
-    if (v > 0 && v < 0.05) return '<0,1%';
-    return (+v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+    // 100% só quando é certeza matemática (o robô manda 100 só nesse caso); perto disso, sem arredondar para cima
+    if (v >= 100) return '100%';
+    if (v > 99) return (Math.floor(v * 100) / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + '%';
+    if (v <= 0) return '0%';
+    if (v < 0.05) return '<0,1%';
+    return (Math.floor(v * 10) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
   };
   const n1 = (v) => (+v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const dataHora = (iso) => {
@@ -1665,6 +1668,32 @@
     C.ids.forEach((t, i) => { out[t] = { titulo: 100 * cont.titulo[i] / n, lib: 100 * cont.lib[i] / n, pre: 100 * cont.pre[i] / n, sul: 100 * cont.sul[i] / n, z4: 100 * cont.z4[i] / n, pts: cont.pts[i] / n, pos: cont.pos[i] / n }; });
     return out;
   }
+  // certeza matemática com os resultados escolhidos (pior caso: só os outros pontuam; melhor: só ele)
+  function certezaSim(C, escolha, lib) {
+    const pts = {}, rest = {};
+    D.times.forEach((t) => { pts[t.id] = t.pts; rest[t.id] = 0; });
+    for (const j of C.resta) {
+      const pl = escolha[j.id];
+      if (!pl) { rest[j.casa]++; rest[j.fora]++; continue; }
+      if (pl[0] > pl[1]) pts[j.casa] += 3; else if (pl[0] < pl[1]) pts[j.fora] += 3; else { pts[j.casa]++; pts[j.fora]++; }
+    }
+    const libRes = C.libInfo ? (C.libInfo.resultado != null ? C.libInfo.resultado : lib) : false;
+    const copa = VG().copa && VG().copa.time != null ? VG().copa.time : null;
+    const gmin = C.baseGrupos + (libRes === true ? 1 : 0), gmax = C.baseGrupos + (libRes === false ? 0 : 1) + (copa != null ? 1 : 0);
+    const pre = C.vg.pre, sul = C.vg.sul, out = {};
+    D.times.forEach((t) => {
+      const i = t.id, mx = (x) => pts[x] + 3 * rest[x];
+      const melhor = 1 + D.times.filter((o) => o.id !== i && pts[o.id] > mx(i)).length;
+      const pior = 1 + D.times.filter((o) => o.id !== i && mx(o.id) >= pts[i]).length;
+      const m1 = melhor - (copa != null ? 1 : 0);
+      out[i] = i === copa
+        ? { certo: { titulo: pior === 1, z4: melhor >= 17, lib: pior <= 16, pre: false, sul: false },
+          nunca: { titulo: melhor > 1, z4: pior <= 16, lib: melhor >= 17 && m1 > gmax, pre: pior <= 16, sul: pior <= 16 } }
+        : { certo: { titulo: pior === 1, z4: melhor >= 17, lib: pior <= gmin, pre: m1 > gmax && pior <= gmin + pre, sul: m1 > gmax + pre && pior <= Math.min(16, gmin + pre + sul) },
+          nunca: { titulo: melhor > 1, z4: pior <= 16, lib: m1 > gmax, pre: pior <= gmin || m1 > gmax + pre, sul: pior <= gmin + pre || m1 > gmax + pre + sul || melhor >= 17 } };
+    });
+    return out;
+  }
   function telaSimulador(app) {
     app.append(secHead('Simulador', 'E se…?', null, 'h1'));
     if (!simuladorAberto()) {
@@ -1713,12 +1742,14 @@
       const lista = D.times.filter((t) => r[t.id][zk] >= 0.05 || SIM.base[t.id][zk] >= 0.05)
         .sort((a, b) => r[b.id][zk] - r[a.id][zk] || r[a.id].pos - r[b.id].pos).slice(0, 12);
       const linhas = el('div', { class: 'pr-list' });
-      const fmt = (x) => (x >= 99.95 ? '100%' : x < 0.05 ? '0%' : x < 1 ? '<1%' : x > 99 ? '>99%' : Math.round(x) + '%');
+      const cz = certezaSim(C, SIM.escolha, SIM.lib);
+      // 100% e 0% só com certeza matemática; o resto fica entre 0,01% e 99,99%, sem arredondar
+      const fmt = (x, t) => pct(cz[t.id].certo[zk] ? 100 : cz[t.id].nunca[zk] ? 0 : Math.min(99.99, Math.max(0.01, x)));
       lista.forEach((t) => {
         const v = r[t.id][zk], d = v - SIM.base[t.id][zk];
         linhas.append(el('a', { class: 'pr sim-pr', href: '#clube-' + t.id }, escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
           el('span', { class: 'pr-bar' }, el('span', { style: `width:${Math.max(v > 0 ? 2 : 0, Math.min(100, v))}%;background:${cor}` })),
-          el('span', { class: 'pr-v num', text: fmt(v) }),
+          el('span', { class: 'pr-v num', text: fmt(v, t) }),
           el('span', { class: 'sim-d num ' + (Math.abs(d) < 0.5 ? '' : (d > 0) === (zk !== 'z4') ? 'sobe' : 'desce'), text: Math.abs(d) < 0.5 ? '–' : (d > 0 ? '+' : '−') + Math.round(Math.abs(d)) })));
       });
       if (!lista.length) linhas.append(el('p', { class: 'small', style: 'margin:0', text: 'Ninguém mais disputa esta faixa.' }));

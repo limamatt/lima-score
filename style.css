@@ -256,7 +256,7 @@ tr.z-reb .sticky-col2{background:color-mix(in srgb,var(--bad) 5%,var(--surface))
 .pano h3{font-size:1.35rem;text-transform:uppercase}
 .pano .small{margin:0 0 .3rem}
 .pr-list{display:flex;flex-direction:column;gap:.15rem}
-.pr{display:grid;grid-template-columns:24px minmax(0,7.5rem) 1fr 3.6rem;gap:.6rem;align-items:center;text-decoration:none;padding:.3rem 0}
+.pr{display:grid;grid-template-columns:24px minmax(0,7.5rem) 1fr 4.1rem;gap:.6rem;align-items:center;text-decoration:none;padding:.3rem 0}
 .pr-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pr-bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
 .pr-bar span{display:block;height:100%;border-radius:4px}
@@ -564,7 +564,7 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .sim-b small{font-weight:500;color:var(--muted);font-size:.72rem}
 .sim-b.on{background:var(--pitch);border-color:var(--pitch);color:var(--chalk)}
 .sim-b.on small{color:var(--chalk);opacity:.8}
-.sim-pr{grid-template-columns:24px minmax(0,7rem) 1fr 3rem 2.2rem}
+.sim-pr{grid-template-columns:24px minmax(0,6.6rem) 1fr 4.1rem 2rem}
 .sim-d{font-size:.78rem;font-weight:700;text-align:right;color:var(--muted)}
 .sim-d.sobe{color:var(--good)}.sim-d.desce{color:var(--bad)}
 .sim-det{margin:.8rem 0 5rem}

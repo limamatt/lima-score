@@ -50,6 +50,53 @@ FAIXAS = [
 ARQ_VAGAS = ROOT / "data" / "vagas.json"
 
 
+def certezas_matematicas(saida_times, restantes, vagas):
+    """100% e 0% só quando é matematicamente certo. Se a simulação deu 100% (ou 0%) mas ainda existe
+    alguma combinação de resultados que muda isso, mostra 99,99% (ou 0,01%).
+    Limites conservadores: pior caso = só os outros pontuam; melhor caso = só ele pontua."""
+    rest = {}
+    for j in restantes:
+        for lado in ("homeTeam", "awayTeam"):
+            rest[j[lado]["id"]] = rest.get(j[lado]["id"], 0) + 1
+    pts = {t["id"]: t["pts"] for t in saida_times}
+    mx = {t: p + 3 * rest.get(t, 0) for t, p in pts.items()}
+    lib = vagas.get("libertadores") or {}
+    copa = (vagas.get("copa") or {}).get("time")
+    base = vagas["grupos"] - (1 if lib.get("resultado") else 0) - (1 if (vagas.get("copa") or {}).get("rebaixado_hoje") else 0)
+    pre, sul = vagas["pre"], vagas["sul"]
+    for t in saida_times:
+        i = t["id"]
+        melhor = 1 + sum(1 for j in pts if j != i and pts[j] > mx[i])          # posição no melhor cenário
+        pior = 1 + sum(1 for j in pts if j != i and mx[j] >= pts[i])           # posição no pior cenário
+        gmin = base + (1 if lib.get("resultado") else 0)
+        gmax = base + (0 if lib.get("resultado") is False else 1) + (1 if copa is not None else 0)
+        m1 = melhor - (1 if copa is not None else 0)                            # o time da Copa pode sair da conta
+        if i == copa:
+            certo = dict(titulo=pior == 1, rebaixamento=melhor >= 17, libertadores=pior <= 16,
+                         pre_libertadores=False, sulamericana=False)
+            nunca = dict(titulo=melhor > 1, rebaixamento=pior <= 16, libertadores=melhor >= 17 and m1 > gmax,
+                         pre_libertadores=pior <= 16, sulamericana=pior <= 16)
+        else:
+            certo = dict(titulo=pior == 1, rebaixamento=melhor >= 17, libertadores=pior <= gmin,
+                         pre_libertadores=m1 > gmax and pior <= gmin + pre,
+                         sulamericana=m1 > gmax + pre and pior <= min(16, gmin + pre + sul))
+            nunca = dict(titulo=melhor > 1, rebaixamento=pior <= 16, libertadores=m1 > gmax,
+                         pre_libertadores=pior <= gmin or m1 > gmax + pre,
+                         sulamericana=pior <= gmin + pre or m1 > gmax + pre + sul or melhor >= 17)
+        t["certeza"] = {}
+        for k in ("titulo", "rebaixamento", "libertadores", "pre_libertadores", "sulamericana"):
+            if certo[k]:
+                t[k] = 100.0
+                t["certeza"][k] = 1
+            elif nunca[k]:
+                t[k] = 0.0
+                t["certeza"][k] = 0
+            elif t[k] >= 99.99:
+                t[k] = 99.99
+            elif t[k] <= 0:
+                t[k] = 0.01
+
+
 def baixar(caminho, token):
     req = urllib.request.Request(API + caminho, headers={"X-Auth-Token": token})
     with urllib.request.urlopen(req, timeout=30) as r:
@@ -870,9 +917,22 @@ def main():
             **faixas,
         ))
     saida_times.sort(key=lambda x: x["pos"])
+    certezas_matematicas(saida_times, restantes, vagas)
     cenarios = montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts,
                                direta=v_grupos, g_hoje=vagas["grupos"], pular=vagas["copa"]["time"],
                                pre=v_pre, g_pre=vagas["grupos"] + vagas["pre"])
+    # nos cenários (chances condicionais), 100% e 0% saem das simulações e não são prova: 99,99% e 0,01%
+    def _sem_certeza(x):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                if k in ("chance", "vence", "empata", "perde", "se_der", "se_nao") and isinstance(v, (int, float)):
+                    x[k] = 99.99 if v >= 99.99 else 0.01 if v <= 0 else v
+                else:
+                    _sem_certeza(v)
+        elif isinstance(x, list):
+            for v in x:
+                _sem_certeza(v)
+    _sem_certeza(cenarios)
 
     # canais de transmissão (preenchidos em data/transmissoes.json)
     arq_canais = ROOT / "data" / "transmissoes.json"
