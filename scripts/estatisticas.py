@@ -304,7 +304,7 @@ def _func_nota(pos):
 
 
 def notas_do_jogo(jj, placar, lances):
-    """Nota de 0 a 10 de cada jogador (base 6,0), no estilo dos apps de futebol, só com o que temos de cada um:
+    """Nota de 3 a 10 de cada jogador na escala do Sofascore (todos começam em 6,5), só com o que temos de cada um:
     gols, assistências, xG e xA estimados, passes para finalização, chutes no gol, defesas, gols sofridos
     enquanto estava em campo, jogo sem sofrer gol, faltas, cartões, gol contra e o resultado do time."""
     if not jj or not placar:
@@ -360,6 +360,8 @@ def notas_do_jogo(jj, placar, lances):
             n += 0.05 * st.get("foulsSuffered", 0) - 0.05 * st.get("foulsCommitted", 0) - 0.05 * st.get("offsides", 0)
             n -= 0.4 * st.get("yellowCards", 0) + 1.5 * st.get("redCards", 0) + 1.2 * contra.get(nn, 0)
             n += (0.3 if gp > gc else -0.3 if gp < gc else 0) * f
+            # escala do Sofascore: todo mundo começa em 6,5 e o jogo mexe para cima ou para baixo (3,0 a 10)
+            n = 6.5 + 0.75 * (n - 6.0)
             n = max(3.0, min(10.0, n))
             motivo = []
             for v, um, varios in ((gols, "gol", "gols"), (assist, "assistência", "assistências"),
