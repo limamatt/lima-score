@@ -1440,7 +1440,7 @@
 
   function arbArbitros(app, A) {
     const lista = el('div', { class: 'arb-lista' });
-    A.arbitros.forEach((a) => {
+    A.arbitros.slice().sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR', { sensitivity: 'base' })).forEach((a) => {
       const aberto = estado.arbAberto === a.nome;
       const n = a.com_dados;
       const det = el('details', { class: 'card arb', open: aberto || null, ontoggle: (ev) => { if (ev.target.open) estado.arbAberto = a.nome; } },
