@@ -23,13 +23,74 @@
       "Calleri"
      ]
     ],
-    "url": "https://ge.globo.com/futebol/times/sao-paulo/noticia/2026/11/25/escalacao-do-sao-paulo-dorival-tera-volta-de-lucas-contra-o-remo.ghtml"
+    "url": "https://ge.globo.com/sp/futebol/brasileirao-serie-a/noticia/2026/11/26/sao-paulo-x-remo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "pendurados": [
+     "Rafael",
+     "Osorio",
+     "Lucas Ramon",
+     "Pedro Lima",
+     "Wendell",
+     "Djhordney",
+     "Marcos Antônio",
+     "Danielzinho",
+     "Gustavo Santana",
+     "André Silva",
+     "Artur.Quem está fora: Nicolas",
+     "Aurélio Buta",
+     "Domingos Duarte",
+     "Sabino",
+     "Toloi  ; Wendell"
+    ]
+   },
+   "fora": {
+    "titulares": [
+     [
+      "Marcelo Rangel"
+     ],
+     [
+      "Marcelinho",
+      "Zé Ivaldo",
+      "Tchamba",
+      "Mayk"
+     ],
+     [
+      "Zé Welison",
+      "Picco",
+      "Patrick"
+     ],
+     [
+      "David Braga",
+      "Galeano",
+      "Taliari"
+     ]
+    ],
+    "url": "https://ge.globo.com/sp/futebol/brasileirao-serie-a/noticia/2026/11/26/sao-paulo-x-remo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "desfalques": [
+     "Matheus Felipe",
+     "Marllon",
+     "Edson",
+     "Jajá"
+    ],
+    "pendurados": [
+     "Marcelinho",
+     "Zé Ricardo",
+     "David Braga",
+     "Pikachu",
+     "Vitor Bueno"
+    ]
    }
   }
  },
  "diag": {
-  "hora": "2026-11-26T01:12:49+00:00",
+  "hora": "2026-11-26T08:53:00+00:00",
   "materias": [
+   [
+    "São Paulo x Remo: onde assistir ao vivo, horário e escalações",
+    {
+     "1776": 4,
+     "4287": 4
+    }
+   ],
    [
     "Escalação do São Paulo: Dorival terá volta de Lucas contra o Remo",
     {
