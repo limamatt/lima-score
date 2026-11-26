@@ -200,8 +200,8 @@
     var list = site.jogos.filter(function (j) {
       return j.status === 'FINISHED' && (j.rodada >= r - 1 || Date.parse(j.data) >= since);
     });
-    // do mais antigo (esquerda) para o mais recente (direita)
-    list.sort(function (a, b) { return Date.parse(a.data) - Date.parse(b.data); });
+    // do mais recente (esquerda) para o mais antigo (direita)
+    list.sort(function (a, b) { return Date.parse(b.data) - Date.parse(a.data); });
     return list;
   }
 
@@ -225,8 +225,8 @@
       c.onclick = c._act;
       box.appendChild(c);
     });
-    // começa mostrando o mais recente, à direita; ◀ volta para os mais antigos
-    if (memory[3] == null || memory[3] >= list.length) memory[3] = Math.max(0, list.length - 1);
+    // começa no mais recente, à esquerda; ▶ vai para os mais antigos
+    if (memory[3] == null || memory[3] >= list.length) memory[3] = 0;
     if (cur.row !== 3) hlScroll(memory[3]);
     var r = currentRound();
     $('hlTitle').textContent = 'Melhores momentos · Rodadas ' + (r - 1) + ' e ' + r;
