@@ -1216,7 +1216,7 @@
       const ramp = (k) => (k < 0.35 ? `rgba(180,230,90,${(k / 0.35) * 0.55})` : k < 0.7 ? `rgba(250,210,60,${0.55 + (k - 0.35) * 0.9})` : `rgba(240,80,40,${0.85 + (k - 0.7) * 0.5})`);
       x.calor.forEach((v, i) => {
         if (!v) return;
-        const cx = i % 12, cy = Math.floor(i / 12);
+        const cx = i % 12, cy = 7 - Math.floor(i / 12);   // a narração mede a largura ao contrário: lateral-direito embaixo
         calor.append(sv('rect', { x: cx * W / 12 - 1, y: cy * H / 8 - 1, width: W / 12 + 2, height: H / 8 + 2, fill: ramp(Math.sqrt(v / mx)) }));
       });
       svg.append(calor);
