@@ -1,87 +1,5 @@
 {
  "jogos": {
-  "555091": {
-   "casa": {
-    "titulares": [
-     [
-      "Provável Atlético: Everson"
-     ],
-     [
-      "Natanael",
-      "Vitor Hugo",
-      "Ruan",
-      "Lodi"
-     ],
-     [
-      "Castaño",
-      "Igor Gomes",
-      "Victor Hugo"
-     ],
-     [
-      "Bernard",
-      "Cuello",
-      "Borbas"
-     ]
-    ],
-    "url": "https://ge.globo.com/mg/futebol/brasileirao-serie-a/noticia/2026/11/25/atletico-mg-x-corinthians-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "desfalques": [
-     "Alan Franco",
-     "Maycon",
-     "Reinier",
-     "Alan Minda",
-     "Fred"
-    ],
-    "pendurados": [
-     "Igor Gomes",
-     "Cissé",
-     "Pascini",
-     "Castaño",
-     "Lyanco",
-     "Natanael"
-    ]
-   },
-   "fora": {
-    "titulares": [
-     [
-      "Hugo Souza"
-     ],
-     [
-      "Matheuzinho",
-      "André Ramalho",
-      "Gustavo Henrique",
-      "Fabrizio Angileri"
-     ],
-     [
-      "Breno Bidon",
-      "André",
-      "Rodrigo Garro"
-     ],
-     [
-      "Kaio César",
-      "Matheus Bidu",
-      "Memphis Depay"
-     ]
-    ],
-    "url": "https://ge.globo.com/mg/futebol/brasileirao-serie-a/noticia/2026/11/25/atletico-mg-x-corinthians-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "desfalques": [
-     "André Carrillo",
-     "Yuri Alberto",
-     "Gabriel Paulista",
-     "Zakaria Labyad",
-     "Kayke"
-    ],
-    "pendurados": [
-     "André",
-     "Raniele",
-     "Breno Bidon",
-     "Kauê",
-     "Matheus Bidu",
-     "Matheus Pereira",
-     "Rodrigo Garro",
-     "Yuri Alberto"
-    ]
-   }
-  },
   "555108": {
    "casa": {
     "titulares": [
@@ -91,72 +9,34 @@
      [
       "Newton",
       "Arboleda",
-      "Osório"
+      "Osorio"
      ],
      [
       "Pedro Lima",
+      "Djhordney",
       "Bobadilla",
-      "Pablo Maia",
-      "Lucas",
       "Iago"
      ],
      [
-      "Luciano",
+      "Artur",
+      "Lucas",
       "Calleri"
      ]
     ],
-    "url": "https://ge.globo.com/rj/futebol/brasileirao-serie-a/noticia/2026/11/23/botafogo-x-sao-paulo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "desfalques": [
-     "Nicolas",
-     "Buta",
-     "Domingos Duarte",
-     "Marcos Antonio",
-     "Rafael Tolói",
-     "Artur",
-     "Sabino"
-    ],
-    "pendurados": [
-     "Lucas Ramon",
-     "Wendell",
-     "Djhordney",
-     "Marcos Antônio",
-     "Danielzinho",
-     "Gustavo Santana",
-     "André Silva",
-     "Artur"
-    ]
+    "url": "https://ge.globo.com/futebol/times/sao-paulo/noticia/2026/11/25/escalacao-do-sao-paulo-dorival-tera-volta-de-lucas-contra-o-remo.ghtml"
    }
   }
  },
  "diag": {
-  "hora": "2026-11-25T18:29:36+00:00",
+  "hora": "2026-11-26T01:12:49+00:00",
   "materias": [
    [
-    "Atlético-MG x Corinthians: onde assistir ao vivo, horário e escalações",
+    "Escalação do São Paulo: Dorival terá volta de Lucas contra o Remo",
     {
-     "1766": 4,
-     "1779": 4
-    }
-   ],
-   [
-    "Treino do Corinthians: Seedorf prepara mudanças na escalação para enfrentar o At",
-    {}
-   ],
-   [
-    "Escalação do Atlético-MG: sem Fred, Domínguez terá que mudar time contra o Corin",
-    {
-     "1779": 4
+     "1776": 4
     }
    ]
   ],
-  "amostra": [
-   [
-    "Treino do Corinthians: Seedorf prepara mudanças na escalação para enfrentar o At",
-    [
-     "O zagueiro André Ramalho e o volante André retornam ao time depois de serem desfalques na rodada passada. No meio de campo há a possibilidade de que Rodrigo Gar",
-     "A provável escalação do Corinthians para enfrentar o Atlético-MG na Arena MRV tem Hugo Souza; Matheuzinho, André Ramalho, Gustavo Henrique e Fabrizio Angileri; "
-    ]
-   ]
-  ]
+  "amostra": []
  }
 }
