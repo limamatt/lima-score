@@ -1051,7 +1051,7 @@
   function golsUteis(app) {
     if (!P) { app.append(el('p', { class: 'small', text: 'Carregando jogadores…' })); carregarJogadores(); return; }
     app.append(el('p', { class: 'small', style: 'margin:0 0 .8rem',
-      text: 'Gols que deixam o time um gol à frente do adversário: o primeiro gol de um 0x0 e os gols de desempate (2x1, 3x2…). Gols contra não contam.' }));
+      text: 'Gols que mudam o resultado: os que deixam o time um gol à frente (o primeiro gol de um 0x0 e os de desempate, como 2x1 e 3x2) e os que empatam o jogo (1x1, 2x2…). Gols contra não contam.' }));
     const lista = (P.jogadores || []).filter((x) => x.gols_uteis > 0)
       .map((x) => ({ pid: x.id, nome: x.nome, time: x.clube, jogos: x.jogos, gols: x.gols || 0, uteis: x.gols_uteis }))
       .sort((a, b) => b.uteis - a.uteis || a.gols - b.gols || a.jogos - b.jogos)

@@ -378,8 +378,8 @@ def montar_jogadores(saida_jogos):
                     r["nota_jogos"] = r.get("nota_jogos", 0) + 1
         except Exception as e:
             print(f"Notas dos jogadores: {e.__class__.__name__}: {e}")
-        # gols úteis: gols que deixam o time exatamente 1 gol à frente (1x0, 2x1, 3x2...),
-        # ou seja, os que tiram o time do empate. Gol contra muda o placar mas não conta para ninguém.
+        # gols úteis: gols que deixam o time exatamente 1 gol à frente (1x0, 2x1, 3x2...) ou que empatam
+        # o jogo (1x1, 2x2...). Gol contra muda o placar mas não conta para ninguém.
         gols_jogo = [l for l in lances_jogo.get(jid, []) if l.get("tipo") == "gol"]
         if len(gols_jogo) == jg["gols_casa"] + jg["gols_fora"]:  # só usa jogos com todos os gols nos lances
             plac = {"casa": 0, "fora": 0}
@@ -387,7 +387,7 @@ def montar_jogadores(saida_jogos):
                 lado = l["lado"]
                 plac[lado] += 1
                 outro = "fora" if lado == "casa" else "casa"
-                if plac[lado] - plac[outro] == 1 and not l.get("contra"):
+                if plac[lado] - plac[outro] in (0, 1) and not l.get("contra"):
                     pid = quem(l.get("jogador"))
                     if pid in jog:
                         jog[pid]["gols_uteis"] = jog[pid].get("gols_uteis", 0) + 1
