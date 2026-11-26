@@ -949,8 +949,8 @@
   };
   function telaJogadores(app) {
     app.append(secHead('Jogadores', 'Jogadores do Brasileirão', null, 'h1'));
-    const seg = el('div', { class: 'seg seg-auto', role: 'group', 'aria-label': 'Visão' });
-    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons'], ['uteis', 'Gols Úteis'], ['selecao', 'Seleção']].forEach(([k, txt]) => {
+    const seg = el('div', { class: 'seg seg-auto seg-jog', role: 'group', 'aria-label': 'Visão' });
+    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons'], ['uteis', 'Gols Úteis'], ['selecao', 'Seleção do Campeonato']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.artilharia === k), text: txt, onclick: () => { estado.artilharia = k; render(); } }));
     });
     app.append(seg);
@@ -1028,7 +1028,7 @@
       [V.Goleiro.esc[0]],
     ];
     app.append(el('div', { class: 'card cp-card' },
-      el('div', { class: 'cp-rot' }, el('div', { class: 'cp-rot-l' }, el('b', { text: 'Seleção do Brasileirão' }), el('span', { class: 'small', text: '4-3-3' }))),
+      el('div', { class: 'cp-rot' }, el('div', { class: 'cp-rot-l' }, el('b', { text: 'Seleção do Campeonato' }), el('span', { class: 'small', text: '4-3-3' }))),
       el('div', { class: 'campo sel-campo' }, el('div', { class: 'cp-meio', 'aria-hidden': 'true' }),
         el('div', { class: 'cp-metade casa' }, linhas.map((ln) => el('div', { class: 'cp-linha' }, ln.map(jog)))))));
     // quem ficou perto
