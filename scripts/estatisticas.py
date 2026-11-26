@@ -381,6 +381,21 @@ def notas_do_jogo(jj, placar, lances):
     return out
 
 
+def recalcular_destaques(jogos_dados, escalacoes):
+    """Melhor do jogo pela nota, refeito para todos os jogos com escalação (sem reler a ESPN)."""
+    for chave, g in jogos_dados.items():
+        try:
+            if escalacoes.get(chave) and g.get("placar") and g.get("estado") in ("in", "post"):
+                eleg = [x for x in notas_do_jogo(escalacoes[chave], g["placar"], g.get("lances")) if x["elegivel"]]
+                if eleg:
+                    d = dict(eleg[0])
+                    d.pop("elegivel", None)
+                    d["outros"] = [dict(nome=x["nome"], lado=x["lado"], nota=x["nota"]) for x in eleg[1:3]]
+                    g["destaque"] = d
+        except Exception:
+            pass
+
+
 def _norm_nome(n):
     import unicodedata
     n = unicodedata.normalize("NFKD", n or "").encode("ascii", "ignore").decode().lower()
@@ -641,7 +656,14 @@ def main():
     encerrados.sort(key=lambda j: j["data"], reverse=True)  # os mais recentes primeiro
     alvo = ao_vivo + encerrados[:MAX_ENCERRADOS_POR_VEZ if ao_vivo else MAX_ENCERRADOS_SEM_JOGO]
     if not alvo:
-        print("Estatísticas: nada para buscar.")
+        esc = json.loads(ESC.read_text(encoding="utf-8")) if ESC.exists() else {}
+        recalcular_destaques(jogos_dados, esc)
+        if json.dumps(jogos_dados, sort_keys=True) != antes:
+            dados["jogos"] = jogos_dados
+            OUT.write_text(json.dumps(dados, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            print("Estatísticas: notas do melhor do jogo refeitas.")
+        else:
+            print("Estatísticas: nada para buscar.")
         return
 
     # acha o jogo correspondente na ESPN (pelo par de clubes e pela data)
@@ -841,19 +863,7 @@ def main():
         jogos_dados[chave] = novo
         lidos += 1
 
-    # melhor do jogo pela nota (refeito para todos os jogos com escalação, sem precisar reler a ESPN)
-    for chave, g in jogos_dados.items():
-        try:
-            if escalacoes.get(chave) and g.get("placar") and g.get("estado") in ("in", "post"):
-                notas = notas_do_jogo(escalacoes[chave], g["placar"], g.get("lances"))
-                eleg = [x for x in notas if x["elegivel"]]
-                if eleg:
-                    d = dict(eleg[0])
-                    d.pop("elegivel", None)
-                    d["outros"] = [dict(nome=x["nome"], lado=x["lado"], nota=x["nota"]) for x in eleg[1:3]]
-                    g["destaque"] = d
-        except Exception:
-            pass
+    recalcular_destaques(jogos_dados, escalacoes)
     if json.dumps(escalacoes, sort_keys=True) != esc_antes or (escalacoes and not ESC.exists()):
         ESC.write_text(json.dumps(escalacoes, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists() or "erro" in dados or not jogos_dados:
