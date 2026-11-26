@@ -206,6 +206,10 @@ def main():
         print("Sem YOUTUBE_API_KEY: pulando os melhores momentos.")
         return
     site = json.loads(SITE.read_text(encoding="utf-8"))
+    # clube novo (promovido na temporada seguinte): usa o nome do próprio site para achar os vídeos
+    for t in site.get("times", []):
+        if t["id"] not in NOMES:
+            NOMES[t["id"]] = [norm(t["nome"])]
     inicio = datetime.fromisoformat(site["temporada"]["inicio"] + "T00:00:00+00:00")
     ano = site["temporada"]["inicio"][:4]
 

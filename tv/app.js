@@ -272,6 +272,27 @@
       (goals == null ? '' : goals) + '</span></div>';
   }
 
+  // Entre temporadas: sem jogos pela frente. Mostra o campeão (ou a data de início da próxima, quando já houver jogos marcados).
+  function drawOffSeason() {
+    var list = site.times.slice().sort(function (x, y) { return x.pos - y.pos; });
+    var ano = String(site.temporada.inicio || '').slice(0, 4);
+    var all = site.jogos.slice().sort(function (x, y) { return Date.parse(x.data) - Date.parse(y.data); });
+    var acabou = all.length && all.every(function (j) { return j.status === 'FINISHED'; });
+    var c = list[0] || {};
+    if (acabou) {
+      $('heroTag').textContent = 'Fim do Brasileirão ' + ano;
+      $('heroMatch').innerHTML = '<div class="team"><img src="' + esc(c.escudo) + '">' + esc(c.nome) + '</div>';
+      $('heroInfo').textContent = 'Campeão com ' + c.pts + ' pontos · Até a próxima temporada!';
+    } else {
+      $('heroTag').textContent = 'Brasileirão ' + ano;
+      $('heroMatch').innerHTML = '';
+      $('heroInfo').textContent = 'A tabela de jogos ainda não foi divulgada.';
+    }
+    $('heroBtns').innerHTML = '';
+    document.documentElement.style.setProperty('--c1', COLORS[c.sigla] || '#1d3b2a');
+    document.documentElement.style.setProperty('--c2', '#2a2140');
+  }
+
   function drawHero(j) {
     var h = teams[j.casa] || {}, a = teams[j.fora] || {};
     var live = LIVE[j.status], fin = j.status === 'FINISHED';
@@ -295,6 +316,7 @@
   function drawMatches(r) {
     $('roundTitle').textContent = 'Próximos jogos';
     var box = $('matches'); box.innerHTML = '';
+    box.parentNode.style.display = r.jogos.length ? '' : 'none';
     r.jogos.forEach(function (j) {
       var live = LIVE[j.status], fin = j.status === 'FINISHED';
       var c = el('div', 'match');
@@ -441,7 +463,8 @@
   function drawAll() {
     if (!site) return;
     var r = roundGames();
-    drawHero(featured(r.jogos));
+    var fj = featured(r.jogos);
+    if (fj) drawHero(fj); else drawOffSeason();
     drawLive(r.jogos);
     drawMyTeam();
     drawMatches(r);
@@ -471,7 +494,8 @@
       if (!on) e.className = e.className.replace(/ ?focus/g, '');
     }); });
     // Rolagem vertical: o topo fica parado até sair do dock.
-    var y = [0, 0, -900, -1330, -1820][cur.row] || 0;
+    var tgt = [null, null, $('matches'), $('highlights'), $('table')][cur.row];
+    var y = tgt && cur.row >= 2 ? -(tgt.parentNode.offsetTop - 70) : 0;
     $('page').style.transform = 'translateY(' + y + 'px)';
     $('brand').style.opacity = cur.row >= 2 ? 0 : 1;
     // Rolagem horizontal dos jogos
