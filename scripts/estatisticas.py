@@ -292,6 +292,93 @@ def destaque_do_jogo(resumo, lado_por_espn):
     return melhor
 
 
+def _func_nota(pos):
+    p = (pos or "").lower()
+    if "goleiro" in p:
+        return "gol"
+    if "zagueiro" in p or "lateral" in p or "ala" in p:
+        return "def"
+    if "volante" in p or "meio" in p or "meia" in p:
+        return "mei"
+    return "ata"
+
+
+def notas_do_jogo(jj, placar, lances):
+    """Nota de 0 a 10 de cada jogador (base 6,0), no estilo dos apps de futebol, só com o que temos de cada um:
+    gols, assistências, xG e xA estimados, passes para finalização, chutes no gol, defesas, gols sofridos
+    enquanto estava em campo, jogo sem sofrer gol, faltas, cartões, gol contra e o resultado do time."""
+    if not jj or not placar:
+        return []
+    gols_lado = {"casa": [], "fora": []}
+    for l in lances or []:
+        if l.get("tipo") == "gol" and l.get("lado") in gols_lado:
+            gols_lado[l["lado"]].append(minuto_num(l.get("minuto")))
+    meus_gols, minhas_assist, contra = {}, {}, {}
+    for l in lances or []:
+        if l.get("tipo") != "gol":
+            continue
+        if l.get("contra"):
+            contra[_norm_nome(l.get("jogador"))] = contra.get(_norm_nome(l.get("jogador")), 0) + 1
+        else:
+            meus_gols[_norm_nome(l.get("jogador"))] = meus_gols.get(_norm_nome(l.get("jogador")), 0) + 1
+            if l.get("assistencia"):
+                minhas_assist[_norm_nome(l["assistencia"])] = minhas_assist.get(_norm_nome(l["assistencia"]), 0) + 1
+    chutes = jj.get("chutes") or []
+    out = []
+    for lado, outro in (("casa", "fora"), ("fora", "casa")):
+        gp, gc = placar.get(lado, 0), placar.get(outro, 0)
+        for p in jj.get(lado) or []:
+            m = p.get("minutos") or 0
+            if m <= 0:
+                continue
+            st = p.get("stats") or {}
+            nn = _norm_nome(p.get("nome"))
+            ini = 0 if p.get("titular") else max(0, 90 - m)
+            fim = ini + m
+            sofridos = sum(1 for x in gols_lado[outro] if ini <= x <= fim + 5)
+            meus = [c for c in chutes if c.get("lado") == lado and _norm_nome(c.get("j")) == nn]
+            passes = [c for c in chutes if c.get("lado") == lado and _norm_nome(c.get("a")) == nn]
+            xg = sum(c.get("xg") or 0 for c in meus)
+            xa = sum(c.get("xg") or 0 for c in passes)
+            no_gol = sum(1 for c in meus if c.get("res") in ("gol", "defendido"))
+            gols = meus_gols.get(nn, int(st.get("totalGoals", 0)))
+            assist = minhas_assist.get(nn, int(st.get("goalAssists", 0)))
+            fn = _func_nota(p.get("pos"))
+            f = min(1.0, m / 90)
+            n = 6.0
+            n += 1.0 * gols + 0.7 * assist + 0.6 * xg + 0.5 * xa + 0.15 * len(passes) + 0.1 * no_gol
+            if fn == "gol":
+                n += 0.25 * st.get("saves", 0) - 0.3 * sofridos
+                if m >= 60 and sofridos == 0:
+                    n += 0.8
+            elif fn == "def":
+                n -= 0.15 * sofridos
+                if m >= 60 and sofridos == 0:
+                    n += 0.5
+            elif fn == "mei" and m >= 60 and sofridos == 0:
+                n += 0.2
+            n += 0.05 * st.get("foulsSuffered", 0) - 0.05 * st.get("foulsCommitted", 0) - 0.05 * st.get("offsides", 0)
+            n -= 0.4 * st.get("yellowCards", 0) + 1.5 * st.get("redCards", 0) + 1.2 * contra.get(nn, 0)
+            n += (0.3 if gp > gc else -0.3 if gp < gc else 0) * f
+            n = max(3.0, min(10.0, n))
+            motivo = []
+            for v, um, varios in ((gols, "gol", "gols"), (assist, "assistência", "assistências"),
+                                  (int(st.get("saves", 0)) if fn == "gol" else 0, "defesa", "defesas"),
+                                  (len(passes), "passe para finalização", "passes para finalização"),
+                                  (no_gol, "chute no gol", "chutes no gol")):
+                if v:
+                    motivo.append(f"{v} {um if v == 1 else varios}")
+            if fn in ("gol", "def") and m >= 60 and sofridos == 0:
+                motivo.append("sem sofrer gol")
+            out.append(dict(nome=p.get("nome"), lado=lado, posicao=p.get("pos"), nota=round(n, 1), minutos=m,
+                            motivo=", ".join(motivo[:3]), elegivel=m >= 45 or gols + assist > 0,
+                            _ord=(round(n, 1), gols, assist, xg + xa)))
+    out.sort(key=lambda x: x["_ord"], reverse=True)
+    for x in out:
+        x.pop("_ord")
+    return out
+
+
 def _norm_nome(n):
     import unicodedata
     n = unicodedata.normalize("NFKD", n or "").encode("ascii", "ignore").decode().lower()
@@ -752,6 +839,19 @@ def main():
         jogos_dados[chave] = novo
         lidos += 1
 
+    # melhor do jogo pela nota (refeito para todos os jogos com escalação, sem precisar reler a ESPN)
+    for chave, g in jogos_dados.items():
+        try:
+            if escalacoes.get(chave) and g.get("placar") and g.get("estado") in ("in", "post"):
+                notas = notas_do_jogo(escalacoes[chave], g["placar"], g.get("lances"))
+                eleg = [x for x in notas if x["elegivel"]]
+                if eleg:
+                    d = dict(eleg[0])
+                    d.pop("elegivel", None)
+                    d["outros"] = [dict(nome=x["nome"], lado=x["lado"], nota=x["nota"]) for x in eleg[1:3]]
+                    g["destaque"] = d
+        except Exception:
+            pass
     if json.dumps(escalacoes, sort_keys=True) != esc_antes or (escalacoes and not ESC.exists()):
         ESC.write_text(json.dumps(escalacoes, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     if json.dumps(jogos_dados, sort_keys=True) != antes or not OUT.exists() or "erro" in dados or not jogos_dados:

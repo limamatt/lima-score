@@ -321,7 +321,11 @@
           el('div', { class: 'dq-txt' },
             el('b', { text: d.nome }),
             el('span', { class: 'small', text: [T[j[d.lado]] ? T[j[d.lado]].nome : '', d.posicao].filter(Boolean).join(' · ') }),
-            d.motivo ? el('span', { class: 'dq-mot', text: d.motivo }) : null))));
+            d.motivo ? el('span', { class: 'dq-mot', text: d.motivo }) : null),
+          d.nota != null && d.nota <= 10 ? el('div', { class: 'dq-nota num', title: 'Nota de 0 a 10' }, String(d.nota.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })), el('small', { text: 'nota' })) : null),
+        d.outros && d.outros.length ? el('p', { class: 'small dq-outros' }, 'Também se destacaram: ',
+          d.outros.map((o, i) => [i ? ' · ' : '', el('b', { text: o.nome }), ` ${o.nota.toLocaleString('pt-BR', { minimumFractionDigits: 1 })}`]).flat()) : null,
+        el('p', { class: 'small dq-como', text: 'Nota de 0 a 10 (base 6,0): gols, assistências, chances criadas (xG e xA), passes para finalização, defesas, gols sofridos em campo, jogo sem sofrer gol, cartões e o resultado do time.' })));
     }
 
     // estatísticas, em grupos (como nos apps de futebol)
