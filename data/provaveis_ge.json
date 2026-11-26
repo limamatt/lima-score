@@ -68,21 +68,47 @@
     "desfalques": [
      "Matheus Felipe",
      "Marllon",
-     "Edson",
      "Jajá"
     ],
     "pendurados": [
      "Marcelinho",
      "Zé Ricardo",
+     "Edson Fernando",
      "David Braga",
      "Pikachu",
      "Vitor Bueno"
     ]
    }
+  },
+  "555105": {
+   "fora": {
+    "titulares": [
+     [
+      "Otávio"
+     ],
+     [
+      "Fagner",
+      "Fabrício Bruno",
+      "Jonathan Jesus",
+      "Viña"
+     ],
+     [
+      "Zé Lucas",
+      "Gerson",
+      "Matheus Pereira"
+     ],
+     [
+      "Marquinhos",
+      "Wesley",
+      "Kaio Jorge"
+     ]
+    ],
+    "url": "https://ge.globo.com/futebol/times/cruzeiro/noticia/2026/11/26/escalacao-do-cruzeiro-gerson-e-kaio-jorge-voltam-mas-artur-tem-duvida-em-meio-a-desfalques.ghtml"
+   }
   }
  },
  "diag": {
-  "hora": "2026-11-26T08:53:00+00:00",
+  "hora": "2026-11-26T23:03:41+00:00",
   "materias": [
    [
     "São Paulo x Remo: onde assistir ao vivo, horário e escalações",
@@ -96,8 +122,43 @@
     {
      "1776": 4
     }
+   ],
+   [
+    "Escalação do Cruzeiro: Gerson e Kaio Jorge voltam, mas Artur tem dúvida em meio ",
+    {
+     "1771": 4
+    }
+   ],
+   [
+    "Escalação do Fluminense: Marcão tem dúvida no ataque, e Martinelli pode voltar a",
+    {}
+   ],
+   [
+    "VC Escala: time de 2026 põe três nomes na escalação de 2019 no melhor Flamengo d",
+    {}
    ]
   ],
-  "amostra": []
+  "amostra": [
+   [
+    "Escalação do Fluminense: Marcão tem dúvida no ataque, e Martinelli pode voltar a",
+    [
+     "O Fluminense entra em campo nesta sexta-feira para sua última partida diante da torcida na temporada e pode ter algumas mudanças nas peças que foram titulares n",
+     "Provável escalação: Fábio, Guga, Ignácio, Thiago Silva e Renê; Hércules, Martinelli (Nonato) e Lucho Acosta; Canobbio, Savarino e Castillo (Hulk)."
+    ]
+   ],
+   [
+    "VC Escala: time de 2026 põe três nomes na escalação de 2019 no melhor Flamengo d",
+    [
+     "Em enquete do ge, torcedores do Flamengo escalaram o time ideal desde 2019, incluindo 3 jogadores do elenco campeão de 2026 na equipe histórica.",
+     "Os atletas do atual elenco que entraram na seleção foram Jorginho, Léo Pereira e Erick Pulgar, superando nomes de destaque como Samuel Lino e Pedro.",
+     "A atual geração do Flamengo fez história ao repetir o feito dos anos de ouro do clube da década de 80, ao conquistar quatro Campeonatos Brasileiros. Mas enquant",
+     "Foi com essa ideia que o ge criou um VC Escala, com os destaques de cada posições durante os últimos oito anos, para os torcedores escolherem quem seriam os seu",
+     "Os três nomes do atual elenco foram: Jorginho, o sétimo na enquete com 2.080 votos; Léo Pereira, o nono mais votado, com 2.017; e Erick Pulgar, o 11º escolhido ",
+     "Arrascaeta e Bruno Henrique, que fazem parte do atual elenco, também foram escolhidos, mas eles já estavam no time desde 2019. Considerado por muitos o maior es",
+     "Filipe Luís, como lateral-esquerdo e não como treinador (técnico não entrou na enquete), fechou o pódio da preferência rubro-negra com 2.655 votos. Os outros ma",
+     "A formação tática escolhida foi o 4-4-2, e a escalação ficou assim: Diego Alves; Rafinha, Rodrigo Caio, Léo Pereira e Filipe Luís; Pulgar, Jorginho, Everton Rib"
+    ]
+   ]
+  ]
  }
 }
