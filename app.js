@@ -950,7 +950,7 @@
   function telaJogadores(app) {
     app.append(secHead('Jogadores', 'Jogadores do Brasileirão', null, 'h1'));
     const seg = el('div', { class: 'seg seg-auto', role: 'group', 'aria-label': 'Visão' });
-    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons'], ['uteis', 'Úteis'], ['selecao', 'Seleção']].forEach(([k, txt]) => {
+    [['clube', 'Por clube'], ['gols', 'Artilheiros'], ['assistencias', 'Garçons'], ['uteis', 'Gols Úteis'], ['selecao', 'Seleção']].forEach(([k, txt]) => {
       seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.artilharia === k), text: txt, onclick: () => { estado.artilharia = k; render(); } }));
     });
     app.append(seg);
