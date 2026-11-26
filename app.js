@@ -626,9 +626,6 @@
       app.append(el('section', { id: 'ao-vivo' }, secHead('Agora', 'Ao vivo', null), g));
     }
 
-    if (simuladorAberto()) app.append(el('a', { class: 'sim-cta', href: '#simulador' }, el('b', { text: 'Simulador: e se…?' }),
-      el('span', { text: 'Escolha os resultados das últimas rodadas e veja quem é campeão, vai à Liberta ou cai.' })));
-
     // panorama em abas: uma faixa por vez
     const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
       escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
@@ -653,6 +650,9 @@
     // cenários: quem ainda briga pelo G4 e contra o Z4
     if (D.cenarios && D.cenarios.length) app.append(secaoCenarios());
 
+    // simulador no fim da página (abre quando faltam 11 rodadas)
+    if (simuladorAberto()) app.append(el('a', { class: 'sim-cta', style: 'margin-top:1.4rem', href: '#simulador' }, el('b', { text: 'Simulador: e se…?' }),
+      el('span', { text: 'Escolha os resultados das últimas rodadas e veja quem é campeão, vai à Liberta ou cai.' })));
   }
 
   // ---------- cenários (G4 e Z4)
