@@ -626,6 +626,9 @@
       app.append(el('section', { id: 'ao-vivo' }, secHead('Agora', 'Ao vivo', null), g));
     }
 
+    if (simuladorAberto()) app.append(el('a', { class: 'sim-cta', href: '#simulador' }, el('b', { text: 'Simulador: e se…?' }),
+      el('span', { text: 'Escolha os resultados das últimas rodadas e veja quem é campeão, vai à Liberta ou cai.' })));
+
     // panorama em abas: uma faixa por vez
     const linhaProb = (t, v, cor, extra) => el('a', { class: 'pr', href: '#clube-' + t.id },
       escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
@@ -637,8 +640,7 @@
       ['g4', 'Liberta', 'Vaga na fase de grupos da Liberta (inclui as vagas extras que podem abrir).', () => topo('libertadores', 1, 8).map((t) => linhaProb(t, t.libertadores, 'var(--info)'))],
       ['pre', 'Pré-Liberta', `Fase preliminar da Liberta (hoje: ${ord(VG().grupos + 1)} e ${ord(VG().grupos + VG().pre)}).`, () => topo('pre_libertadores', 1, 8).map((t) => linhaProb(t, t.pre_libertadores, 'var(--teal)'))],
       ['sul', 'Sula', `Os seis seguintes fora da Liberta (hoje: ${ord(VG().grupos + VG().pre + 1)} ao ${ord(VG().grupos + VG().pre + VG().sul)}).`, () => topo('sulamericana', 1, 10).map((t) => linhaProb(t, t.sulamericana, 'var(--good)'))],
-      ['z4', 'Z4', 'Terminar entre os quatro últimos e cair para a Série B.', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))],
-      ['copa', 'Copa BR', 'Quem cair perde a vaga da Copa do Brasil 2027 pela Série A (ainda pode entrar pelo estadual ou pelo ranking da CBF).', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--muted)', rebaixadoMatematicamente(t) ? '100%' : null))],
+      ['z4', 'Z4', 'Terminar entre os quatro últimos e cair para a Série B. Quem cai também fica fora da Copa do Brasil do ano seguinte pela vaga da Série A.', () => topo('rebaixamento', 1, 10).reverse().map((t) => linhaProb(t, t.rebaixamento, 'var(--bad)', rebaixadoMatematicamente(t) ? '100%' : null))],
     ];
     const atual = faixas.find((f) => f[0] === estado.pano) || faixas[0];
     const abas = el('div', { class: 'seg seg-scroll', role: 'group', 'aria-label': 'Faixa da tabela' });
@@ -1597,6 +1599,134 @@
   }
 
   // ---------- roteamento
+  // ---------- simulador: o usuário escolhe resultados e o navegador refaz as simulações do resto
+  // aparece quando faltam 11 rodadas ou menos (todo ano)
+  const simuladorAberto = () => D && D.jogos.some((j) => !encerrado(j)) && 38 - rodadaAtual() + 1 <= 11;
+  const SIM = { escolha: {}, lib: null, base: null };
+  function poissonJS(l) { let k = 0, p = 1; const L = Math.exp(-l); do { k++; p *= Math.random(); } while (p > L); return k - 1; }
+  function rodarSimulacao(escolha, lib, n = 8000) {
+    const ids = D.times.map((t) => t.id), idx = Object.fromEntries(ids.map((t, i) => [t, i])), N = ids.length;
+    const resta = D.jogos.filter((j) => !encerrado(j) && j.previsao && idx[j.casa] != null && idx[j.fora] != null);
+    const vg = VG();
+    const copa = vg.copa && vg.copa.time != null ? idx[vg.copa.time] : null;
+    const libInfo = vg.libertadores || null;
+    const baseGrupos = vg.grupos - (libInfo && libInfo.resultado ? 1 : 0) - (vg.copa && vg.copa.rebaixado_hoje ? 1 : 0);
+    const cont = { titulo: new Float64Array(N), lib: new Float64Array(N), pre: new Float64Array(N), sul: new Float64Array(N), z4: new Float64Array(N), pts: new Float64Array(N), pos: new Float64Array(N) };
+    const pts = new Float64Array(N), vit = new Float64Array(N), sg = new Float64Array(N), pos = new Int32Array(N), ord = ids.map((_, i) => i);
+    for (let s = 0; s < n; s++) {
+      D.times.forEach((t, i) => { pts[i] = t.pts; vit[i] = t.v; sg[i] = t.sg; });
+      for (const j of resta) {
+        const h = idx[j.casa], a = idx[j.fora], want = escolha[j.id];
+        let gh, ga, tent = 0;
+        do { gh = poissonJS(j.previsao.xg_casa); ga = poissonJS(j.previsao.xg_fora); tent++; }
+        while (want && tent < 40 && !((want === 'c' && gh > ga) || (want === 'e' && gh === ga) || (want === 'f' && ga > gh)));
+        if (want && tent >= 40) { if (want === 'c') { gh = 1; ga = 0; } else if (want === 'e') { gh = ga = 1; } else { gh = 0; ga = 1; } }
+        if (gh > ga) { pts[h] += 3; vit[h]++; } else if (gh === ga) { pts[h]++; pts[a]++; } else { pts[a] += 3; vit[a]++; }
+        sg[h] += gh - ga; sg[a] += ga - gh;
+      }
+      const ch = ord.map((i) => pts[i] * 1e6 + vit[i] * 1e3 + sg[i] + Math.random() * 1e-3);
+      ord.sort((x, y) => ch[y] - ch[x]);
+      ord.forEach((i, k) => { pos[i] = k + 1; });
+      // vagas extras: campeão da Liberta já classificado e o campeão da Copa rebaixado
+      let extra = 0;
+      if (libInfo && libInfo.resultado == null) extra += (lib == null ? Math.random() < (libInfo.prob || 50) / 100 : lib) ? 1 : 0;
+      else if (libInfo && libInfo.resultado) extra += 1;
+      let caiu = false;
+      if (copa != null) { caiu = pos[copa] >= 17; if (caiu) extra += 1; }
+      const g = baseGrupos + extra;
+      for (let i = 0; i < N; i++) {
+        const p = pos[i];
+        const adj = copa != null && !caiu && p > pos[copa] ? p - 1 : p;
+        cont.pts[i] += pts[i]; cont.pos[i] += p;
+        if (p === 1) cont.titulo[i]++;
+        if (p >= 17) cont.z4[i]++;
+        if (copa != null && i === copa && !caiu) { cont.lib[i]++; continue; }
+        if (adj <= g) cont.lib[i]++;
+        else if (adj <= g + vg.pre) cont.pre[i]++;
+        else if (adj <= g + vg.pre + vg.sul) cont.sul[i]++;
+      }
+    }
+    const out = {};
+    ids.forEach((t, i) => { out[t] = { titulo: 100 * cont.titulo[i] / n, lib: 100 * cont.lib[i] / n, pre: 100 * cont.pre[i] / n, sul: 100 * cont.sul[i] / n, z4: 100 * cont.z4[i] / n, pts: cont.pts[i] / n, pos: cont.pos[i] / n }; });
+    return out;
+  }
+  function telaSimulador(app) {
+    app.append(secHead('Simulador', 'E se…?', null, 'h1'));
+    if (!simuladorAberto()) {
+      app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0', text: 'O simulador abre quando faltarem 11 rodadas para o fim do Brasileirão.' })));
+      return;
+    }
+    if (!SIM.base) SIM.base = rodarSimulacao({}, null);
+    const resta = D.jogos.filter((j) => !encerrado(j) && j.previsao).sort((a, b) => a.rodada - b.rodada || a.data.localeCompare(b.data));
+    const nEsc = () => Object.keys(SIM.escolha).length;
+    // resultado
+    const res = el('section', { id: 'sim-res' });
+    const ZONAS = [['titulo', 'Título', 'var(--accent)'], ['lib', 'Liberta', 'var(--info)'], ['pre', 'Pré-Liberta', 'var(--teal)'], ['sul', 'Sula', 'var(--good)'], ['z4', 'Z4', 'var(--bad)']];
+    if (!estado.simZona) estado.simZona = 'z4';
+    const desenhar = () => {
+      const r = rodarSimulacao(SIM.escolha, SIM.lib);
+      res.innerHTML = '';
+      const seg = el('div', { class: 'seg seg-auto', role: 'group', 'aria-label': 'Faixa' });
+      ZONAS.forEach(([k, txt]) => seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.simZona === k), text: txt, onclick: () => { estado.simZona = k; desenhar(); } })));
+      const [zk, , cor] = ZONAS.find((z) => z[0] === estado.simZona);
+      const lista = D.times.filter((t) => r[t.id][zk] >= 0.05 || SIM.base[t.id][zk] >= 0.05)
+        .sort((a, b) => r[b.id][zk] - r[a.id][zk] || r[a.id].pos - r[b.id].pos).slice(0, 12);
+      const linhas = el('div', { class: 'pr-list' });
+      lista.forEach((t) => {
+        const v = r[t.id][zk], d = v - SIM.base[t.id][zk];
+        const fmt = (x) => (x >= 99.95 ? '100%' : x < 0.05 ? '0%' : x < 1 ? '<1%' : x > 99 ? '>99%' : Math.round(x) + '%');
+        linhas.append(el('a', { class: 'pr sim-pr', href: '#clube-' + t.id }, escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
+          el('span', { class: 'pr-bar' }, el('span', { style: `width:${Math.max(v > 0 ? 2 : 0, Math.min(100, v))}%;background:${cor}` })),
+          el('span', { class: 'pr-v num', text: fmt(v) }),
+          el('span', { class: 'sim-d num ' + (Math.abs(d) < 0.5 ? '' : (d > 0) === (zk !== 'z4') ? 'sobe' : 'desce'), text: Math.abs(d) < 0.5 ? '–' : (d > 0 ? '+' : '−') + Math.round(Math.abs(d)) })));
+      });
+      if (!lista.length) linhas.append(el('p', { class: 'small', style: 'margin:0', text: 'Ninguém mais disputa esta faixa.' }));
+      res.append(secHead('Resultado', nEsc() ? `Com ${nEsc()} resultado${nEsc() > 1 ? 's' : ''} escolhido${nEsc() > 1 ? 's' : ''}` : 'Sem nenhum resultado escolhido', null),
+        seg, el('div', { class: 'card pad' }, linhas,
+          el('p', { class: 'small', style: 'margin:.6rem 0 0', text: 'Ao lado, quanto a chance mudou em relação a hoje (em pontos percentuais). Os jogos sem escolha seguem a previsão do Lima Score.' })));
+      // classificação média
+      const tab = el('div', { class: 'card sim-tab' });
+      D.times.slice().sort((a, b) => r[a.id].pos - r[b.id].pos).forEach((t, i) => {
+        tab.append(el('div', { class: 'sim-tl' }, el('span', { class: 'num sim-tp', text: String(i + 1) }), escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
+          el('span', { class: 'num small', text: `${r[t.id].pts.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} pts` })));
+      });
+      res.append(el('details', { class: 'sim-det' }, el('summary', { text: 'Classificação média simulada' }), tab));
+      barra.querySelector('b').textContent = nEsc() ? `${nEsc()} de ${resta.length} jogos escolhidos` : 'Toque nos resultados';
+    };
+    // barra fixa embaixo
+    const barra = el('div', { class: 'sim-barra' }, el('b'), el('button', { type: 'button', text: 'Ver resultado', onclick: () => document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }) }));
+    // final da Libertadores (vagas extras)
+    const lib = VG().libertadores;
+    if (lib && lib.resultado == null && lib.time != null) {
+      const sl = el('div', { class: 'seg', role: 'group', style: 'max-width:28rem' });
+      [[null, `Aleatório (${lib.prob || 50}%)`], [true, 'Sim'], [false, 'Não']].forEach(([k, txt]) => sl.append(el('button', { type: 'button', 'aria-pressed': String(SIM.lib === k), text: txt,
+        onclick: () => { SIM.lib = k; sl.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String([null, true, false][i] === k))); desenhar(); } })));
+      app.append(el('section', null, secHead('Liberta', `${T[lib.time] ? T[lib.time].nome : ''} campeão da Liberta?`, null),
+        el('p', { class: 'small', style: 'margin:-.4rem 0 .6rem', text: 'Se for campeão, abre mais uma vaga de fase de grupos pela tabela.' }), sl));
+    }
+    // jogos
+    const acoes = el('div', { class: 'sim-acoes' },
+      el('button', { type: 'button', class: 'av-copiar', text: 'Favoritos vencem', onclick: () => { resta.forEach((j) => { const p = j.previsao; SIM.escolha[j.id] = p.casa >= p.fora && p.casa >= p.empate ? 'c' : p.fora >= p.empate ? 'f' : 'e'; }); render(); } }),
+      el('button', { type: 'button', class: 'av-copiar', text: 'Limpar', onclick: () => { SIM.escolha = {}; SIM.lib = null; render(); } }));
+    app.append(acoes);
+    let rod = null, card = null;
+    resta.forEach((j) => {
+      if (j.rodada !== rod) { rod = j.rodada; card = el('div', { class: 'card sim-jogos' }); app.append(el('section', null, secHead('Rodada', `${j.rodada}ª rodada`, null), card)); }
+      const bt = (k, rot, p) => el('button', { type: 'button', class: 'sim-b' + (SIM.escolha[j.id] === k ? ' on' : ''), 'aria-pressed': String(SIM.escolha[j.id] === k),
+        onclick: (ev) => { if (SIM.escolha[j.id] === k) delete SIM.escolha[j.id]; else SIM.escolha[j.id] = k;
+          ev.currentTarget.parentElement.querySelectorAll('.sim-b').forEach((b) => { const on = b.dataset.k === SIM.escolha[j.id]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+          desenhar(); } }, el('span', { text: rot }), el('small', { class: 'num', text: Math.round(p) + '%' }));
+      const b1 = bt('c', T[j.casa] ? T[j.casa].sigla || 'Casa' : 'Casa', j.previsao.casa); b1.dataset.k = 'c';
+      const b2 = bt('e', 'Empate', j.previsao.empate); b2.dataset.k = 'e';
+      const b3 = bt('f', T[j.fora] ? T[j.fora].sigla || 'Fora' : 'Fora', j.previsao.fora); b3.dataset.k = 'f';
+      card.append(el('div', { class: 'sim-j' },
+        el('div', { class: 'sim-t' }, escudo(j.casa), el('span', { text: T[j.casa] ? T[j.casa].nome : '' }), el('span', { class: 'small sim-x', text: '×' }), el('span', { text: T[j.fora] ? T[j.fora].nome : '' }), escudo(j.fora)),
+        el('div', { class: 'sim-bs' }, b1, b2, b3)));
+    });
+    app.append(res, barra);
+    desenhar();
+  }
+
   // ---------- avisos de gol no celular (app grátis ntfy: cada tópico é um clube)
   function slugClube(nome) {
     return nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -1637,7 +1767,7 @@
     if (h.startsWith('jogo-')) return { tela: 'jogo', id: +h.slice(5) };
     if (h.startsWith('jogador-')) return { tela: 'jogador', id: h.slice(8) };
     if (h === 'artilharia') return { tela: 'jogadores' };
-    if (['inicio', 'tabela', 'rodadas', 'jogadores', 'noticias', 'arbitragem', 'avisos'].includes(h)) return { tela: h };
+    if (['inicio', 'tabela', 'rodadas', 'jogadores', 'noticias', 'arbitragem', 'avisos', 'simulador'].includes(h)) return { tela: h };
     return { tela: 'inicio' };
   }
   window.addEventListener('error', () => {
@@ -1658,6 +1788,7 @@
     else if (r.tela === 'noticias') telaNoticias(app);
     else if (r.tela === 'arbitragem') telaArbitragem(app);
     else if (r.tela === 'avisos') telaAvisos(app);
+    else if (r.tela === 'simulador') telaSimulador(app);
     else if (r.tela === 'jogo') { telaJogo(app, r.id); if (!E) carregarEstat(); }
     else telaClube(app, r.id);
     const navKey = r.tela === 'clube' ? 'tabela' : r.tela === 'jogo' ? 'rodadas' : r.tela === 'jogador' ? 'jogadores' : r.tela;

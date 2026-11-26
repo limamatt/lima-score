@@ -548,3 +548,31 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .sel-pos{padding:.55rem .9rem .25rem;font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line)}
 .sel-pos:first-child{border-top:0}
 .sel-banco{opacity:.72}
+/* simulador */
+.sim-cta{display:flex;flex-direction:column;gap:.2rem;padding:.9rem 1rem;margin:0 0 1rem;border-radius:12px;background:linear-gradient(120deg,var(--pitch),#145c38);color:var(--chalk);text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.sim-cta b{font-family:var(--display);font-size:1.25rem;text-transform:uppercase;letter-spacing:.03em}
+.sim-cta b::after{content:" →"}
+.sim-cta span{font-size:.88rem;opacity:.9}
+.sim-acoes{display:flex;gap:.5rem;margin:0 0 .4rem}
+.sim-jogos{padding:.2rem .8rem}
+.sim-j{padding:.65rem 0;border-top:1px solid var(--line)}
+.sim-j:first-child{border-top:0}
+.sim-t{display:flex;align-items:center;justify-content:center;gap:.4rem;font-weight:600;font-size:.92rem;margin-bottom:.45rem;text-align:center}
+.sim-x{color:var(--muted)}
+.sim-bs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem}
+.sim-b{display:flex;flex-direction:column;align-items:center;gap:.05rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:9px;padding:.4rem .2rem;font:inherit;font-weight:700;font-size:.85rem;cursor:pointer}
+.sim-b small{font-weight:500;color:var(--muted);font-size:.72rem}
+.sim-b.on{background:var(--pitch);border-color:var(--pitch);color:var(--chalk)}
+.sim-b.on small{color:var(--chalk);opacity:.8}
+.sim-pr{grid-template-columns:24px minmax(0,7rem) 1fr 3rem 2.2rem}
+.sim-d{font-size:.78rem;font-weight:700;text-align:right;color:var(--muted)}
+.sim-d.sobe{color:var(--good)}.sim-d.desce{color:var(--bad)}
+.sim-det{margin:.8rem 0 5rem}
+.sim-det summary{cursor:pointer;font-weight:600;padding:.4rem 0}
+.sim-tab{padding:.3rem .8rem}
+.sim-tl{display:grid;grid-template-columns:1.6rem 24px 1fr auto;gap:.5rem;align-items:center;padding:.3rem 0;border-top:1px solid var(--line)}
+.sim-tl:first-child{border-top:0}
+.sim-tp{color:var(--muted);text-align:right}
+.sim-barra{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:.8rem;padding:.45rem .5rem .45rem 1rem;border-radius:999px;background:var(--fg);color:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:.85rem;white-space:nowrap}
+.sim-barra button{border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;padding:.4rem .8rem;cursor:pointer}
+@media (min-width:900px){.sim-barra{bottom:1.2rem}}
