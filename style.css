@@ -576,3 +576,21 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .sim-barra{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:.8rem;padding:.45rem .5rem .45rem 1rem;border-radius:999px;background:var(--fg);color:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:.85rem;white-space:nowrap}
 .sim-barra button{border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;padding:.4rem .8rem;cursor:pointer}
 @media (min-width:900px){.sim-barra{bottom:1.2rem}}
+.sim-placar{display:flex;align-items:center;justify-content:center;gap:.35rem;margin-top:.45rem}
+.sim-placar .small{margin-right:.3rem}
+.sim-placar b{min-width:1.4rem;text-align:center;font-family:var(--display);font-size:1.25rem}
+.sim-step{width:1.9rem;height:1.9rem;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-weight:700;font-size:1rem;cursor:pointer;line-height:1}
+.sim-resumo{display:grid;grid-template-columns:1fr;gap:.5rem;margin-bottom:.7rem}
+.sim-chip{display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.sim-chip span{display:flex;flex-direction:column}
+.sim-chip small{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:.7rem}
+.sim-chip.campeao{border-color:var(--accent)}
+.sim-chip.caem{border-color:color-mix(in srgb,var(--bad) 55%,transparent)}
+.sim-fin{grid-template-columns:1.6rem 24px minmax(0,1fr) 2rem 3.4rem 6.2rem;text-decoration:none;color:inherit;border-left:3px solid transparent;padding-left:.3rem}
+.sim-fin.z-titulo{border-left-color:var(--accent)}.sim-fin.z-lib{border-left-color:var(--info)}.sim-fin.z-pre{border-left-color:var(--teal)}.sim-fin.z-sul{border-left-color:var(--good)}.sim-fin.z-z4{border-left-color:var(--bad)}
+.sim-z{white-space:nowrap;font-size:.72rem;font-weight:700;text-align:right;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.sim-fin.z-titulo .sim-z{color:var(--accent)}.sim-fin.z-z4 .sim-z{color:var(--bad)}
+.sim-mov{font-size:.72rem;font-weight:700;text-align:center}
+.sim-mov.sobe{color:var(--good)}.sim-mov.desce{color:var(--bad)}
+@media (max-width:480px){.sim-fin{grid-template-columns:1.3rem 22px minmax(0,1fr) 1.6rem 3rem 5.4rem;gap:.3rem}.sim-fin .sim-z{font-size:.6rem}}
+.sim-pts{font-weight:700;font-size:.85rem;text-align:right}

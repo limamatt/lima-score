@@ -1602,52 +1602,65 @@
   // ---------- simulador: o usuário escolhe resultados e o navegador refaz as simulações do resto
   // aparece quando faltam 11 rodadas ou menos (todo ano)
   const simuladorAberto = () => D && D.jogos.some((j) => !encerrado(j)) && 38 - rodadaAtual() + 1 <= 11;
+  // escolha[jogo] = [gols do mandante, gols do visitante]: o que você escolhe acontece exatamente assim
   const SIM = { escolha: {}, lib: null, base: null };
+  const resultadoDe = (pl) => (pl[0] > pl[1] ? 'c' : pl[0] === pl[1] ? 'e' : 'f');
   function poissonJS(l) { let k = 0, p = 1; const L = Math.exp(-l); do { k++; p *= Math.random(); } while (p > L); return k - 1; }
-  function rodarSimulacao(escolha, lib, n = 8000) {
-    const ids = D.times.map((t) => t.id), idx = Object.fromEntries(ids.map((t, i) => [t, i])), N = ids.length;
+  function simContexto() {
+    const ids = D.times.map((t) => t.id), idx = Object.fromEntries(ids.map((t, i) => [t, i]));
     const resta = D.jogos.filter((j) => !encerrado(j) && j.previsao && idx[j.casa] != null && idx[j.fora] != null);
     const vg = VG();
-    const copa = vg.copa && vg.copa.time != null ? idx[vg.copa.time] : null;
     const libInfo = vg.libertadores || null;
-    const baseGrupos = vg.grupos - (libInfo && libInfo.resultado ? 1 : 0) - (vg.copa && vg.copa.rebaixado_hoje ? 1 : 0);
+    return { ids, idx, N: ids.length, resta, vg, libInfo,
+      copa: vg.copa && vg.copa.time != null ? idx[vg.copa.time] : null,
+      baseGrupos: vg.grupos - (libInfo && libInfo.resultado ? 1 : 0) - (vg.copa && vg.copa.rebaixado_hoje ? 1 : 0) };
+  }
+  // faixa de cada posição numa tabela final (respeita a vaga do campeão da Copa e da Liberta)
+  function faixasFinais(C, pos, libCampeao) {
+    let extra = (C.libInfo && C.libInfo.resultado) || (C.libInfo && C.libInfo.resultado == null && libCampeao) ? 1 : 0;
+    const caiu = C.copa != null && pos[C.copa] >= 17;
+    if (caiu) extra += 1;
+    const g = C.baseGrupos + extra, out = new Array(C.N);
+    for (let i = 0; i < C.N; i++) {
+      const p = pos[i], adj = C.copa != null && !caiu && p > pos[C.copa] ? p - 1 : p;
+      out[i] = p >= 17 ? 'z4' : (C.copa != null && i === C.copa && !caiu) ? 'lib' : adj <= g ? 'lib' : adj <= g + C.vg.pre ? 'pre' : adj <= g + C.vg.pre + C.vg.sul ? 'sul' : '';
+    }
+    return out;
+  }
+  // uma temporada: jogos escolhidos com o placar escolhido; os outros sorteados pela previsão
+  function jogarTemporada(C, escolha, sortear) {
+    const pts = new Float64Array(C.N), vit = new Float64Array(C.N), sg = new Float64Array(C.N), gp = new Float64Array(C.N);
+    D.times.forEach((t, i) => { pts[i] = t.pts; vit[i] = t.v; sg[i] = t.sg; gp[i] = t.gp; });
+    for (const j of C.resta) {
+      const h = C.idx[j.casa], a = C.idx[j.fora], pl = escolha[j.id];
+      let gh, ga;
+      if (pl) [gh, ga] = pl;
+      else if (sortear) { gh = poissonJS(j.previsao.xg_casa); ga = poissonJS(j.previsao.xg_fora); } else continue;
+      if (gh > ga) { pts[h] += 3; vit[h]++; } else if (gh === ga) { pts[h]++; pts[a]++; } else { pts[a] += 3; vit[a]++; }
+      sg[h] += gh - ga; sg[a] += ga - gh; gp[h] += gh; gp[a] += ga;
+    }
+    // desempate: pontos, vitórias, saldo, gols marcados
+    const ord = C.ids.map((_, i) => i).sort((x, y) => pts[y] - pts[x] || vit[y] - vit[x] || sg[y] - sg[x] || gp[y] - gp[x]
+      || (sortear ? Math.random() - 0.5 : D.times[x].nome.localeCompare(D.times[y].nome)));
+    const pos = new Int32Array(C.N);
+    ord.forEach((i, k) => { pos[i] = k + 1; });
+    return { pts, vit, sg, gp, pos, ord };
+  }
+  function rodarSimulacao(escolha, lib, n = 8000) {
+    const C = simContexto(), N = C.N;
     const cont = { titulo: new Float64Array(N), lib: new Float64Array(N), pre: new Float64Array(N), sul: new Float64Array(N), z4: new Float64Array(N), pts: new Float64Array(N), pos: new Float64Array(N) };
-    const pts = new Float64Array(N), vit = new Float64Array(N), sg = new Float64Array(N), pos = new Int32Array(N), ord = ids.map((_, i) => i);
     for (let s = 0; s < n; s++) {
-      D.times.forEach((t, i) => { pts[i] = t.pts; vit[i] = t.v; sg[i] = t.sg; });
-      for (const j of resta) {
-        const h = idx[j.casa], a = idx[j.fora], want = escolha[j.id];
-        let gh, ga, tent = 0;
-        do { gh = poissonJS(j.previsao.xg_casa); ga = poissonJS(j.previsao.xg_fora); tent++; }
-        while (want && tent < 40 && !((want === 'c' && gh > ga) || (want === 'e' && gh === ga) || (want === 'f' && ga > gh)));
-        if (want && tent >= 40) { if (want === 'c') { gh = 1; ga = 0; } else if (want === 'e') { gh = ga = 1; } else { gh = 0; ga = 1; } }
-        if (gh > ga) { pts[h] += 3; vit[h]++; } else if (gh === ga) { pts[h]++; pts[a]++; } else { pts[a] += 3; vit[a]++; }
-        sg[h] += gh - ga; sg[a] += ga - gh;
-      }
-      const ch = ord.map((i) => pts[i] * 1e6 + vit[i] * 1e3 + sg[i] + Math.random() * 1e-3);
-      ord.sort((x, y) => ch[y] - ch[x]);
-      ord.forEach((i, k) => { pos[i] = k + 1; });
-      // vagas extras: campeão da Liberta já classificado e o campeão da Copa rebaixado
-      let extra = 0;
-      if (libInfo && libInfo.resultado == null) extra += (lib == null ? Math.random() < (libInfo.prob || 50) / 100 : lib) ? 1 : 0;
-      else if (libInfo && libInfo.resultado) extra += 1;
-      let caiu = false;
-      if (copa != null) { caiu = pos[copa] >= 17; if (caiu) extra += 1; }
-      const g = baseGrupos + extra;
+      const r = jogarTemporada(C, escolha, true);
+      const libCamp = C.libInfo && C.libInfo.resultado == null ? (lib == null ? Math.random() < (C.libInfo.prob || 50) / 100 : lib) : false;
+      const fx = faixasFinais(C, r.pos, libCamp);
       for (let i = 0; i < N; i++) {
-        const p = pos[i];
-        const adj = copa != null && !caiu && p > pos[copa] ? p - 1 : p;
-        cont.pts[i] += pts[i]; cont.pos[i] += p;
-        if (p === 1) cont.titulo[i]++;
-        if (p >= 17) cont.z4[i]++;
-        if (copa != null && i === copa && !caiu) { cont.lib[i]++; continue; }
-        if (adj <= g) cont.lib[i]++;
-        else if (adj <= g + vg.pre) cont.pre[i]++;
-        else if (adj <= g + vg.pre + vg.sul) cont.sul[i]++;
+        cont.pts[i] += r.pts[i]; cont.pos[i] += r.pos[i];
+        if (r.pos[i] === 1) cont.titulo[i]++;
+        if (fx[i]) cont[fx[i]][i]++;
       }
     }
     const out = {};
-    ids.forEach((t, i) => { out[t] = { titulo: 100 * cont.titulo[i] / n, lib: 100 * cont.lib[i] / n, pre: 100 * cont.pre[i] / n, sul: 100 * cont.sul[i] / n, z4: 100 * cont.z4[i] / n, pts: cont.pts[i] / n, pos: cont.pos[i] / n }; });
+    C.ids.forEach((t, i) => { out[t] = { titulo: 100 * cont.titulo[i] / n, lib: 100 * cont.lib[i] / n, pre: 100 * cont.pre[i] / n, sul: 100 * cont.sul[i] / n, z4: 100 * cont.z4[i] / n, pts: cont.pts[i] / n, pos: cont.pos[i] / n }; });
     return out;
   }
   function telaSimulador(app) {
@@ -1657,71 +1670,106 @@
       return;
     }
     if (!SIM.base) SIM.base = rodarSimulacao({}, null);
-    const resta = D.jogos.filter((j) => !encerrado(j) && j.previsao).sort((a, b) => a.rodada - b.rodada || a.data.localeCompare(b.data));
-    const nEsc = () => Object.keys(SIM.escolha).length;
-    // resultado
+    const C = simContexto();
+    const resta = C.resta.slice().sort((a, b) => a.rodada - b.rodada || a.data.localeCompare(b.data));
+    const nEsc = () => resta.filter((j) => SIM.escolha[j.id]).length;
+    const libAberta = C.libInfo && C.libInfo.resultado == null && C.libInfo.time != null;
     const res = el('section', { id: 'sim-res' });
     const ZONAS = [['titulo', 'Título', 'var(--accent)'], ['lib', 'Liberta', 'var(--info)'], ['pre', 'Pré-Liberta', 'var(--teal)'], ['sul', 'Sula', 'var(--good)'], ['z4', 'Z4', 'var(--bad)']];
+    const ROT = { lib: 'Liberta', pre: 'Pré-Liberta', sul: 'Sula', z4: 'Rebaixado' };
     if (!estado.simZona) estado.simZona = 'z4';
-    const desenhar = () => {
+
+    // todos os jogos escolhidos: a tabela final é exatamente a dos seus placares
+    const tabelaFinal = () => {
+      const r = jogarTemporada(C, SIM.escolha, false);
+      const fx = faixasFinais(C, r.pos, SIM.lib === true);
+      const camp = D.times[r.ord[0]], caem = r.ord.slice(16).map((i) => D.times[i].nome);
+      res.append(secHead('Resultado', 'Tabela final com os seus placares', null),
+        el('div', { class: 'sim-resumo' },
+          el('div', { class: 'sim-chip campeao' }, escudo(camp.id), el('span', null, el('small', { text: 'Campeão' }), el('b', { text: camp.nome }))),
+          el('div', { class: 'sim-chip caem' }, el('span', null, el('small', { text: 'Rebaixados' }), el('b', { text: caem.join(', ') })))));
+      const tab = el('div', { class: 'card sim-tab' });
+      r.ord.forEach((i, k) => {
+        const t = D.times[i], z = k === 0 ? 'titulo' : fx[i];
+        const dPos = t.pos - (k + 1);
+        tab.append(el('a', { class: 'sim-tl sim-fin z-' + (z || 'nada'), href: '#clube-' + t.id },
+          el('span', { class: 'num sim-tp', text: String(k + 1) }), escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
+          el('span', { class: 'sim-mov num ' + (dPos > 0 ? 'sobe' : dPos < 0 ? 'desce' : ''), text: dPos > 0 ? `▲${dPos}` : dPos < 0 ? `▼${-dPos}` : '' }),
+          el('span', { class: 'num sim-pts', title: `${r.vit[i]} vitórias · saldo ${r.sg[i] > 0 ? '+' : ''}${r.sg[i]}`, text: `${r.pts[i]} pts` }),
+          el('span', { class: 'sim-z', text: k === 0 ? 'Campeão' : (C.copa === i && z === 'lib' && k + 1 > 6) ? 'Liberta (Copa)' : ROT[z] || '' })));
+      });
+      res.append(tab, el('p', { class: 'small', style: 'margin:.6rem 0 5rem', text: (libAberta && SIM.lib == null
+        ? `Considerando que o ${T[C.libInfo.time] ? T[C.libInfo.time].nome : ''} não ganha a Liberta. Marque "Sim" lá em cima para ver a vaga extra. `
+        : '') + 'Desempate: pontos, vitórias, saldo e gols marcados. ▲▼ = posições ganhas ou perdidas em relação à tabela de hoje.' }));
+    };
+    // faltam jogos: os que você escolheu valem exatamente; os outros são sorteados 8 mil vezes
+    const chances = () => {
       const r = rodarSimulacao(SIM.escolha, SIM.lib);
-      res.innerHTML = '';
       const seg = el('div', { class: 'seg seg-auto', role: 'group', 'aria-label': 'Faixa' });
       ZONAS.forEach(([k, txt]) => seg.append(el('button', { type: 'button', 'aria-pressed': String(estado.simZona === k), text: txt, onclick: () => { estado.simZona = k; desenhar(); } })));
       const [zk, , cor] = ZONAS.find((z) => z[0] === estado.simZona);
       const lista = D.times.filter((t) => r[t.id][zk] >= 0.05 || SIM.base[t.id][zk] >= 0.05)
         .sort((a, b) => r[b.id][zk] - r[a.id][zk] || r[a.id].pos - r[b.id].pos).slice(0, 12);
       const linhas = el('div', { class: 'pr-list' });
+      const fmt = (x) => (x >= 99.95 ? '100%' : x < 0.05 ? '0%' : x < 1 ? '<1%' : x > 99 ? '>99%' : Math.round(x) + '%');
       lista.forEach((t) => {
         const v = r[t.id][zk], d = v - SIM.base[t.id][zk];
-        const fmt = (x) => (x >= 99.95 ? '100%' : x < 0.05 ? '0%' : x < 1 ? '<1%' : x > 99 ? '>99%' : Math.round(x) + '%');
         linhas.append(el('a', { class: 'pr sim-pr', href: '#clube-' + t.id }, escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
           el('span', { class: 'pr-bar' }, el('span', { style: `width:${Math.max(v > 0 ? 2 : 0, Math.min(100, v))}%;background:${cor}` })),
           el('span', { class: 'pr-v num', text: fmt(v) }),
           el('span', { class: 'sim-d num ' + (Math.abs(d) < 0.5 ? '' : (d > 0) === (zk !== 'z4') ? 'sobe' : 'desce'), text: Math.abs(d) < 0.5 ? '–' : (d > 0 ? '+' : '−') + Math.round(Math.abs(d)) })));
       });
       if (!lista.length) linhas.append(el('p', { class: 'small', style: 'margin:0', text: 'Ninguém mais disputa esta faixa.' }));
-      res.append(secHead('Resultado', nEsc() ? `Com ${nEsc()} resultado${nEsc() > 1 ? 's' : ''} escolhido${nEsc() > 1 ? 's' : ''}` : 'Sem nenhum resultado escolhido', null),
+      const falta = resta.length - nEsc();
+      res.append(secHead('Resultado', `Faltam ${falta} jogo${falta > 1 ? 's' : ''} para cravar a tabela final`, null),
         seg, el('div', { class: 'card pad' }, linhas,
-          el('p', { class: 'small', style: 'margin:.6rem 0 0', text: 'Ao lado, quanto a chance mudou em relação a hoje (em pontos percentuais). Os jogos sem escolha seguem a previsão do Lima Score.' })));
-      // classificação média
+          el('p', { class: 'small', style: 'margin:.6rem 0 0', text: 'Os jogos que você escolheu acontecem exatamente com o placar escolhido. Os que faltam são sorteados pela previsão do Lima Score, por isso ainda aparecem chances. Ao lado, quanto a chance mudou em relação a hoje.' })));
       const tab = el('div', { class: 'card sim-tab' });
       D.times.slice().sort((a, b) => r[a.id].pos - r[b.id].pos).forEach((t, i) => {
         tab.append(el('div', { class: 'sim-tl' }, el('span', { class: 'num sim-tp', text: String(i + 1) }), escudo(t.id), el('span', { class: 'pr-n', text: t.nome }),
           el('span', { class: 'num small', text: `${r[t.id].pts.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} pts` })));
       });
       res.append(el('details', { class: 'sim-det' }, el('summary', { text: 'Classificação média simulada' }), tab));
-      barra.querySelector('b').textContent = nEsc() ? `${nEsc()} de ${resta.length} jogos escolhidos` : 'Toque nos resultados';
     };
-    // barra fixa embaixo
+    const desenhar = () => {
+      res.innerHTML = '';
+      if (nEsc() === resta.length) tabelaFinal(); else chances();
+      barra.querySelector('b').textContent = nEsc() === resta.length ? 'Tabela final pronta' : nEsc() ? `${nEsc()} de ${resta.length} jogos escolhidos` : 'Toque nos resultados';
+    };
     const barra = el('div', { class: 'sim-barra' }, el('b'), el('button', { type: 'button', text: 'Ver resultado', onclick: () => document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }) }));
-    // final da Libertadores (vagas extras)
-    const lib = VG().libertadores;
-    if (lib && lib.resultado == null && lib.time != null) {
+    if (libAberta) {
+      const lib = C.libInfo;
       const sl = el('div', { class: 'seg', role: 'group', style: 'max-width:28rem' });
       [[null, `Aleatório (${lib.prob || 50}%)`], [true, 'Sim'], [false, 'Não']].forEach(([k, txt]) => sl.append(el('button', { type: 'button', 'aria-pressed': String(SIM.lib === k), text: txt,
         onclick: () => { SIM.lib = k; sl.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String([null, true, false][i] === k))); desenhar(); } })));
       app.append(el('section', null, secHead('Liberta', `${T[lib.time] ? T[lib.time].nome : ''} campeão da Liberta?`, null),
         el('p', { class: 'small', style: 'margin:-.4rem 0 .6rem', text: 'Se for campeão, abre mais uma vaga de fase de grupos pela tabela.' }), sl));
     }
-    // jogos
-    const acoes = el('div', { class: 'sim-acoes' },
-      el('button', { type: 'button', class: 'av-copiar', text: 'Favoritos vencem', onclick: () => { resta.forEach((j) => { const p = j.previsao; SIM.escolha[j.id] = p.casa >= p.fora && p.casa >= p.empate ? 'c' : p.fora >= p.empate ? 'f' : 'e'; }); render(); } }),
-      el('button', { type: 'button', class: 'av-copiar', text: 'Limpar', onclick: () => { SIM.escolha = {}; SIM.lib = null; render(); } }));
-    app.append(acoes);
+    const padrao = { c: [1, 0], e: [1, 1], f: [0, 1] };
+    app.append(el('div', { class: 'sim-acoes' },
+      el('button', { type: 'button', class: 'av-copiar', text: 'Favoritos vencem', onclick: () => { resta.forEach((j) => { const p = j.previsao; SIM.escolha[j.id] = (j.previsao.placar || '').split(' x ').map(Number).filter((x) => !isNaN(x)).length === 2 ? j.previsao.placar.split(' x ').map(Number) : padrao[p.casa >= p.fora && p.casa >= p.empate ? 'c' : p.fora >= p.empate ? 'f' : 'e']; }); render(); } }),
+      el('button', { type: 'button', class: 'av-copiar', text: 'Limpar', onclick: () => { SIM.escolha = {}; SIM.lib = null; render(); } })));
     let rod = null, card = null;
     resta.forEach((j) => {
       if (j.rodada !== rod) { rod = j.rodada; card = el('div', { class: 'card sim-jogos' }); app.append(el('section', null, secHead('Rodada', `${j.rodada}ª rodada`, null), card)); }
-      const bt = (k, rot, p) => el('button', { type: 'button', class: 'sim-b' + (SIM.escolha[j.id] === k ? ' on' : ''), 'aria-pressed': String(SIM.escolha[j.id] === k),
-        onclick: (ev) => { if (SIM.escolha[j.id] === k) delete SIM.escolha[j.id]; else SIM.escolha[j.id] = k;
-          ev.currentTarget.parentElement.querySelectorAll('.sim-b').forEach((b) => { const on = b.dataset.k === SIM.escolha[j.id]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-          desenhar(); } }, el('span', { text: rot }), el('small', { class: 'num', text: Math.round(p) + '%' }));
-      const b1 = bt('c', T[j.casa] ? T[j.casa].sigla || 'Casa' : 'Casa', j.previsao.casa); b1.dataset.k = 'c';
-      const b2 = bt('e', 'Empate', j.previsao.empate); b2.dataset.k = 'e';
-      const b3 = bt('f', T[j.fora] ? T[j.fora].sigla || 'Fora' : 'Fora', j.previsao.fora); b3.dataset.k = 'f';
-      card.append(el('div', { class: 'sim-j' },
-        el('div', { class: 'sim-t' }, escudo(j.casa), el('span', { text: T[j.casa] ? T[j.casa].nome : '' }), el('span', { class: 'small sim-x', text: '×' }), el('span', { text: T[j.fora] ? T[j.fora].nome : '' }), escudo(j.fora)),
-        el('div', { class: 'sim-bs' }, b1, b2, b3)));
+      const caixa = el('div', { class: 'sim-j' });
+      const montar = () => {
+        caixa.innerHTML = '';
+        const pl = SIM.escolha[j.id], k = pl ? resultadoDe(pl) : null;
+        const bt = (kk, rot, p) => el('button', { type: 'button', class: 'sim-b' + (k === kk ? ' on' : ''), 'aria-pressed': String(k === kk),
+          onclick: () => { if (k === kk) delete SIM.escolha[j.id]; else SIM.escolha[j.id] = padrao[kk].slice(); montar(); desenhar(); } },
+          el('span', { text: rot }), el('small', { class: 'num', text: Math.round(p) + '%' }));
+        const passo = (lado, dlt) => el('button', { type: 'button', class: 'sim-step', 'aria-label': (dlt > 0 ? 'Mais' : 'Menos') + ' um gol',
+          onclick: () => { const v = SIM.escolha[j.id].slice(); v[lado] = Math.max(0, Math.min(15, v[lado] + dlt)); SIM.escolha[j.id] = v; montar(); desenhar(); } }, dlt > 0 ? '+' : '−');
+        caixa.append(el('div', { class: 'sim-t' }, escudo(j.casa), el('span', { text: T[j.casa] ? T[j.casa].nome : '' }), el('span', { class: 'small sim-x', text: '×' }), el('span', { text: T[j.fora] ? T[j.fora].nome : '' }), escudo(j.fora)),
+          el('div', { class: 'sim-bs' }, bt('c', T[j.casa] ? T[j.casa].sigla || 'Casa' : 'Casa', j.previsao.casa), bt('e', 'Empate', j.previsao.empate), bt('f', T[j.fora] ? T[j.fora].sigla || 'Fora' : 'Fora', j.previsao.fora)),
+          pl ? el('div', { class: 'sim-placar' }, el('span', { class: 'small', text: 'Placar' }),
+            passo(0, -1), el('b', { class: 'num', text: String(pl[0]) }), passo(0, 1),
+            el('span', { class: 'sim-x', text: '×' }),
+            passo(1, -1), el('b', { class: 'num', text: String(pl[1]) }), passo(1, 1)) : '');
+      };
+      montar();
+      card.append(caixa);
     });
     app.append(res, barra);
     desenhar();
