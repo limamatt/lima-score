@@ -992,7 +992,8 @@
   function selecao(app) {
     if (!P) { app.append(el('p', { class: 'small', text: 'Carregando jogadores…' })); carregarJogadores(); return; }
     const todos = P.jogadores || [];
-    const nota = notasPorFuncao(todos);
+    // nota média por jogo, na mesma escala do melhor do jogo (Sofascore): só quem tem minutos e jogos suficientes
+    const nota = new Map(todos.filter((y) => y.nota && (y.minutos || 0) >= MIN_SELECAO && (y.nota_jogos || 0) >= 10 && y.pos).map((y) => [y.id, y.nota]));
     const usados = new Set();
     const melhores = (filtro, n) => {
       const lista = todos.filter((y) => nota.has(y.id) && filtro(y) && !usados.has(y.id))
@@ -1014,9 +1015,10 @@
     ];
     const V = Object.fromEntries(vagas);
     const curto = (n) => { const ps = (n || '').trim().split(/\s+/); return ps.length === 1 || n.length <= 11 ? n : ps[ps.length - 1].length > 2 ? ps[ps.length - 1] : ps.slice(-2).join(' '); };
-    const cor = (v) => (v >= 75 ? 'var(--good)' : v >= 55 ? 'var(--accent)' : 'var(--muted)');
-    const jog = (y) => (y ? el('a', { class: 'cp-j sel-j', href: '#jogador-' + y.id, title: `${y.nome} · ${T[y.clube] ? T[y.clube].nome : ''} · nota ${nota.get(y.id)}` },
-      el('span', { class: 'sel-esc' }, escudo(y.clube, 'md'), el('b', { class: 'sel-nota num', style: `background:${cor(nota.get(y.id))}`, text: String(nota.get(y.id)) })),
+    const cor = (v) => (v >= 7.3 ? 'var(--good)' : v >= 7 ? 'var(--accent)' : 'var(--muted)');
+    const nf = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const jog = (y) => (y ? el('a', { class: 'cp-j sel-j', href: '#jogador-' + y.id, title: `${y.nome} · ${T[y.clube] ? T[y.clube].nome : ''} · nota ${nf(nota.get(y.id))}` },
+      el('span', { class: 'sel-esc' }, escudo(y.clube, 'md'), el('b', { class: 'sel-nota num', style: `background:${cor(nota.get(y.id))}`, text: nf(nota.get(y.id)) })),
       el('span', { class: 'cp-nome', text: curto(y.nome) })) : el('div', { class: 'cp-j' }));
     const pontas = V.Pontas.esc, meias = V.Meias.esc;
     const linhas = [
@@ -1038,11 +1040,11 @@
           el('span', { class: 'rk num', text: i < esc.length ? '★' : String(i + 1) }),
           el('div', { class: 'who' }, el('a', { class: 'pl-nome', href: '#jogador-' + y.id }, el('b', { text: y.nome })),
             el('span', { class: 'small' }, escudo(y.clube), el('a', { href: '#clube-' + y.clube, text: T[y.clube] ? T[y.clube].nome : '' }), ` · ${y.minutos.toLocaleString('pt-BR')} min`)),
-          el('div', { class: 'stat' }, el('div', { class: 'big num', style: `color:${cor(nota.get(y.id))}` }, String(nota.get(y.id)), el('small', { text: 'nota' })))));
+          el('div', { class: 'stat' }, el('div', { class: 'big num', style: `color:${cor(nota.get(y.id))}` }, nf(nota.get(y.id)), el('small', { text: 'nota' })))));
       });
     });
     app.append(el('section', null, secHead('Posições', 'Titulares e os próximos da fila', null), card));
-    app.append(el('p', { class: 'small', text: `A nota (0 a 100) é a média de quanto o jogador supera os outros da mesma função em cada item do scout dele (gols, xG, passes para finalização, defesas, gols sofridos, cartões…), contando só quem jogou pelo menos ${MIN_SELECAO.toLocaleString('pt-BR')} minutos. Atualiza a cada rodada.` }));
+    app.append(el('p', { class: 'small', text: `A nota é a média das notas de cada jogo, na mesma escala do melhor do jogo (a do Sofascore: todos começam em 6,5). Entra quem jogou pelo menos ${MIN_SELECAO.toLocaleString('pt-BR')} minutos e 10 jogos. Atualiza a cada rodada.` }));
   }
 
   // gols úteis: gols que deixam o time exatamente 1 gol à frente (1x0, 2x1, 3x2...)

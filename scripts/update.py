@@ -363,6 +363,21 @@ def montar_jogadores(saida_jogos):
                 nomes[_sem_acento(p.get("nome"))] = p["id"]
         def quem(nome):
             return nomes.get(nome or "") or nomes.get(_sem_acento(nome))
+        # nota do jogo (escala do Sofascore, a mesma do melhor do jogo): média na temporada
+        try:
+            from estatisticas import notas_do_jogo
+            ids_lado = {}
+            for lado in ("casa", "fora"):
+                for p in lados.get(lado) or []:
+                    ids_lado[(lado, p.get("nome"))] = p["id"]
+            for x in notas_do_jogo(lados, {"casa": jg["gols_casa"], "fora": jg["gols_fora"]}, lances_jogo.get(jid, [])):
+                pid = ids_lado.get((x["lado"], x["nome"]))
+                if pid in jog and x["minutos"] >= 30:
+                    r = jog[pid]
+                    r["nota_soma"] = round(r.get("nota_soma", 0) + x["nota"], 2)
+                    r["nota_jogos"] = r.get("nota_jogos", 0) + 1
+        except Exception as e:
+            print(f"Notas dos jogadores: {e.__class__.__name__}: {e}")
         # gols úteis: gols que deixam o time exatamente 1 gol à frente (1x0, 2x1, 3x2...),
         # ou seja, os que tiram o time do empate. Gol contra muda o placar mas não conta para ninguém.
         gols_jogo = [l for l in lances_jogo.get(jid, []) if l.get("tipo") == "gol"]
@@ -443,6 +458,8 @@ def montar_jogadores(saida_jogos):
             m[3] = round(m[3] * fator, 3)
     saida = []
     for r in jog.values():
+        if r.get("nota_jogos"):
+            r["nota"] = round(r.pop("nota_soma") / r["nota_jogos"], 2)
         r["pos"] = max(r["pos"], key=r["pos"].get) if r["pos"] else None
         r["ultimos"] = r["ultimos"][-5:]
         saida.append({k: v for k, v in r.items() if v not in (0, None) or k in ("jogos", "gols", "assist", "titular")})
