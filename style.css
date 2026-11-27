@@ -602,3 +602,18 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .dq-como{margin:.3rem 0 0;color:var(--muted);font-size:.72rem}
 .mapa-calor{display:block;width:45%;max-width:13rem;min-width:9rem;height:auto;border-radius:10px;margin:0 auto}
 @media (max-width:560px){.seg.seg-jog{grid-auto-flow:row;grid-template-columns:repeat(6,1fr)}.seg.seg-jog button{grid-column:span 2;white-space:nowrap;font-size:.82rem}.seg.seg-jog button:nth-child(n+4){grid-column:span 3}}
+/* simulador: uma rodada por vez */
+.sim-pag{margin-top:.4rem}
+.sim-abas{display:flex;gap:.35rem;overflow-x:auto;padding:.2rem 0 .6rem;scrollbar-width:none}
+.sim-abas::-webkit-scrollbar{display:none}
+.sim-aba{flex:none;display:flex;align-items:center;gap:.25rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:.35rem .75rem;font:inherit;font-weight:700;font-size:.85rem;cursor:pointer}
+.sim-aba small{color:var(--good);font-weight:800}
+.sim-aba.on{background:var(--pitch);border-color:var(--pitch);color:var(--chalk)}
+.sim-aba.on small{color:var(--chalk)}
+.sim-cab{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;margin:.2rem 0 .5rem;scroll-margin-top:5rem}
+.sim-rod{margin:0;font-family:var(--display);font-size:1.5rem;text-transform:uppercase;letter-spacing:.02em}
+.sim-nav{display:flex;gap:.5rem;margin:.7rem 0 1.2rem}
+.sim-nav button{flex:1;border-radius:10px;padding:.7rem .6rem;font:inherit;font-weight:700;font-size:.9rem;cursor:pointer}
+.sim-ant{border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.sim-ant[disabled]{opacity:.4;cursor:default}
+.sim-prox{border:0;background:var(--pitch);color:var(--chalk)}
