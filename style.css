@@ -617,3 +617,8 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .sim-ant{border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 .sim-ant[disabled]{opacity:.4;cursor:default}
 .sim-prox{border:0;background:var(--pitch);color:var(--chalk)}
+.sim-box{display:flex;align-items:center;gap:1rem;padding:1.1rem 1.2rem;border-radius:14px;background:linear-gradient(125deg,var(--pitch) 0%,#178048 100%);color:var(--chalk);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.sim-box p{margin:0;flex:1;font-size:.95rem;line-height:1.4}
+.sim-btn{flex:none;display:inline-flex;align-items:center;gap:.5rem;padding:.8rem 1.3rem;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:800;font-size:1.35rem;text-transform:uppercase;letter-spacing:.02em;text-decoration:none;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.sim-btn:hover{filter:brightness(1.06)}
+@media (max-width:520px){.sim-box{flex-direction:column;align-items:stretch;text-align:left}.sim-btn{justify-content:center}}
