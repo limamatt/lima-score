@@ -1755,7 +1755,7 @@
     const atrasado = (j) => j.rodada < rAt || new Date(j.data).getTime() > tip[j.rodada] + 7 * 864e5;
     const grp = (j) => (atrasado(j) ? 'atr' : j.rodada);
     const ordem = (j) => (atrasado(j) ? 0 : j.rodada);
-    const resta = C.resta.slice().sort((a, b) => ordem(a) - ordem(b) || a.data.localeCompare(b.data));
+    const resta = C.resta.slice().sort((a, b) => ordem(a) - ordem(b) || (atrasado(a) ? a.rodada - b.rodada : 0) || a.data.localeCompare(b.data));
     const nAtr = resta.filter(atrasado).length;
     const nEsc = () => resta.filter((j) => SIM.escolha[j.id]).length;
     const libAberta = C.libInfo && C.libInfo.resultado == null && C.libInfo.time != null;
@@ -1843,7 +1843,8 @@
       el('button', { type: 'button', class: 'av-copiar', text: 'Limpar', onclick: () => { SIM.escolha = {}; SIM.lib = null; SIM.pag = null; render(); } })));
     if (nAtr) app.append(el('button', { type: 'button', class: 'sim-aviso', onclick: () => { SIM.pag = 0; render(); } },
       el('b', { text: `⚠ ${nAtr} jogo${nAtr > 1 ? 's' : ''} atrasado${nAtr > 1 ? 's' : ''}` }),
-      el('span', { text: ` (${[...new Set(resta.filter(atrasado).map((j) => j.rodada + 'ª'))].join(', ')} rodada). Eles ficam juntos na primeira aba para você não esquecer. Toque para preencher.` })));
+      el('span', { text: (() => { const rs = [...new Set(resta.filter(atrasado).map((j) => j.rodada))].sort((a, b) => a - b).map((r) => r + 'ª');
+        return ` (${rs.length > 1 ? rs.slice(0, -1).join(', ') + ' e ' + rs[rs.length - 1] + ' rodadas' : rs[0] + ' rodada'}). Eles ficam juntos na primeira aba, cada um com a rodada de origem, para você não esquecer. Toque para preencher.`; })() })));
     // uma rodada por vez: completou a rodada, passa sozinho para a próxima
     const rodadas = [...new Set(resta.map(grp))];
     if (SIM.pag == null || SIM.pag >= rodadas.length) SIM.pag = Math.max(0, rodadas.findIndex((r) => resta.some((j) => grp(j) === r && !SIM.escolha[j.id])));
