@@ -1,85 +1,5 @@
 {
  "jogos": {
-  "555108": {
-   "casa": {
-    "titulares": [
-     [
-      "Rafael"
-     ],
-     [
-      "Newton",
-      "Arboleda",
-      "Osorio"
-     ],
-     [
-      "Pedro Lima",
-      "Djhordney",
-      "Bobadilla",
-      "Iago"
-     ],
-     [
-      "Artur",
-      "Lucas",
-      "Calleri"
-     ]
-    ],
-    "url": "https://ge.globo.com/sp/futebol/brasileirao-serie-a/noticia/2026/11/26/sao-paulo-x-remo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "pendurados": [
-     "Rafael",
-     "Osorio",
-     "Lucas Ramon",
-     "Pedro Lima",
-     "Wendell",
-     "Djhordney",
-     "Marcos Antônio",
-     "Danielzinho",
-     "Gustavo Santana",
-     "André Silva",
-     "Artur.Quem está fora: Nicolas",
-     "Aurélio Buta",
-     "Domingos Duarte",
-     "Sabino",
-     "Toloi  ; Wendell"
-    ]
-   },
-   "fora": {
-    "titulares": [
-     [
-      "Marcelo Rangel"
-     ],
-     [
-      "Marcelinho",
-      "Zé Ivaldo",
-      "Tchamba",
-      "Mayk"
-     ],
-     [
-      "Zé Welison",
-      "Picco",
-      "Patrick"
-     ],
-     [
-      "David Braga",
-      "Galeano",
-      "Taliari"
-     ]
-    ],
-    "url": "https://ge.globo.com/sp/futebol/brasileirao-serie-a/noticia/2026/11/26/sao-paulo-x-remo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "desfalques": [
-     "Matheus Felipe",
-     "Marllon",
-     "Jajá"
-    ],
-    "pendurados": [
-     "Marcelinho",
-     "Zé Ricardo",
-     "Edson Fernando",
-     "David Braga",
-     "Pikachu",
-     "Vitor Bueno"
-    ]
-   }
-  },
   "555105": {
    "fora": {
     "titulares": [
@@ -108,21 +28,8 @@
   }
  },
  "diag": {
-  "hora": "2026-11-26T23:03:41+00:00",
+  "hora": "2026-11-27T01:05:30+00:00",
   "materias": [
-   [
-    "São Paulo x Remo: onde assistir ao vivo, horário e escalações",
-    {
-     "1776": 4,
-     "4287": 4
-    }
-   ],
-   [
-    "Escalação do São Paulo: Dorival terá volta de Lucas contra o Remo",
-    {
-     "1776": 4
-    }
-   ],
    [
     "Escalação do Cruzeiro: Gerson e Kaio Jorge voltam, mas Artur tem dúvida em meio ",
     {
