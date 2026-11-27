@@ -1740,7 +1740,7 @@
       app.append(el('div', { class: 'card pad' }, el('p', { class: 'small', style: 'margin:0', text: 'O simulador abre quando faltarem 11 rodadas para o fim do Brasileirão.' })));
       return;
     }
-    if (!SIM.base) SIM.base = rodarSimulacao({}, null);
+    // (as chances do simulador saíram: fica só a classificação)
     const C = simContexto();
     const resta = C.resta.slice().sort((a, b) => a.rodada - b.rodada || a.data.localeCompare(b.data));
     const nEsc = () => resta.filter((j) => SIM.escolha[j.id]).length;
