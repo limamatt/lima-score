@@ -628,3 +628,4 @@ details.arb[open] summary{border-bottom:1px solid var(--line)}
 .sim-aviso{display:block;width:100%;text-align:left;margin:0 0 .8rem;padding:.75rem .9rem;border-radius:12px;border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--fg);font:inherit;font-size:.9rem;line-height:1.4;cursor:pointer}
 .sim-aviso b{color:var(--accent)}
 .sim-box-atr{color:var(--accent)}
+.cen-mat{margin:.45rem 0 0;font-size:.85rem;line-height:1.4;color:var(--muted)}.cen-mat b{color:var(--fg)}

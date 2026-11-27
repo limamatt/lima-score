@@ -741,11 +741,20 @@
     }
     // meta de pontos
     const m = c.meta;
-    card.append(el('p', { class: 'cen-meta' }, m
+    if (m || !(c.matematica && c.matematica.possivel)) card.append(el('p', { class: 'cen-meta' }, m
       ? (g4 ? `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), ${pre ? 'ao menos a pré-Liberta' : 'a Liberta'} fica praticamente garantida.`
         : `Chegando a ${m.pontos} pontos (mais ${m.faltam} em ${m.jogos} jogo${m.jogos === 1 ? '' : 's'}), fica praticamente livre do Z4.`)
       : (g4 ? 'Nem vencendo tudo a vaga está garantida: depende também de tropeços dos rivais.'
         : 'Nem vencendo tudo está garantido: depende também dos resultados dos rivais.')));
+    // a conta exata (certeza matemática, sem depender de ninguém)
+    const mt = c.matematica;
+    if (mt) {
+      const alvo = pre ? 'a vaga ao menos na pré-Liberta' : g4 ? 'a vaga na Liberta' : 'a permanência';
+      card.append(el('p', { class: 'cen-mat' }, el('b', { text: '100% garantido: ' }),
+        mt.possivel
+          ? `${mt.faltam === 0 ? 'já tem os pontos, mas' : `com mais ${mt.faltam} ponto${mt.faltam === 1 ? '' : 's'} (chegando a ${mt.pontos})`} ${mt.faltam === 0 ? 'ainda depende de desempate' : `garante ${alvo} sem depender de ninguém`}.`
+          : `mesmo vencendo os ${mt.jogos} jogo${mt.jogos === 1 ? '' : 's'}, só garante ${alvo} com tropeços dos rivais (precisaria de ${mt.pontos} pontos).`));
+    }
     return card;
   }
 

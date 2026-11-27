@@ -653,7 +653,7 @@ def regras_vagas(ids, idx, times, posicoes, token):
 
 
 def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts, direta=None, g_hoje=4, pular=None,
-                    pre=None, g_pre=None):
+                    pre=None, g_pre=None, certeza=None, g_min=None, n_pre=0):
     """Para cada clube que ainda briga pelo G4 ou contra o Z4: o que muda com o resultado do
     próximo jogo, para quem torcer (quem secar) e quantos pontos deixam a vaga praticamente certa.
     Tudo sai das mesmas simulações do fim do campeonato."""
@@ -680,8 +680,27 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
             else:
                 dentro = (posicoes[:, i] >= lo) & (posicoes[:, i] <= hi)
             chance = float(dentro.mean()) * 100
-            if not (1 <= chance <= 99) or t not in proximo:
+            # entra todo clube cuja situação ainda não está decidida matematicamente (mesmo com 0,1% ou 99,9%)
+            ce = (certeza or {}).get(t, {})
+            if zona == "g4":
+                decidido = "libertadores" in ce
+            elif zona == "pre":
+                decidido = ce.get("libertadores") == 1 or ce.get("pre_libertadores") == 1 or \
+                    (ce.get("libertadores") == 0 and ce.get("pre_libertadores") == 0)
+            else:
+                decidido = "rebaixamento" in ce
+            if certeza is None:
+                decidido = not (1 <= chance <= 99)
+            if decidido or t not in proximo:
                 continue
+            # conta exata: quantos pontos garantem matematicamente, sem depender de ninguém
+            outros = sorted((pts_de[o] + 3 * faltam[o] for o in ids if o != t and not (sobe and o == pular)), reverse=True)
+            vagas_z = (g_min or g_hoje) if zona == "g4" else ((g_min or g_hoje) + n_pre) if zona == "pre" else 16
+            precisa = outros[vagas_z - 1] + 1 if len(outros) >= vagas_z else int(pts_de[t])
+            matematica = dict(pontos=precisa, faltam=max(0, precisa - int(pts_de[t])),
+                              possivel=precisa <= int(pts_de[t]) + 3 * faltam[t], jogos=faltam[t])
+            if matematica["faltam"] == 0:
+                continue   # já tem pontos que ninguém alcança: está decidido
             pc = lambda m: round(float(dentro[m].mean()) * 100, 1) if m.sum() >= 30 else None
             jogo, adv, em_casa = proximo[t]
             res = resultados[jogo["id"]]
@@ -746,7 +765,7 @@ def montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, p
                 ref = tabela[16] if pos <= 16 else tabela[15]
             saida.append(dict(time=t, zona=zona, chance=round(chance, 1), pos=pos, pts=pts_de[t], jogos=faltam[t],
                               linha=dict(time=ref, pos=times[ref]["position"], dif=pts_de[t] - pts_de[ref]),
-                              proximo=prox, secar=torcidas[:3], meta=meta, decide=decide))
+                              proximo=prox, secar=torcidas[:3], meta=meta, decide=decide, matematica=matematica))
     saida.sort(key=lambda c: (c["zona"], c["pos"]))
     return saida
 
@@ -944,9 +963,12 @@ def main():
         ))
     saida_times.sort(key=lambda x: x["pos"])
     certezas_matematicas(saida_times, restantes, vagas)
+    lib_ = vagas.get("libertadores") or {}
+    g_min = vagas["grupos"] - (1 if (vagas.get("copa") or {}).get("rebaixado_hoje") else 0)
     cenarios = montar_cenarios(ids, idx, times, restantes, proximo, resultados, posicoes, pts,
                                direta=v_grupos, g_hoje=vagas["grupos"], pular=vagas["copa"]["time"],
-                               pre=v_pre, g_pre=vagas["grupos"] + vagas["pre"])
+                               pre=v_pre, g_pre=vagas["grupos"] + vagas["pre"],
+                               certeza={t["id"]: t.get("certeza", {}) for t in saida_times}, g_min=g_min, n_pre=vagas["pre"])
     # nos cenários (chances condicionais), 100% e 0% saem das simulações e não são prova: 99,99% e 0,01%
     def _sem_certeza(x):
         if isinstance(x, dict):
