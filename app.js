@@ -1810,12 +1810,7 @@
       res.innerHTML = '';
       const fim = nEsc() === resta.length;
       res.append(secHead('Resultado', fim ? 'Tabela final' : 'Como fica a tabela', null));
-      if (!fim) {
-        const sv = el('div', { class: 'seg', role: 'group', 'aria-label': 'Ver' });
-        [['tab', 'Classificação'], ['chances', 'Chances']].forEach(([k, txt]) => sv.append(el('button', { type: 'button', 'aria-pressed': String(estado.simVista === k), text: txt, onclick: () => { estado.simVista = k; desenhar(); } })));
-        res.append(sv);
-      }
-      if (fim || estado.simVista === 'tab') tabelaFinal(); else chances();
+      tabelaFinal();
       barra.querySelector('b').textContent = nEsc() === resta.length ? 'Tabela final pronta' : nEsc() ? `${nEsc()} de ${resta.length} jogos escolhidos` : 'Toque nos resultados';
     };
     const barra = el('div', { class: 'sim-barra' }, el('b'), el('button', { type: 'button', text: 'Ver resultado', onclick: () => document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }) }));
