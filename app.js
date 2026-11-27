@@ -659,7 +659,8 @@
       const faltam = 38 - rodadaAtual() + 1;
       app.append(el('section', null, secHead(`Faltam ${faltam} rodada${faltam > 1 ? 's' : ''}`, 'Simulador', null),
         el('div', { class: 'sim-box' },
-          el('p', { text: 'Escolha o resultado de cada jogo que falta e veja na hora como fica a tabela: quem é campeão, quem vai à Liberta e quem cai.' }),
+          el('p', null, 'Escolha o resultado de cada jogo que falta e veja na hora como fica a tabela: quem é campeão, quem vai à Liberta e quem cai.',
+            (() => { const n = D.jogos.filter((j) => !encerrado(j) && j.rodada < rodadaAtual()).length; return n ? el('b', { class: 'sim-box-atr', text: ` Inclui ${n} jogo${n > 1 ? 's' : ''} atrasado${n > 1 ? 's' : ''}.` }) : ''; })()),
           el('a', { class: 'sim-btn', href: '#simulador' }, 'E se…?', el('span', { 'aria-hidden': 'true', text: '→' })))));
     }
 
@@ -1747,7 +1748,15 @@
     }
     // (as chances do simulador saíram: fica só a classificação)
     const C = simContexto();
-    const resta = C.resta.slice().sort((a, b) => a.rodada - b.rodada || a.data.localeCompare(b.data));
+    // jogos atrasados: de rodadas que já passaram, ou remarcados para bem depois da data da rodada
+    const rAt = rodadaAtual(), tip = {};
+    D.jogos.forEach((j) => { (tip[j.rodada] = tip[j.rodada] || []).push(new Date(j.data).getTime()); });
+    Object.keys(tip).forEach((r) => { const v = tip[r].sort((x, y) => x - y); tip[r] = v[Math.floor(v.length / 2)]; });
+    const atrasado = (j) => j.rodada < rAt || new Date(j.data).getTime() > tip[j.rodada] + 7 * 864e5;
+    const grp = (j) => (atrasado(j) ? 'atr' : j.rodada);
+    const ordem = (j) => (atrasado(j) ? 0 : j.rodada);
+    const resta = C.resta.slice().sort((a, b) => ordem(a) - ordem(b) || a.data.localeCompare(b.data));
+    const nAtr = resta.filter(atrasado).length;
     const nEsc = () => resta.filter((j) => SIM.escolha[j.id]).length;
     const libAberta = C.libInfo && C.libInfo.resultado == null && C.libInfo.time != null;
     const res = el('section', { id: 'sim-res' });
@@ -1823,7 +1832,7 @@
     const irFaltante = () => {
       const j = resta.find((x) => !SIM.escolha[x.id]);
       if (!j) { document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }); return; }
-      const i = [...new Set(resta.map((x) => x.rodada))].indexOf(j.rodada);
+      const i = [...new Set(resta.map(grp))].indexOf(grp(j));
       if (i !== SIM.pag) { SIM.pag = i; render(); }
       setTimeout(() => { const alvo = [...document.querySelectorAll('.sim-j')].find((c) => !c.querySelector('.sim-b.on')); (alvo || document.querySelector('.sim-cab')).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60);
     };
@@ -1832,10 +1841,13 @@
     app.append(el('div', { class: 'sim-acoes' },
       el('button', { type: 'button', class: 'av-copiar', text: 'Favoritos vencem', onclick: () => { resta.forEach((j) => { const p = j.previsao; SIM.escolha[j.id] = padrao[p.casa >= p.fora && p.casa >= p.empate ? 'c' : p.fora >= p.empate ? 'f' : 'e'].slice(); }); render(); } }),
       el('button', { type: 'button', class: 'av-copiar', text: 'Limpar', onclick: () => { SIM.escolha = {}; SIM.lib = null; SIM.pag = null; render(); } })));
+    if (nAtr) app.append(el('button', { type: 'button', class: 'sim-aviso', onclick: () => { SIM.pag = 0; render(); } },
+      el('b', { text: `⚠ ${nAtr} jogo${nAtr > 1 ? 's' : ''} atrasado${nAtr > 1 ? 's' : ''}` }),
+      el('span', { text: ` (${[...new Set(resta.filter(atrasado).map((j) => j.rodada + 'ª'))].join(', ')} rodada). Eles ficam juntos na primeira aba para você não esquecer. Toque para preencher.` })));
     // uma rodada por vez: completou a rodada, passa sozinho para a próxima
-    const rodadas = [...new Set(resta.map((j) => j.rodada))];
-    if (SIM.pag == null || SIM.pag >= rodadas.length) SIM.pag = Math.max(0, rodadas.findIndex((r) => resta.some((j) => j.rodada === r && !SIM.escolha[j.id])));
-    const completa = (r) => resta.filter((j) => j.rodada === r).every((j) => SIM.escolha[j.id]);
+    const rodadas = [...new Set(resta.map(grp))];
+    if (SIM.pag == null || SIM.pag >= rodadas.length) SIM.pag = Math.max(0, rodadas.findIndex((r) => resta.some((j) => grp(j) === r && !SIM.escolha[j.id])));
+    const completa = (r) => resta.filter((j) => grp(j) === r).every((j) => SIM.escolha[j.id]);
     const abas = el('div', { class: 'sim-abas', role: 'tablist', 'aria-label': 'Rodadas' });
     const cab = el('div', { class: 'sim-cab' });
     const card = el('div', { class: 'card sim-jogos' });
@@ -1849,7 +1861,8 @@
       abas.innerHTML = '';
       rodadas.forEach((r, i) => {
         const b = el('button', { type: 'button', role: 'tab', class: 'sim-aba' + (i === SIM.pag ? ' on' : '') + (completa(r) ? ' ok' : ''), 'aria-selected': String(i === SIM.pag),
-          onclick: () => irPara(i) }, el('span', { text: `${r}ª` }), completa(r) ? el('small', { text: '✓' }) : '');
+          onclick: () => irPara(i) }, el('span', { text: r === 'atr' ? `Atrasados (${nAtr})` : `${r}ª` }), completa(r) ? el('small', { text: '✓' }) : r === 'atr' ? el('small', { class: 'sim-alerta', text: '!' }) : '');
+        if (r === 'atr') b.classList.add('atr');
         abas.append(b);
       });
       const at = abas.children[SIM.pag];
@@ -1857,39 +1870,44 @@
     };
     const mostrarRodada = () => {
       const r = rodadas[SIM.pag];
-      const jogos = resta.filter((j) => j.rodada === r);
+      const jogos = resta.filter((j) => grp(j) === r);
       const feitos = jogos.filter((j) => SIM.escolha[j.id]).length;
       cab.innerHTML = '';
-      cab.append(el('h2', { class: 'sim-rod', text: `${r}ª rodada` }), el('span', { class: 'small', text: `${feitos} de ${jogos.length} jogos preenchidos` }));
+      cab.append(el('h2', { class: 'sim-rod', text: r === 'atr' ? 'Jogos atrasados' : `${r}ª rodada` }), el('span', { class: 'small', text: `${feitos} de ${jogos.length} jogos preenchidos` }));
       card.innerHTML = '';
       jogos.forEach((j) => card.append(caixaJogo(j)));
       rodape.innerHTML = '';
       rodape.append(
         el('button', { type: 'button', class: 'sim-ant', disabled: SIM.pag === 0 ? '' : null, onclick: () => irPara(SIM.pag - 1, true) }, '‹ Rodada anterior'),
         SIM.pag < rodadas.length - 1
-          ? el('button', { type: 'button', class: 'sim-prox', onclick: () => irPara(SIM.pag + 1, true) }, `Próxima rodada (${rodadas[SIM.pag + 1]}ª) ›`)
+          ? el('button', { type: 'button', class: 'sim-prox', onclick: () => irPara(SIM.pag + 1, true) }, (rodadas[SIM.pag + 1] === 'atr' ? 'Jogos atrasados ›' : `Próxima rodada (${rodadas[SIM.pag + 1]}ª) ›`))
           : el('button', { type: 'button', class: 'sim-prox', onclick: irFaltante }, 'Ver tabela final ›'));
       desenharAbas();
     };
     const caixaJogo = (j) => {
       const caixa = el('div', { class: 'sim-j' });
       const mudou = () => {
-        const r = j.rodada, antes = completaAntes;
+        const r = grp(j), antes = completaAntes;
         montar(); desenhar();
         const agora = completa(r);
         completaAntes = agora;
         if (agora && !antes && nEsc() === resta.length) setTimeout(() => document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }), 450);
         else if (agora && !antes && SIM.pag < rodadas.length - 1) setTimeout(() => irPara(SIM.pag + 1, true), 450);
-        else { cab.querySelector('.small').textContent = `${resta.filter((x) => x.rodada === r && SIM.escolha[x.id]).length} de ${resta.filter((x) => x.rodada === r).length} jogos preenchidos`; desenharAbas(); }
+        else { cab.querySelector('.small').textContent = `${resta.filter((x) => grp(x) === r && SIM.escolha[x.id]).length} de ${resta.filter((x) => grp(x) === r).length} jogos preenchidos`; desenharAbas(); }
       };
-      let completaAntes = completa(j.rodada);
+      let completaAntes = completa(grp(j));
       const montar = () => {
         caixa.innerHTML = '';
-        completaAntes = completa(j.rodada);
+        completaAntes = completa(grp(j));
         const pl = SIM.escolha[j.id], k = pl ? resultadoDe(pl) : null;
         const bt = (kk, rot, p) => el('button', { type: 'button', class: 'sim-b' + (k === kk ? ' on' : ''), 'aria-pressed': String(k === kk),
-          onclick: () => { completaAntes = completa(j.rodada); if (k === kk) delete SIM.escolha[j.id]; else SIM.escolha[j.id] = padrao[kk].slice(); mudou(); } },
+          onclick: () => { completaAntes = completa(grp(j)); if (k === kk) delete SIM.escolha[j.id]; else SIM.escolha[j.id] = padrao[kk].slice(); mudou(); } },
           el('span', { text: rot }), el('small', { class: 'num', text: Math.round(p) + '%' }));
+        if (atrasado(j)) {
+          const dt = new Date(j.data);
+          caixa.append(el('div', { class: 'sim-atr' }, `Jogo da ${j.rodada}ª rodada · `,
+            dt.getTime() > Date.now() - 864e5 ? `marcado para ${dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}` : 'sem data definida'));
+        }
         caixa.append(el('div', { class: 'sim-t' }, escudo(j.casa), el('span', { text: T[j.casa] ? T[j.casa].nome : '' }), el('span', { class: 'small sim-x', text: '×' }), el('span', { text: T[j.fora] ? T[j.fora].nome : '' }), escudo(j.fora)),
           el('div', { class: 'sim-bs' }, bt('c', T[j.casa] ? T[j.casa].sigla || 'Casa' : 'Casa', j.previsao.casa), bt('e', 'Empate', j.previsao.empate), bt('f', T[j.fora] ? T[j.fora].sigla || 'Fora' : 'Fora', j.previsao.fora)));
       };
