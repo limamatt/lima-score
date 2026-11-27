@@ -18,18 +18,44 @@
       "Matheus Pereira"
      ],
      [
-      "Marquinhos",
       "Wesley",
+      "Marquinhos",
       "Kaio Jorge"
      ]
     ],
-    "url": "https://ge.globo.com/futebol/times/cruzeiro/noticia/2026/11/26/escalacao-do-cruzeiro-gerson-e-kaio-jorge-voltam-mas-artur-tem-duvida-em-meio-a-desfalques.ghtml"
+    "url": "https://ge.globo.com/mg/futebol/brasileirao-serie-a/noticia/2026/11/27/fluminense-x-cruzeiro-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "desfalques": [
+     "Gabriel Pec",
+     "Arroyo",
+     "Bruno Rodrigues",
+     "Gabriel Rojas",
+     "Lucas Romero",
+     "Luis Sinisterra",
+     "Matheus Henrique",
+     "William"
+    ],
+    "pendurados": [
+     "Otávio",
+     "Fabrício Bruno",
+     "Gabriel Rojas",
+     "Lucas Silva",
+     "Matheus Henrique",
+     "Wesley",
+     "Arroyo"
+    ]
    }
   }
  },
  "diag": {
-  "hora": "2026-11-27T01:05:30+00:00",
+  "hora": "2026-11-27T08:46:25+00:00",
   "materias": [
+   [
+    "Fluminense x Cruzeiro: onde assistir ao vivo, horário e escalações",
+    {
+     "1765": 0,
+     "1771": 4
+    }
+   ],
    [
     "Escalação do Cruzeiro: Gerson e Kaio Jorge voltam, mas Artur tem dúvida em meio ",
     {
