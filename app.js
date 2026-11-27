@@ -1814,11 +1814,20 @@
     const desenhar = () => {
       res.innerHTML = '';
       const fim = nEsc() === resta.length;
-      res.append(secHead('Resultado', fim ? 'Tabela final' : 'Como fica a tabela', null));
-      tabelaFinal();
-      barra.querySelector('b').textContent = nEsc() === resta.length ? 'Tabela final pronta' : nEsc() ? `${nEsc()} de ${resta.length} jogos escolhidos` : 'Toque nos resultados';
+      // a tabela só aparece quando todos os jogos tiverem resultado
+      if (fim) { res.append(secHead('Resultado', 'Tabela final', null)); tabelaFinal(); }
+      barra.querySelector('b').textContent = fim ? 'Tabela final pronta' : nEsc() ? `${nEsc()} de ${resta.length} jogos escolhidos` : 'Toque nos resultados';
+      const bb = barra.querySelector('button');
+      bb.textContent = fim ? 'Ver tabela' : 'Próximo jogo';
     };
-    const barra = el('div', { class: 'sim-barra' }, el('b'), el('button', { type: 'button', text: 'Ver resultado', onclick: () => document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }) }));
+    const irFaltante = () => {
+      const j = resta.find((x) => !SIM.escolha[x.id]);
+      if (!j) { document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }); return; }
+      const i = [...new Set(resta.map((x) => x.rodada))].indexOf(j.rodada);
+      if (i !== SIM.pag) { SIM.pag = i; render(); }
+      setTimeout(() => { const alvo = [...document.querySelectorAll('.sim-j')].find((c) => !c.querySelector('.sim-b.on')); (alvo || document.querySelector('.sim-cab')).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60);
+    };
+    const barra = el('div', { class: 'sim-barra' }, el('b'), el('button', { type: 'button', text: 'Próximo jogo', onclick: irFaltante }));
     const padrao = { c: [1, 0], e: [0, 0], f: [0, 1] };
     app.append(el('div', { class: 'sim-acoes' },
       el('button', { type: 'button', class: 'av-copiar', text: 'Favoritos vencem', onclick: () => { resta.forEach((j) => { const p = j.previsao; SIM.escolha[j.id] = padrao[p.casa >= p.fora && p.casa >= p.empate ? 'c' : p.fora >= p.empate ? 'f' : 'e'].slice(); }); render(); } }),
@@ -1859,7 +1868,7 @@
         el('button', { type: 'button', class: 'sim-ant', disabled: SIM.pag === 0 ? '' : null, onclick: () => irPara(SIM.pag - 1, true) }, '‹ Rodada anterior'),
         SIM.pag < rodadas.length - 1
           ? el('button', { type: 'button', class: 'sim-prox', onclick: () => irPara(SIM.pag + 1, true) }, `Próxima rodada (${rodadas[SIM.pag + 1]}ª) ›`)
-          : el('button', { type: 'button', class: 'sim-prox', onclick: () => document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }) }, 'Ver resultado ›'));
+          : el('button', { type: 'button', class: 'sim-prox', onclick: irFaltante }, 'Ver tabela final ›'));
       desenharAbas();
     };
     const caixaJogo = (j) => {
@@ -1869,7 +1878,8 @@
         montar(); desenhar();
         const agora = completa(r);
         completaAntes = agora;
-        if (agora && !antes && SIM.pag < rodadas.length - 1) setTimeout(() => irPara(SIM.pag + 1, true), 450);
+        if (agora && !antes && nEsc() === resta.length) setTimeout(() => document.getElementById('sim-res').scrollIntoView({ behavior: 'smooth' }), 450);
+        else if (agora && !antes && SIM.pag < rodadas.length - 1) setTimeout(() => irPara(SIM.pag + 1, true), 450);
         else { cab.querySelector('.small').textContent = `${resta.filter((x) => x.rodada === r && SIM.escolha[x.id]).length} de ${resta.filter((x) => x.rodada === r).length} jogos preenchidos`; desenharAbas(); }
       };
       let completaAntes = completa(j.rodada);
