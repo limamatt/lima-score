@@ -1,50 +1,5 @@
 {
  "jogos": {
-  "555105": {
-   "fora": {
-    "titulares": [
-     [
-      "Otávio"
-     ],
-     [
-      "Fagner",
-      "Fabrício Bruno",
-      "Jonathan Jesus",
-      "Viña"
-     ],
-     [
-      "Zé Lucas",
-      "Gerson",
-      "Matheus Pereira"
-     ],
-     [
-      "Wesley",
-      "Marquinhos",
-      "Kaio Jorge"
-     ]
-    ],
-    "url": "https://ge.globo.com/mg/futebol/brasileirao-serie-a/noticia/2026/11/27/fluminense-x-cruzeiro-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-    "desfalques": [
-     "Gabriel Pec",
-     "Arroyo",
-     "Bruno Rodrigues",
-     "Gabriel Rojas",
-     "Lucas Romero",
-     "Luis Sinisterra",
-     "Matheus Henrique",
-     "William"
-    ],
-    "pendurados": [
-     "Otávio",
-     "Fabrício Bruno",
-     "Gabriel Rojas",
-     "Lucas Silva",
-     "Matheus Henrique",
-     "Wesley",
-     "Arroyo"
-    ]
-   }
-  },
   "555101": {
    "casa": {
     "titulares": [
@@ -99,25 +54,8 @@
   }
  },
  "diag": {
-  "hora": "2026-11-28T00:14:53+00:00",
+  "hora": "2026-11-28T01:16:15+00:00",
   "materias": [
-   [
-    "Fluminense x Cruzeiro: onde assistir ao vivo, horário e escalações",
-    {
-     "1765": 0,
-     "1771": 4
-    }
-   ],
-   [
-    "Escalação do Cruzeiro: Gerson e Kaio Jorge voltam, mas Artur tem dúvida em meio ",
-    {
-     "1771": 4
-    }
-   ],
-   [
-    "Escalação do Fluminense: Marcão tem dúvida no ataque, e Martinelli pode voltar a",
-    {}
-   ],
    [
     "Escalação do Botafogo: Tite ensaia zaga com Kaio e Arthur, e meio-campo deve ter",
     {
@@ -136,13 +74,6 @@
    ]
   ],
   "amostra": [
-   [
-    "Escalação do Fluminense: Marcão tem dúvida no ataque, e Martinelli pode voltar a",
-    [
-     "O Fluminense entra em campo nesta sexta-feira para sua última partida diante da torcida na temporada e pode ter algumas mudanças nas peças que foram titulares n",
-     "Provável escalação: Fábio, Guga, Ignácio, Thiago Silva e Renê; Hércules, Martinelli (Nonato) e Lucho Acosta; Canobbio, Savarino e Castillo (Hulk)."
-    ]
-   ],
    [
     "Escalação do Flamengo: Pulgar e Léo Pereira voltam, e Ayrton Lucas ter ganhar ch",
     [
