@@ -23,7 +23,58 @@
       "Tiquinho Soares"
      ]
     ],
-    "url": "https://ge.globo.com/futebol/times/botafogo/noticia/2026/11/27/escalacao-do-botafogo-tite-ensaia-zaga-com-kaio-e-arthur-e-meio-campo-deve-ter-retornos.ghtml"
+    "url": "https://ge.globo.com/rj/futebol/brasileirao-serie-a/noticia/2026/11/28/botafogo-x-bahia-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "desfalques": [
+     "Jordan Barrera",
+     "Ferraresi",
+     "Marçal"
+    ],
+    "pendurados": [
+     "Danilo",
+     "Edenílson",
+     "Júnior Santos",
+     "Lucas Monzón",
+     "Matheus Martins",
+     "Medina",
+     "Marçal",
+     "Villlalba"
+    ]
+   },
+   "fora": {
+    "titulares": [
+     [
+      "Ronaldo"
+     ],
+     [
+      "Marcos Victor",
+      "David Duarte",
+      "Kanu",
+      "Luciano Juba"
+     ],
+     [
+      "Caio Alexandre",
+      "Erick",
+      "Rodrigo Nestor"
+     ],
+     [
+      "Kike Olivera",
+      "Erick Pulga",
+      "Alejo Veliz"
+     ]
+    ],
+    "url": "https://ge.globo.com/rj/futebol/brasileirao-serie-a/noticia/2026/11/28/botafogo-x-bahia-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+    "desfalques": [
+     "Acevedo",
+     "Léo Vieira"
+    ],
+    "pendurados": [
+     "Ronaldo",
+     "David Duarte",
+     "Rodrigo Nestor",
+     "Caio Alexandre",
+     "Erick Pulga",
+     "Sanabria"
+    ]
    }
   },
   "555100": {
@@ -54,8 +105,15 @@
   }
  },
  "diag": {
-  "hora": "2026-11-28T01:16:15+00:00",
+  "hora": "2026-11-28T08:23:23+00:00",
   "materias": [
+   [
+    "Botafogo x Bahia: onde assistir ao vivo, horário e escalações",
+    {
+     "1770": 4,
+     "1777": 4
+    }
+   ],
    [
     "Escalação do Botafogo: Tite ensaia zaga com Kaio e Arthur, e meio-campo deve ter",
     {
