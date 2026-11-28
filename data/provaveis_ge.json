@@ -45,6 +45,32 @@
     ]
    }
   },
+  "555101": {
+   "casa": {
+    "titulares": [
+     [
+      "Gabriel Batista"
+     ],
+     [
+      "Vitinho",
+      "Kaio Pantaleão",
+      "Arthur Chaves",
+      "Alex Telles"
+     ],
+     [
+      "Huguinho",
+      "Danilo",
+      "Medina"
+     ],
+     [
+      "Montoro",
+      "Matheus Martins",
+      "Tiquinho Soares"
+     ]
+    ],
+    "url": "https://ge.globo.com/futebol/times/botafogo/noticia/2026/11/27/escalacao-do-botafogo-tite-ensaia-zaga-com-kaio-e-arthur-e-meio-campo-deve-ter-retornos.ghtml"
+   }
+  },
   "555100": {
    "fora": {
     "titulares": [
@@ -73,7 +99,7 @@
   }
  },
  "diag": {
-  "hora": "2026-11-27T21:43:07+00:00",
+  "hora": "2026-11-28T00:14:53+00:00",
   "materias": [
    [
     "Fluminense x Cruzeiro: onde assistir ao vivo, horário e escalações",
@@ -93,6 +119,16 @@
     {}
    ],
    [
+    "Escalação do Botafogo: Tite ensaia zaga com Kaio e Arthur, e meio-campo deve ter",
+    {
+     "1770": 4
+    }
+   ],
+   [
+    "Escalação do Flamengo: Pulgar e Léo Pereira voltam, e Ayrton Lucas ter ganhar ch",
+    {}
+   ],
+   [
     "Escalação do Vasco: Pedro Emanuel terá desfalques na defesa contra o Atlético-MG",
     {
      "1780": 4
@@ -105,6 +141,15 @@
     [
      "O Fluminense entra em campo nesta sexta-feira para sua última partida diante da torcida na temporada e pode ter algumas mudanças nas peças que foram titulares n",
      "Provável escalação: Fábio, Guga, Ignácio, Thiago Silva e Renê; Hércules, Martinelli (Nonato) e Lucho Acosta; Canobbio, Savarino e Castillo (Hulk)."
+    ]
+   ],
+   [
+    "Escalação do Flamengo: Pulgar e Léo Pereira voltam, e Ayrton Lucas ter ganhar ch",
+    [
+     "+ Varela, do Flamengo, tatua título brasileiro depois do empate com o Palmeiras; veja",
+     "Ao menos duas mudanças são por necessidade: Alex Sandro tomou o terceiro amarelo e está suspenso. Plata, que foi titular no jogo do título contra o Palmeiras, s",
+     "Na manhã deste sábado, o técnico ainda terá um último treino para comandar no Ninho do Urubu e encerrar a preparação para a partida. A delegação rubro-negra emb",
+     "Rossi, Royal, Léo Ortiz (Vitão), Léo Pereira e Ayrton Lucas; Pulgar, Jorginho (De la Cruz ou Saúl) e Arrascaeta (Paquetá); Carrascal (Luiz Araújo), Samuel Lino "
     ]
    ]
   ]
